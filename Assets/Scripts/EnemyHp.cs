@@ -11,7 +11,6 @@ public class EnemyHp : MonoBehaviour
     private SpriteRenderer spriteRenderer;
     private EnemyHpViewer enemyHpViewer;
 
-
     public void SetUp(EnemyHpViewer enemyHpViewer)
     {
         this.enemyHpViewer = enemyHpViewer;
@@ -75,14 +74,3 @@ public class EnemyHp : MonoBehaviour
         }
     }
 }
-
-
-/*
- * File : EnemyHP.cs
- * Desc
- *	: 적 캐릭터의 체력
- *	
- * Functions
- *	: TakeDamage() - 체력 감소
- *	: HitAlphaAnimation() - 투명도를 100% -> 40% -> 100%로 설정
- */

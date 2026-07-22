@@ -22,11 +22,3 @@ public class EnemyHpViewer : MonoBehaviour
         hpSliderUpdate();
     }
 }
-
-
-/*
- * File : EnemyHPView.cs
- * Desc
- *	: 적의 체력 정보를 Slider UI에 업데이트
- *	
- */
