@@ -33,7 +33,7 @@ public class Projectile : MonoBehaviour
         //Vector3 position = transform.position;
         //Vector3 direction = (target - position).normalized;
         //rigidbody2d.AddForce(target.normalized * moveSpeed);
-        rigidbody2d.velocity = target * moveSpeed;
+        rigidbody2d.linearVelocity = target * moveSpeed;
     }
     private void OnTriggerEnter2D(Collider2D collision)
     {
@@ -42,8 +42,8 @@ public class Projectile : MonoBehaviour
             return;
         }
 
-        collision.GetComponent<EnemyHp>().TakeDamage(damage);   // Àû Ã¼·ÂÀ» damage¸¸Å­ °¨¼Ò
-        Destroy(gameObject);                                    // ¹ß»çÃ¼ ¿ÀºêÁ§Æ® »èÁ¦
+        collision.GetComponent<EnemyHp>().TakeDamage(damage);   // ï¿½ï¿½ Ã¼ï¿½ï¿½ï¿½ï¿½ damageï¿½ï¿½Å­ ï¿½ï¿½ï¿½ï¿½
+        Destroy(gameObject);                                    // ï¿½ß»ï¿½Ã¼ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ® ï¿½ï¿½ï¿½ï¿½
     }
 
     void DestroyThisProjectile()
