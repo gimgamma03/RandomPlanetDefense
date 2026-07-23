@@ -1,5 +1,3 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 public class Bomb : MonoBehaviour
@@ -7,65 +5,89 @@ public class Bomb : MonoBehaviour
     private float bombTime = 0.5f;
     private float currentTime;
     private float damage;
-    bool isExplode = false;
-
+    private bool isExplode = false;
 
     [SerializeField]
     private ParticleSystem explodeParticle;
 
     public void SetUp(float damage)
     {
+        CancelInvoke();
         this.damage = damage;
-    }
-    // Start is called before the first frame update
-    void Start()
-    {
         currentTime = Time.time;
+        isExplode = false;
+        transform.localScale = Vector3.zero;
+
+        SpriteRenderer spriteRenderer = GetComponent<SpriteRenderer>();
+        if (spriteRenderer != null)
+        {
+            spriteRenderer.enabled = true;
+        }
+
+        if (explodeParticle != null)
+        {
+            explodeParticle.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+        }
     }
 
-    // Update is called once per frame
-    void Update()
+    private void Update()
     {
         float u = (Time.time - currentTime) / bombTime;
-
         transform.localScale = new Vector3(u, u, u) * 1.0f;
 
         if (u >= 1 && !isExplode)
         {
-            //ExplodeBomb();
             isExplode = true;
-            GetComponent<SpriteRenderer>().enabled = false;
-            explodeParticle.Play();
-            Invoke("DestoryThis", 0.5f);
+            SpriteRenderer spriteRenderer = GetComponent<SpriteRenderer>();
+            if (spriteRenderer != null)
+            {
+                spriteRenderer.enabled = false;
+            }
+
+            if (explodeParticle != null)
+            {
+                explodeParticle.Play();
+            }
+
+            Invoke(nameof(Release), 0.5f);
         }
     }
 
     private void OnTriggerEnter2D(Collider2D collision)
     {
-        if (!collision.CompareTag("Enemy")) return;
-
-        if (isExplode) 
+        if (!collision.CompareTag("Enemy"))
         {
-            collision.GetComponent<EnemyHp>().TakeDamage(damage);
+            return;
         }
-    }
 
-    private void DestoryThis()
-    {
-        Destroy(this.gameObject);
-    }
-/*    public void ExplodeBomb()
-    {
-        Collider2D[] colliders = Physics2D.OverlapCircleAll(transform.position, 0.5f);
-        foreach (Collider2D col in colliders)
+        if (isExplode)
         {
-            if (col != null && col.CompareTag("Enemy"))
+            EnemyHp enemyHp = collision.GetComponent<EnemyHp>();
+            if (enemyHp != null)
             {
-                col.GetComponent<EnemyHp>().TakeDamage(damage);
-                bombParticle.Play();
-                yield return new WaitForSeconds(bombTime);
-                Destroy(gameObject);
+                enemyHp.TakeDamage(damage);
             }
         }
-    }*/
+    }
+
+    private void Release()
+    {
+        CancelInvoke();
+        isExplode = false;
+
+        PooledObject pooled = GetComponent<PooledObject>();
+        if (pooled != null)
+        {
+            pooled.ReturnToPool();
+            return;
+        }
+
+        if (GameObjectPoolManager.Instance != null)
+        {
+            GameObjectPoolManager.Instance.Return(gameObject);
+            return;
+        }
+
+        Destroy(gameObject);
+    }
 }

@@ -55,18 +55,19 @@ public class TowerWeapon : MonoBehaviour
     private LineRenderer lineRenderer3;
 
     private Slow slow;
+    private GameObjectPoolManager poolManager;
 
     public WeaponState weaponState = WeaponState.SearchTarget;
     private Transform attackTarget = null;
     private Vector3 attackTargetVector;
-    private SpriteRenderer spriteRenderer; //Å¸¿ö ÇöÀç Á¤º¸¿ë ÀÌ¹ÌÁö
+    private SpriteRenderer spriteRenderer;
 
     private TowerSpawner towerSpawner;
     private EnemySpawner enemySpawner;
 
     public TowerGrade towerGrade;
     public Sprite towerSprite => towerData.sprite;
-    public int level = 1; // ÀÌ°Íµµ ³ªÁß¿¡ µÅ´ÂÁö È®ÀÎ ÇØ¾ß‰Î
+    public int level = 1; // ?? ? ? ? ??
     public int upGradeGold;
     public int useGoldToUpGrade = 0;
 
@@ -78,7 +79,7 @@ public class TowerWeapon : MonoBehaviour
     public float rate;
     bool doubleShot;
 
-    //½½·Î¿ì Å¸¿öÀÏ¶§
+    //? ?
     [HideInInspector]
     public float slowValue;
 
@@ -104,8 +105,8 @@ public class TowerWeapon : MonoBehaviour
         spriteRenderer = GetComponent<SpriteRenderer>();
         this.towerSpawner = towerSpawner;
         this.enemySpawner = enemySpawner;
+        poolManager = GameObjectPoolManager.EnsureExists();
 
-        //Invoke("ChangeState(WeaponState.SearchTarget)", 1f);
         if (!(weaponType == WeaponType.Slow || weaponType == WeaponType.Buff))
         {
             ChangeState(WeaponState.SearchTarget);
@@ -114,6 +115,21 @@ public class TowerWeapon : MonoBehaviour
         {
             slow = GetComponentInChildren<Slow>();
         }
+    }
+
+    private GameObject SpawnPooled(GameObject prefab, Vector3 position, Quaternion rotation)
+    {
+        if (poolManager == null)
+        {
+            poolManager = GameObjectPoolManager.EnsureExists();
+        }
+
+        if (poolManager != null && prefab != null)
+        {
+            return poolManager.Spawn(prefab, position, rotation);
+        }
+
+        return Instantiate(prefab, position, rotation);
     }
     // Update is called once per frame
 
@@ -138,18 +154,18 @@ public class TowerWeapon : MonoBehaviour
     }
     public void ChangeState(WeaponState newState)
     {
-        // ÀÌÀü¿¡ Àç»ıÁßÀÌ´ø »óÅÂ Á¾·á
+        //  ?  
         StopCoroutine(weaponState.ToString());
-        // »óÅÂ º¯°æ
+        //  
         weaponState = newState;
-        // »õ·Î¿î »óÅÂ Àç»ı
+        // ?  
         StartCoroutine(weaponState.ToString());
     }
     public IEnumerator SearchTarget()
     {
         while (true)
         {
-            // ÇöÀç Å¸¿ö¿¡ °¡Àå °¡±îÀÌ ÀÖ´Â °ø°İ ´ë»ó(Àû) Å½»ö
+            //     ?  () 
             attackTarget = FindClosestAttackTarget();
 
             if (attackTarget != null)
@@ -185,13 +201,13 @@ public class TowerWeapon : MonoBehaviour
 
     private Transform FindClosestAttackTarget()
     {
-        // Á¦ÀÏ °¡±îÀÌ ÀÖ´Â ÀûÀ» Ã£±â À§ÇØ ÃÖÃÊ °Å¸®¸¦ ÃÖ´ëÇÑ Å©°Ô ¼³Á¤
+        //   ?  ?    ? ? 
         float closestDistSqr = Mathf.Infinity;
-        // EnemySpawnerÀÇ EnemyList¿¡ ÀÖ´Â ÇöÀç ¸Ê¿¡ Á¸ÀçÇÏ´Â ¸ğµç Àû °Ë»ç
+        // EnemySpawner EnemyList ?  ? ?   ?
         for (int i = 0; i < enemySpawner.enemyList.Count; ++i)
         {
             float distance = Vector3.Distance(enemySpawner.enemyList[i].transform.position, transform.position);
-            // ÇöÀç °Ë»çÁßÀÎ Àû°úÀÇ °Å¸®°¡ °ø°İ¹üÀ§ ³»¿¡ ÀÖ°í, ÇöÀç±îÁö °Ë»çÇÑ Àûº¸´Ù °Å¸®°¡ °¡±î¿ì¸é
+            //  ?   ?  ?,  ?   
             if (distance <= range && distance <= closestDistSqr)
             {
                 closestDistSqr = distance;
@@ -204,13 +220,13 @@ public class TowerWeapon : MonoBehaviour
 
     private bool IsPossibleToAttackTarget()
     {
-        // targetÀÌ ÀÖ´ÂÁö °Ë»ç (´Ù¸¥ ¹ß»çÃ¼¿¡ ÀÇÇØ Á¦°Å, Goal ÁöÁ¡±îÁö ÀÌµ¿ÇØ »èÁ¦ µî)
+        // target ? ? (? ?  , Goal  ?  )
         if (attackTarget == null)
         {
             return false;
         }
 
-        // targetÀÌ °ø°İ ¹üÀ§ ¾È¿¡ ÀÖ´ÂÁö °Ë»ç (°ø°İ ¹üÀ§¸¦ ¹ş¾î³ª¸é »õ·Î¿î Àû Å½»ö)
+        // target   ? ? ? (  ? ?  )
         float distance = Vector3.Distance(attackTarget.position, transform.position);
         if (distance > range)
         {
@@ -252,7 +268,7 @@ public class TowerWeapon : MonoBehaviour
 
             SpawnMultiProjectile(attackTargetVector);
 
-            //µÎ¹ø ½î´Â Å¸ÀÔ ÀÏ¶§
+            //?   ?
             if (doubleShot)
             {
                 yield return new WaitForSeconds(0.2f);
@@ -306,15 +322,15 @@ public class TowerWeapon : MonoBehaviour
 
     private IEnumerator TryAttackLaser()
     {
-        // ·¹ÀÌÀú, ·¹ÀÌÀú Å¸°İ È¿°ú È°¼ºÈ­
+        // ,   ? ??
         EnableLaser();
 
         while (true)
         {
-            // targetÀ» °ø°İÇÏ´Â°Ô °¡´ÉÇÑÁö °Ë»ç
+            // target ?  ?
             if (IsPossibleToAttackTarget() == false)
             {
-                // ·¹ÀÌÀú, ·¹ÀÌÀú Å¸°İ È¿°ú ºñÈ°¼ºÈ­
+                // ,   ? ??
                 DisableLaser();
 
                 //enable and Research cooltime
@@ -324,7 +340,7 @@ public class TowerWeapon : MonoBehaviour
                 break;
             }
 
-            // ·¹ÀÌÀú °ø°İ
+            //  
             SpawnLaser();
 
             yield return new WaitForEndOfFrame();
@@ -343,7 +359,7 @@ public class TowerWeapon : MonoBehaviour
         for(int i = 0; i < bombCount; i++)
         {
             bombPosition[i] = towerPositon + bombVector * ((i + 1) * (1.0f / bombCount));
-            GameObject bombs = Instantiate(bombPrefab, bombPosition[i], Quaternion.identity);
+            GameObject bombs = SpawnPooled(bombPrefab, bombPosition[i], Quaternion.identity);
             bombs.GetComponent<Bomb>().SetUp(damage);
         }
 
@@ -360,23 +376,23 @@ public class TowerWeapon : MonoBehaviour
 
         for (int i = 0; i < projectileClones.Length; i++)
         {
-            projectileClones[i] = Instantiate(projectilePrefab, spawnPoint.position, Quaternion.identity);
+            projectileClones[i] = SpawnPooled(projectilePrefab, spawnPoint.position, Quaternion.identity);
             projectileClones[i].GetComponent<Projectile>().Setup(targetMove[i], damage);
         }
     }
     private void SpawnBombProjectile()
     {
-        GameObject clone = Instantiate(bombProjectilePrefab, spawnPoint.position, Quaternion.identity);
-        // »ı¼ºµÈ ¹ß»çÃ¼¿¡°Ô °ø°İ´ë»ó(attackTarget) Á¤º¸ Á¦°ø
-        // °ø°İ·Â = Å¸¿ö ±âº» °ø°İ·Â + ¹öÇÁ¿¡ ÀÇÇØ Ãß°¡µÈ °ø°İ·Â
+        GameObject clone = SpawnPooled(bombProjectilePrefab, spawnPoint.position, Quaternion.identity);
+        //  ? ?(attackTarget)  
+        // ? =  ? ? +   ? ?
         float damage = this.damage; // +Adddamage
         clone.GetComponent<BombProjectile>().Setup(attackTarget, damage);
     }
     private void SpawnTargetProjectile()
     {
-        GameObject clone = Instantiate(targetProjectilePrefab, spawnPoint.position, Quaternion.identity);
-        // »ı¼ºµÈ ¹ß»çÃ¼¿¡°Ô °ø°İ´ë»ó(attackTarget) Á¤º¸ Á¦°ø
-        // °ø°İ·Â = Å¸¿ö ±âº» °ø°İ·Â + ¹öÇÁ¿¡ ÀÇÇØ Ãß°¡µÈ °ø°İ·Â
+        GameObject clone = SpawnPooled(targetProjectilePrefab, spawnPoint.position, Quaternion.identity);
+        //  ? ?(attackTarget)  
+        // ? =  ? ? +   ? ?
         float damage = this.damage; // +Adddamage
         clone.GetComponent<TargetProjectile>().Setup(attackTarget, damage);
     }
@@ -399,19 +415,19 @@ public class TowerWeapon : MonoBehaviour
         //RaycastHit2D[] hit = Physics2D.RaycastAll(spawnPoint.position, direction, towerData.weapon[level].range, targetLayer);
         RaycastHit2D[] hit = Physics2D.RaycastAll(spawnPoint.position, direction, this.range);
 
-        // °°Àº ¹æÇâÀ¸·Î ¿©·¯ °³ÀÇ ±¤¼±À» ½÷¼­ ±× Áß ÇöÀç attackTarget°ú µ¿ÀÏÇÑ ¿ÀºêÁ§Æ®¸¦ °ËÃâ
+        //          attackTarget  ? 
         for (int i = 0; i < hit.Length; ++i)
         {
             if (hit[i].transform == attackTarget)
             {
-                // ¼±ÀÇ ½ÃÀÛÁöÁ¡
+                //  
                 lineRenderer.SetPosition(0, spawnPoint.position);
-                // ¼±ÀÇ ¸ñÇ¥ÁöÁ¡
+                //  ?
                 lineRenderer.SetPosition(1, new Vector3(hit[i].point.x, hit[i].point.y, 0) + Vector3.back);
-                // Å¸°İ È¿°ú À§Ä¡ ¼³Á¤
+                //  ? ? 
                 //hitEffect.position = hit[i].point;
-                // Àû Ã¼·Â °¨¼Ò (1ÃÊ¿¡ damage¸¸Å­ °¨¼Ò)
-                // °ø°İ·Â = Å¸¿ö ±âº» °ø°İ·Â + ¹öÇÁ¿¡ ÀÇÇØ Ãß°¡µÈ °ø°İ·Â
+                //    (1? damage? )
+                // ? =  ? ? +   ? ?
                 float damage = this.damage; // + AddedDamage;
                 attackTarget.GetComponent<EnemyHp>().TakeDamage(damage * Time.deltaTime);
             }

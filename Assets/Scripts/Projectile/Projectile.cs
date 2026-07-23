@@ -1,5 +1,3 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 public class Projectile : MonoBehaviour
@@ -8,33 +6,33 @@ public class Projectile : MonoBehaviour
     private Vector3 target;
     private float moveSpeed = 4.5f;
     private float damage;
+
     private void Awake()
     {
         rigidbody2d = GetComponent<Rigidbody2D>();
     }
+
     public void Setup(Vector3 target, float damage)
     {
+        CancelInvoke();
         this.target = target;
         this.damage = damage;
+
+        if (rigidbody2d != null)
+        {
+            rigidbody2d.linearVelocity = Vector2.zero;
+            rigidbody2d.angularVelocity = 0f;
+        }
+
         AddForceToTarget(this.target);
-    }
-    // Start is called before the first frame update
-    void Start()
-    {
-        Invoke("DestroyThisProjectile", 3f);
+        Invoke(nameof(Release), 3f);
     }
 
-    void Update()
-    {
-        
-    }
     public void AddForceToTarget(Vector3 target)
     {
-        //Vector3 position = transform.position;
-        //Vector3 direction = (target - position).normalized;
-        //rigidbody2d.AddForce(target.normalized * moveSpeed);
         rigidbody2d.linearVelocity = target * moveSpeed;
     }
+
     private void OnTriggerEnter2D(Collider2D collision)
     {
         if (collision == null || !collision.CompareTag("Enemy"))
@@ -42,12 +40,42 @@ public class Projectile : MonoBehaviour
             return;
         }
 
-        collision.GetComponent<EnemyHp>().TakeDamage(damage);   // �� ü���� damage��ŭ ����
-        Destroy(gameObject);                                    // �߻�ü ������Ʈ ����
+        if (!collision.gameObject.activeInHierarchy)
+        {
+            return;
+        }
+
+        EnemyHp enemyHp = collision.GetComponent<EnemyHp>();
+        if (enemyHp != null)
+        {
+            enemyHp.TakeDamage(damage);
+        }
+
+        Release();
     }
 
-    void DestroyThisProjectile()
+    private void Release()
     {
+        CancelInvoke();
+        if (rigidbody2d != null)
+        {
+            rigidbody2d.linearVelocity = Vector2.zero;
+            rigidbody2d.angularVelocity = 0f;
+        }
+
+        PooledObject pooled = GetComponent<PooledObject>();
+        if (pooled != null)
+        {
+            pooled.ReturnToPool();
+            return;
+        }
+
+        if (GameObjectPoolManager.Instance != null)
+        {
+            GameObjectPoolManager.Instance.Return(gameObject);
+            return;
+        }
+
         Destroy(gameObject);
     }
 }

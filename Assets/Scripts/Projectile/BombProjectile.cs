@@ -1,7 +1,5 @@
 using System.Collections;
-using Unity.VisualScripting;
 using UnityEngine;
-using UnityEngine.EventSystems;
 
 public class BombProjectile : MonoBehaviour
 {
@@ -12,15 +10,21 @@ public class BombProjectile : MonoBehaviour
     private float bombLifeTime = 0.5f;
     private float bombStartDistance = 0.1f;
     private bool isExploding = false;
-    //private bool isBomb = false;
 
     [SerializeField]
     private ParticleSystem bombParticle;
 
     public void Setup(Transform target, float damage)
     {
+        StopAllCoroutines();
         this.target = target.position;
         this.damage = damage;
+        isExploding = false;
+
+        if (bombParticle != null)
+        {
+            bombParticle.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+        }
     }
 
     private void Update()
@@ -28,33 +32,58 @@ public class BombProjectile : MonoBehaviour
         if (!isExploding)
         {
             Vector3 direction = (target - transform.position).normalized;
-
             transform.position += direction * moveSpeed * Time.deltaTime;
 
             if (Vector2.Distance(transform.position, target) < bombStartDistance)
             {
                 isExploding = true;
-
-                StartCoroutine("Bomb");
+                StartCoroutine(Bomb());
             }
         }
     }
 
     private IEnumerator Bomb()
     {
-        bombParticle.Play();
+        if (bombParticle != null)
+        {
+            bombParticle.Play();
+        }
 
         Collider2D[] colliders = Physics2D.OverlapCircleAll(transform.position, bombRadius * 0.5f);
         foreach (Collider2D collider in colliders)
         {
-            if (collider.CompareTag("Enemy") && collider != null)
+            if (collider != null && collider.CompareTag("Enemy"))
             {
                 EnemyHp enemyHp = collider.GetComponent<EnemyHp>();
-                enemyHp.TakeDamage(damage);
+                if (enemyHp != null)
+                {
+                    enemyHp.TakeDamage(damage);
+                }
             }
         }
 
         yield return new WaitForSeconds(bombLifeTime);
+        Release();
+    }
+
+    private void Release()
+    {
+        StopAllCoroutines();
+        isExploding = false;
+
+        PooledObject pooled = GetComponent<PooledObject>();
+        if (pooled != null)
+        {
+            pooled.ReturnToPool();
+            return;
+        }
+
+        if (GameObjectPoolManager.Instance != null)
+        {
+            GameObjectPoolManager.Instance.Return(gameObject);
+            return;
+        }
+
         Destroy(gameObject);
     }
 }
