@@ -1,25 +1,88 @@
-using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+ï»¿using UnityEngine;
 
-[CreateAssetMenu]
+/// <summary>
+/// íƒ€ì›Œ ì •ì˜(ë¡œì»¬ SO).
+/// êµ¬ê¸€ ì‹œíŠ¸/ì—‘ì…€ CSVëŠ” ApplyBalanceë¡œ ìˆ˜ì¹˜Â·ë“±ê¸‰Â·í‘œì‹œì´ë¦„ì„ ë®ì–´ì“´ë‹¤.
+/// </summary>
+[CreateAssetMenu(menuName = "RPD/Tower Data", fileName = "TowerData")]
 public class TowerData : ScriptableObject
 {
-    public GameObject towerPrefab;
-    public GameObject followTowerPrefab;    // ÀÓ½Ã Å¸¿ö ÇÁ¸®ÆÕ
-    public Weapon weapon;             // ·¹º§º° Å¸¿ö(¹«±â) Á¤º¸
-    public WeaponUpGradeValue weaponUpGradeValue;
-    public TowerGrade grade;
-    public Sprite sprite;   // º¸¿©Áö´Â Å¸¿ö ÀÌ¹ÌÁö (UI)
+    [Tooltip("ì‹œíŠ¸/ë°¸ëŸ°ìŠ¤ í‚¤. ë¹„ìš°ë©´ asset ì´ë¦„ ì‚¬ìš©")]
+    public string towerId;
 
+    [Tooltip("UI í‘œì‹œìš©. ì‹œíŠ¸ displayNameìœ¼ë¡œ ë®ì„ ìˆ˜ ìˆìŒ")]
+    public string displayName;
+
+    public GameObject towerPrefab;
+    public GameObject followTowerPrefab;
+    public Weapon weapon;
+    public WeaponUpGradeValue weaponUpGradeValue;
+
+    [Tooltip("í•©ì„± ë“±ê¸‰ 1~5. ì´ë¦„ ì ‘ë‘ì™€ ë¬´ê´€ â€” ì‹œíŠ¸ grade ì»¬ëŸ¼ì´ ìš°ì„ ")]
+    public TowerGrade grade;
+
+    public WeaponType weaponType;
+    public Sprite sprite;
+
+    [Min(0.01f)]
+    [Tooltip("ê°™ì€ ë“±ê¸‰ ëœë¤ ìŠ¤í° ê°€ì¤‘ì¹˜")]
+    public float spawnWeight = 1f;
+
+    public string Id => string.IsNullOrEmpty(towerId) ? name : towerId;
+
+    public string DisplayName =>
+        string.IsNullOrEmpty(displayName) ? Id : displayName;
+
+    public void ApplyBalance(
+        float damage,
+        float rate,
+        float range,
+        float slowValue,
+        float weight,
+        int sell = 0,
+        bool doubleShot = false,
+        float upgradeDamage = 0f,
+        float upgradeRate = 0f,
+        float upgradeRange = 0f,
+        float upgradeSlow = 0f,
+        int gradeNumber = -1,
+        string newDisplayName = null)
+    {
+        weapon.damage = damage;
+        weapon.rate = rate;
+        weapon.range = range;
+        weapon.slowValue = slowValue;
+        weapon.sell = sell;
+        weapon.doubleShot = doubleShot;
+
+        if (weight > 0f)
+        {
+            spawnWeight = weight;
+        }
+
+        weaponUpGradeValue.damage = upgradeDamage;
+        weaponUpGradeValue.rate = upgradeRate;
+        weaponUpGradeValue.range = upgradeRange;
+        weaponUpGradeValue.slowValue = upgradeSlow;
+
+        if (gradeNumber >= (int)TowerGrade.Grade1 && gradeNumber <= Constants.MaxTowerGrade)
+        {
+            grade = (TowerGrade)gradeNumber;
+        }
+
+        if (!string.IsNullOrEmpty(newDisplayName))
+        {
+            displayName = newDisplayName;
+        }
+    }
 
     [System.Serializable]
     public struct Weapon
     {
-        public float damage;    // °ø°İ·Â
-        public float rate;  // °ø°İ ¼Óµµ
-        public float range; // °ø°İ ¹üÀ§
-        public int sell;    // Å¸¿ö ÆÇ¸Å ½Ã È¹µæ °ñµå
+        public float damage;
+        public float rate;
+        public float range;
+        public int sell;
         public bool doubleShot;
 
         [Header("About SlowTower (0.0 ~ 1.0)")]
@@ -29,13 +92,11 @@ public class TowerData : ScriptableObject
     [System.Serializable]
     public struct WeaponUpGradeValue
     {
-        public float damage;    // °ø°İ·Â
-        public float rate;  // °ø°İ ¼Óµµ
-        public float range; // °ø°İ ¹üÀ§
+        public float damage;
+        public float rate;
+        public float range;
 
         [Header("About SlowTower")]
         public float slowValue;
     }
-
-
 }

@@ -1,4 +1,4 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 
 [CreateAssetMenu]
 public class WaveData : ScriptableObject
@@ -36,7 +36,7 @@ public class WaveData : ScriptableObject
 
             float adjustment = 1f / totalPercentage;
 
-            //Àû ÃâÇö È®·ü ÇÕÀÌ 1ÀÌ µÇµµ·Ï Á¶Á¤
+            // ì  ì¶œí˜„ í™•ë¥  í•©ì´ 1ì´ ë˜ë„ë¡ ì¡°ì •
             if (totalPercentage != 1f)
             {
                 for (int j = 0; j < waves[i].enemies.Length; j++)

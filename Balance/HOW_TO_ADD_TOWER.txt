@@ -1,0 +1,31 @@
+﻿========================================================
+새 타워 추가 방법 (몇 년 뒤 다시 볼 때용)
+========================================================
+
+■ 기존 공격 재사용 (Cannon/Laser/Bomb 등) — 보통 이것만
+  1) Prefabs 에 타워 프리팹 만들기
+     - Tower, TowerWeapon 붙이기
+     - weaponType / 탄·라인 등 기존이랑 맞게
+  2) Assets/Resources/TowerData/ 에 TowerData SO 만들기
+     - towerId, grade(1~5), weaponType, towerPrefab(루트!), 스탯
+  → 끝. Catalog에 넣을 필요 없음 (폴더에 있으면 자동).
+
+■ 완전 새 공격 패턴일 때만 추가
+  3) WeaponType enum 값 추가
+  4) Behaviors/ 에 ITowerBehavior 구현 + TowerBehaviorFactory case
+
+■ 밸런스 시트 (선택)
+  5) Balance/TowerBalance.csv 에 한 줄 추가 후
+     Assets/Resources/TowerBalance.csv 로 복사
+  - 없어도 SO 수치로 플레이됨
+  - grade / displayName / 스탯은 CSV가 있으면 덮어씀
+
+■ 머지 규칙 (코드 고정)
+  - 상점 = grade 1 풀 랜덤
+  - 같은 weaponType + 같은 grade 3개 → grade+1 풀 랜덤
+  - 최대 grade 5
+
+■ 자주 하는 실수
+  - towerPrefab 에 LevelMark 자식 넣기 → TowerWeapon 없음 NRE
+  - Resources/TowerData 가 아닌 다른 폴더에 SO 두기 → 안 나옴
+  - CSV towerId 와 SO towerId 불일치 → 시트 안 먹힘

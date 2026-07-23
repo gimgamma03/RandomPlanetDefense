@@ -78,9 +78,9 @@ public class BombProjectile : MonoBehaviour
             return;
         }
 
-        if (GameObjectPoolManager.Instance != null)
+        if (ServiceLocator.TryGet(out IPoolService pool))
         {
-            GameObjectPoolManager.Instance.Return(gameObject);
+            pool.Return(gameObject);
             return;
         }
 

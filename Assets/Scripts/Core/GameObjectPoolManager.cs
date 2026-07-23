@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
@@ -15,9 +15,11 @@ public enum PoolId
 }
 
 [DefaultExecutionOrder(-200)]
-public class GameObjectPoolManager : MonoBehaviour
+public class GameObjectPoolManager : MonoBehaviour, IPoolService
 {
     public static GameObjectPoolManager Instance { get; private set; }
+
+    public Transform Root => transform;
 
     [System.Serializable]
     private class PoolConfig
@@ -47,6 +49,11 @@ public class GameObjectPoolManager : MonoBehaviour
 
     public static GameObjectPoolManager EnsureExists()
     {
+        if (ServiceLocator.TryGet(out IPoolService pool) && pool is GameObjectPoolManager manager)
+        {
+            return manager;
+        }
+
         if (Instance != null)
         {
             return Instance;
@@ -58,8 +65,34 @@ public class GameObjectPoolManager : MonoBehaviour
             return found;
         }
 
+        // Bootstrapper가 아직이면 생성은 Bootstrapper에 맡기고, 최후 수단만 직접 생성
+        GameBootstrapper bootstrapper = FindFirstObjectByType<GameBootstrapper>();
+        if (bootstrapper == null)
+        {
+            new GameObject("[GameBootstrapper]").AddComponent<GameBootstrapper>();
+        }
+
+        if (ServiceLocator.TryGet(out IPoolService created) && created is GameObjectPoolManager ready)
+        {
+            return ready;
+        }
+
         GameObject go = new GameObject("[GameObjectPoolManager]");
         return go.AddComponent<GameObjectPoolManager>();
+    }
+
+    /// <summary>IService — Awake에서 풀 구성이 끝나므로 추가 작업 없음</summary>
+    public void Initialize()
+    {
+        if (Instance == null)
+        {
+            Instance = this;
+        }
+
+        if (poolById.Count == 0 && poolByPrefabId.Count == 0)
+        {
+            InitializeConfiguredPools();
+        }
     }
 
     private void Awake()

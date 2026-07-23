@@ -1,35 +1,22 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
 public class Pathfinder : MonoBehaviour
 {
-    private List<AStarNode> Path;
+    private List<Vector3> path;
     private float nodeArriveDistance = 0.1f;
-    //private float pathFindDelay = 5.0f;
-    //private float lastPathFindTime;
     private float nextNodeMoveTime = 0.05f;
     private float currentTime;
     private TrailRenderer trailRenderer;
 
-    // Start is called before the first frame update
     void Start()
     {
-        Path = new List<AStarNode>();
+        path = new List<Vector3>();
         trailRenderer = GetComponent<TrailRenderer>();
         currentTime = Time.time;
         SetPath();
         StartCoroutine("MoveToPath");
-        //lastPathFindTime = currentTime;
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-/*        if (Time.time -  lastPathFindTime > pathFindDelay)
-        {
-            ShowPath();
-        }*/
     }
 
     public void ShowPath()
@@ -37,7 +24,6 @@ public class Pathfinder : MonoBehaviour
         trailRenderer.Clear();
         trailRenderer.enabled = false;
 
-        //lastPathFindTime = Time.time;
         transform.position = MapDirector.Instance.GetEnemySpanwerPosition();
 
         StopCoroutine("MoveToPath");
@@ -45,37 +31,37 @@ public class Pathfinder : MonoBehaviour
         SetPath();
         StartCoroutine("MoveToPath");
     }
+
     public void SetPath()
     {
-        Path = MapDirector.Instance.SetPathFromPosition(transform);
+        path = MapDirector.Instance.SetPathFromPosition(transform);
     }
 
     public IEnumerator MoveToPath()
     {
-        //Debug.Log("pathfinder : " + Path[0].xPos + " " + Path[0].yPos);
-        foreach (var node in Path)
+        if (path == null)
         {
-            Vector2 targetPositon = new Vector2(node.xPos, node.yPos);
-            Vector2 currentPosition = transform.position;
+            yield break;
+        }
+
+        foreach (Vector3 waypoint in path)
+        {
+            Vector3 targetPosition = waypoint;
+            Vector3 currentPosition = transform.position;
             currentTime = Time.time;
-            while(true)
+
+            while (true)
             {
-                Vector3 move = (targetPositon - currentPosition).normalized * Time.deltaTime;
-                //transform.Translate(move);
-                transform.position += move;
-
                 float u = (Time.time - currentTime) / nextNodeMoveTime;
+                transform.position = Vector3.Lerp(currentPosition, targetPosition, u);
 
-                transform.position = Vector3.Lerp(currentPosition, targetPositon, u);
-
-                if (Vector2.Distance(transform.position, targetPositon) < nodeArriveDistance)
+                if (Vector2.Distance(transform.position, targetPosition) < nodeArriveDistance)
                 {
                     break;
                 }
 
-                yield return new WaitForEndOfFrame();
+                yield return null;
             }
-
         }
     }
 
@@ -83,7 +69,7 @@ public class Pathfinder : MonoBehaviour
     {
         if (collision.gameObject.name == "Goal")
         {
-            Invoke("ShowPath" ,1f);
+            Invoke(nameof(ShowPath), 1f);
         }
     }
 }

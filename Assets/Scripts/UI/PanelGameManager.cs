@@ -1,4 +1,4 @@
-using System.Collections;
+Ôªøusing System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using Unity.Burst.CompilerServices;
@@ -9,8 +9,6 @@ using UnityEngine.UIElements;
 public class PanelGameManager : MonoBehaviour
 {
     [SerializeField]
-    private Player player;
-    [SerializeField]
     private TowerSpawner towerSpawner;
     [SerializeField]
     private EnemySpawner enemySpawner;
@@ -18,6 +16,7 @@ public class PanelGameManager : MonoBehaviour
     [SerializeField]
     private GameObject randomTowerSpawnerImage;
 
+    private IPlayerService playerService;
     private bool isTowerCellMode = false;
     private bool isTowerSpawnMode = false;
     private bool isTowerCombineMode = false;
@@ -27,9 +26,10 @@ public class PanelGameManager : MonoBehaviour
     //for MouseFollowObject Image color change
     private Renderer panelGameSystemMouseImageRenderer;
     private Material panelMaterial;
-    // Start is called before the first frame update
+
     void Start()
     {
+        playerService = ServiceLocator.Get<IPlayerService>();
         panelGameSystemMouseImageRenderer = randomTowerSpawnerImage.gameObject.GetComponent<Renderer>();
         panelMaterial = panelGameSystemMouseImageRenderer.material;
         randomTowerSpawnerImage.SetActive(false);
@@ -52,24 +52,25 @@ public class PanelGameManager : MonoBehaviour
 
         if (Input.GetMouseButtonDown(0) && activeSomeThingButton)
         {
-            //ΩΩ∑ŒøÏ ≈∏øˆ¿« ¿Ã∆Â∆Æ µÓ ø° ∏∑«Ùº≠ ≈¨∏Ø¿Ã æ»â∆ºˆµµ ¿÷¿Ω
+            // NonRayLayerÎäî Î†àÏù¥Ï∫êÏä§Ìä∏ÏóêÏÑú Ï†úÏô∏
             int layerMask = ~(1 << LayerMask.NameToLayer("NonRayLayer"));
             hit = Physics2D.Raycast(MousePosition, Vector2.zero, Mathf.Infinity, layerMask);
 
-            //1∑π∫ß ≈∏øˆ ∑£¥˝ ª˝º∫
+            // 1Îì±Í∏â ÎûúÎç§ ÌÉÄÏõå Ïä§Ìè∞
             if (isTowerSpawnMode)
             {
-                if (player.gold >= Constants.spawnRandomTowerGold)
+                if (!playerService.TrySpendGold(Constants.spawnRandomTowerGold))
                 {
-                    if (hit.transform == null || !hit.transform.CompareTag("WallMap"))
-                    {
-                        return;
-                    }
-
-                    towerSpawner.SpawnTower(MousePosition, TowerGrade.Grade1);
-                    player.gold -= Constants.spawnRandomTowerGold;
-
+                    return;
                 }
+
+                if (hit.transform == null || !hit.transform.CompareTag("WallMap"))
+                {
+                    playerService.AddGold(Constants.spawnRandomTowerGold);
+                    return;
+                }
+
+                towerSpawner.SpawnTower(MousePosition, (TowerGrade)Constants.ShopSpawnGrade);
             }
             else if (isTowerCombineMode)
             {

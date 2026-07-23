@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -6,11 +6,9 @@ public enum EnemyDestroyType { Kill = 0, Arrive }
 
 public class Enemy : MonoBehaviour
 {
-    public List<AStarNode> enemyPath;
+    public List<Vector3> enemyPath;
 
-    private float LastPathUpdate;
     private EnemySpawner enemySpawner;
-    private Transform canvasTransform;
 
     private int gold;
     private int scorePoint;
@@ -31,7 +29,7 @@ public class Enemy : MonoBehaviour
         this.enemySpawner = enemySpawner;
     }
 
-    /// <summary>????? ???? ?? ???? ???? (Start ???).</summary>
+    /// <summary>스폰 직전 상태 초기화 (Start 대체).</summary>
     public void PrepareForSpawn(EnemySpawner spawner)
     {
         StopAllCoroutines();
@@ -39,7 +37,7 @@ public class Enemy : MonoBehaviour
 
         if (enemyPath == null)
         {
-            enemyPath = new List<AStarNode>();
+            enemyPath = new List<Vector3>();
         }
         else
         {
@@ -55,7 +53,6 @@ public class Enemy : MonoBehaviour
         baseNextNodeMoveTime = nextNodeMoveTime;
         obstructed = false;
 
-        LastPathUpdate = Time.time;
         SetPath();
     }
 
@@ -88,40 +85,40 @@ public class Enemy : MonoBehaviour
     public void SetPath()
     {
         StopCoroutine("Move");
-
         enemyPath = MapDirector.Instance.SetPathFromPosition(transform);
-
         StartCoroutine("Move");
     }
 
     public IEnumerator Move()
     {
-        foreach (var node in enemyPath)
+        if (enemyPath == null || enemyPath.Count == 0)
         {
-            if (node == enemyPath[0])
+            yield break;
+        }
+
+        for (int i = 0; i < enemyPath.Count; i++)
+        {
+            // 첫 노드는 현재 셀인 경우가 많아 스킵
+            if (i == 0)
             {
                 continue;
             }
 
-            Vector2 targetPositon = new Vector2(node.xPos, node.yPos);
-            Vector2 currentPosition = transform.position;
+            Vector3 targetPosition = enemyPath[i];
+            Vector3 currentPosition = transform.position;
             currentTime = Time.time;
 
             while (true)
             {
-                Vector3 move = (targetPositon - currentPosition).normalized * Time.deltaTime;
-                transform.position += move;
-
                 float u = (Time.time - currentTime) / nextNodeMoveTime;
+                transform.position = Vector3.Lerp(currentPosition, targetPosition, u);
 
-                transform.position = Vector3.Lerp(currentPosition, targetPositon, u);
-
-                if (Vector2.Distance(transform.position, targetPositon) < nodeArriveDistance)
+                if (Vector2.Distance(transform.position, targetPosition) < nodeArriveDistance)
                 {
                     break;
                 }
 
-                yield return new WaitForEndOfFrame();
+                yield return null;
             }
         }
     }

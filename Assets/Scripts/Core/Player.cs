@@ -1,85 +1,111 @@
-using System.Collections;
-using System.Collections.Generic;
+ï»¿using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
 
+/// <summary>
+/// ì”¬ ì „ìš© í”Œë ˆì´ì–´ ë·°.
+/// ê³¨ë“œ/HP ë°ì´í„°ëŠ” IPlayerService, ì—¬ê¸°ì„  í”¼ê²© UIÂ·ê²Œì„ì˜¤ë²„ ì—°ì¶œë§Œ.
+/// </summary>
+[DefaultExecutionOrder(-100)]
 public class Player : MonoBehaviour
 {
-    bool gameover = false;
+    [Tooltip("í•œ íŒ ì‹œì‘ ê³¨ë“œ (ì¸ìŠ¤í™í„°)")]
     public int gold;
     public int maxHp;
-    private int _currentHp;
+
+    [SerializeField] private WaveSystem waveSystem;
+    [SerializeField] private Image hitRedImage;
+
+    private IPlayerService playerService;
     private SceneDirector sceneDirector;
-    public int currentHp
-    {
-        get { return _currentHp; }
-        private set { _currentHp = Mathf.Max(0, value); }
-    }
-
-    private int wallCount;
-    private int towerCount;
-
-    [SerializeField]
-    private EnemySpawner enemySpawner;
-    [SerializeField]
-    private TowerSpawner towerSpawner;
-    [SerializeField]
-    private WaveSystem waveSystem;
-    [SerializeField]
-    private Image hitRedImage;
+    private bool configured;
 
     private void Awake()
     {
-        currentHp = maxHp;
-
-    }
-    // Start is called before the first frame update
-    void Start()
-    {
         sceneDirector = GetComponent<SceneDirector>();
+        TryConfigureRun();
     }
 
-    // Update is called once per frame
-    void Update()
+    private void Start()
     {
-        
+        // Bootstrap íƒ€ì´ë° ëŒ€ë¹„ â€” Awakeì—ì„œ ëª» í–ˆìœ¼ë©´ Startì—ì„œ ì¬ì‹œë„
+        TryConfigureRun();
     }
+
+    private void TryConfigureRun()
+    {
+        if (configured)
+        {
+            return;
+        }
+
+        if (!ServiceLocator.TryGet(out playerService))
+        {
+            Debug.LogWarning("[Player] IPlayerService ì•„ì§ ì—†ìŒ â€” Startì—ì„œ ì¬ì‹œë„í•©ë‹ˆë‹¤.", this);
+            return;
+        }
+
+        playerService.ConfigureRun(gold, maxHp);
+        playerService.OnDamaged += PlayHitAnimation;
+        playerService.OnDied += HandleGameOver;
+        configured = true;
+    }
+
+    private void OnDestroy()
+    {
+        if (playerService == null || !configured)
+        {
+            return;
+        }
+
+        playerService.OnDamaged -= PlayHitAnimation;
+        playerService.OnDied -= HandleGameOver;
+    }
+
+    public int currentHp => playerService != null ? playerService.CurrentHp : 0;
 
     public void TakeDamage(int damage)
     {
-        currentHp -= damage;
-
-        StopCoroutine("HitAnimation");
-        StartCoroutine("HitAnimation");
-
-        if (currentHp <= 0 && !gameover)
+        if (!configured)
         {
-            gameover = true;
-            //holy moly wtf game over damn it
-            waveSystem.FinishGame();
-            Invoke("GameOverScene", 3f);
+            TryConfigureRun();
         }
+
+        playerService?.TakeDamage(damage);
+    }
+
+    private void PlayHitAnimation()
+    {
+        if (!isActiveAndEnabled || hitRedImage == null)
+        {
+            return;
+        }
+
+        StopCoroutine(nameof(HitAnimation));
+        StartCoroutine(HitAnimation());
+    }
+
+    private void HandleGameOver()
+    {
+        waveSystem.FinishGame();
+        Invoke(nameof(GameOverScene), 3f);
     }
 
     public void GameOverScene()
     {
         sceneDirector.OpeningScene();
     }
+
     private IEnumerator HitAnimation()
     {
-        //ÀÌ ÀÌ¹ÌÁö UI´Â È­¸é ÀüÃ¼¸¦ ´ş±â ¶§¹®¿¡ RayCastTargetÀ» ²¨ÁÖÀÚ
-        // ÀüÃ¼È­¸é Å©±â·Î ¹èÄ¡µÈ imageScreenÀÇ »ö»óÀ» color º¯¼ö¿¡ ÀúÀå
-        // imageScreenÀÇ Åõ¸íµµ¸¦ 40%·Î ¼³Á¤
         Color color = hitRedImage.color;
         color.a = 0.4f;
         hitRedImage.color = color;
 
-        // Åõ¸íµµ°¡ 0%°¡ µÉ¶§±îÁö °¨¼Ò
         while (color.a >= 0.0f)
         {
             color.a -= Time.deltaTime;
             hitRedImage.color = color;
-
             yield return null;
         }
     }

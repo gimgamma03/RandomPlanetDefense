@@ -1,10 +1,10 @@
-using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 
 public class AStarPathfind
 {
     public AStarGrid grid;
+
     public AStarPathfind(AStarGrid grid)
     {
         this.grid = grid;
@@ -12,32 +12,37 @@ public class AStarPathfind
 
     private float Heuristic(AStarNode a, AStarNode b, bool diagonal = false)
     {
-        // 맨해튼 거리
-        var dx = Mathf.Abs(a.xPos - b.xPos);
-        var dy = Mathf.Abs(a.yPos - b.yPos);
+        float dx = Mathf.Abs(a.xPos - b.xPos);
+        float dy = Mathf.Abs(a.yPos - b.yPos);
 
-        if (!diagonal) return 1 * (dx + dy);
-        // 체비쇼프 거리
-        return Mathf.Max(Mathf.Abs(a.xPos - b.xPos), Mathf.Abs(a.yPos - b.yPos));
+        if (!diagonal)
+        {
+            return dx + dy;
+        }
+
+        return Mathf.Max(dx, dy);
     }
 
     public List<AStarNode> CreatePath(AStarNode start, AStarNode end, bool diagonal = false)
     {
-        if (start == null || end == null) return null;
+        if (start == null || end == null)
+        {
+            return null;
+        }
+
         grid.ResetNode();
 
         List<AStarNode> openSet = new List<AStarNode>();
-        List<AStarNode> closedSet = new List<AStarNode>();
+        HashSet<AStarNode> openLookup = new HashSet<AStarNode>();
+        HashSet<AStarNode> closedSet = new HashSet<AStarNode>();
 
-        AStarNode startNode = start;
-        AStarNode endNode = end;
-        startNode.gCost = 0;
-        startNode.hCost = Heuristic(start, end);
-        openSet.Add(startNode);
+        start.gCost = 0;
+        start.hCost = Heuristic(start, end, diagonal);
+        openSet.Add(start);
+        openLookup.Add(start);
 
         while (openSet.Count > 0)
         {
-            // Open Set 내의 노드 중 가장 거리가 짧은 노드를 찾는다.
             int shortest = 0;
             for (int i = 1; i < openSet.Count; i++)
             {
@@ -46,52 +51,54 @@ public class AStarPathfind
                     shortest = i;
                 }
             }
-            AStarNode currentNode = openSet[shortest];
 
-            // 목적지 도착
-            if (currentNode == endNode)
+            AStarNode currentNode = openSet[shortest];
+            openSet.RemoveAt(shortest);
+            openLookup.Remove(currentNode);
+
+            if (currentNode == end)
             {
-                // 경로만들어서 반환
                 List<AStarNode> path = new List<AStarNode>();
-                path.Add(endNode);
-                var tempNode = endNode;
-                while (tempNode.parent != null)
+                AStarNode tempNode = end;
+                while (tempNode != null)
                 {
-                    path.Add(tempNode.parent);
+                    path.Add(tempNode);
                     tempNode = tempNode.parent;
                 }
-                path.Reverse();
 
+                path.Reverse();
                 return path;
             }
 
-            // 리스트를 업데이트한다.
-            openSet.Remove(currentNode);
             closedSet.Add(currentNode);
 
-            // 다음 노드를 방문한다.
-            var neighbors = grid.GetNeighborNodes(currentNode, diagonal);
+            List<AStarNode> neighbors = grid.GetNeighborNodes(currentNode, diagonal);
             for (int i = 0; i < neighbors.Count; i++)
             {
-                if (closedSet.Contains(neighbors[i]) || !neighbors[i].isWalkable)
+                AStarNode neighbor = neighbors[i];
+                if (closedSet.Contains(neighbor) || !neighbor.isWalkable)
                 {
                     continue;
                 }
 
-                var gCost = currentNode.gCost + Heuristic(currentNode, neighbors[i], diagonal);
-
-                if (gCost < neighbors[i].gCost)
+                float gCost = currentNode.gCost + Heuristic(currentNode, neighbor, diagonal);
+                if (gCost >= neighbor.gCost)
                 {
-                    neighbors[i].parent = currentNode;
-                    neighbors[i].gCost = gCost;
-                    neighbors[i].hCost = Heuristic(neighbors[i], endNode, diagonal);
-                    if (!openSet.Contains(neighbors[i]))
-                        openSet.Add(neighbors[i]);
+                    continue;
+                }
+
+                neighbor.parent = currentNode;
+                neighbor.gCost = gCost;
+                neighbor.hCost = Heuristic(neighbor, end, diagonal);
+
+                if (!openLookup.Contains(neighbor))
+                {
+                    openSet.Add(neighbor);
+                    openLookup.Add(neighbor);
                 }
             }
         }
 
-        //길 찾기에 실패하면 null을 리턴한다.
         return null;
     }
 
@@ -99,8 +106,6 @@ public class AStarPathfind
     {
         AStarNode startNode = grid.GetNodeFromWorld(start);
         AStarNode endNode = grid.GetNodeFromWorld(end);
-
-        var ret = CreatePath(startNode, endNode, diagonal);
-        return ret;
+        return CreatePath(startNode, endNode, diagonal);
     }
 }

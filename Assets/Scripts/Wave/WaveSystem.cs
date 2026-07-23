@@ -1,9 +1,6 @@
-using TMPro;
+Ôªøusing TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-using Newtonsoft.Json;
-using System.IO;
-using System.Collections.Generic;
 
 public class WaveSystem : MonoBehaviour
 {
@@ -22,8 +19,9 @@ public class WaveSystem : MonoBehaviour
 
     private int currentWaveIndex = 0;
 
-    public ScoreSystem scoreSystem;
-    // ø˛¿Ã∫Í ¡§∫∏ √‚∑¬¿ª ¿ß«— Get «¡∑Œ∆€∆º («ˆ¿Á ø˛¿Ã∫Í, √— ø˛¿Ã∫Í)
+    /// <summary>ServiceLocatorÏóêÏÑú Í∞ÄÏ†∏Ïò® Ï†êÏàò ÏÑúÎπÑÏä§</summary>
+    private IScoreService scoreService;
+
     public int MaxWave => waveData.waves.Length;
 
     [SerializeField]
@@ -40,43 +38,58 @@ public class WaveSystem : MonoBehaviour
     [SerializeField]
     private Sprite stopGameBlackButton;
 
-
-    private List<int> scoreData = new List<int>();
-
     private void Start()
     {
+        scoreService = ServiceLocator.Get<IScoreService>();
+        scoreService.ResetRun();
+        scoreService.BindHud(textCurrentScore, textBestScore);
+
         textWaveCount.text = "Wave : " + 1;
-        textCurrentScore.text = "Score : " + 0;
-        scoreSystem = new ScoreSystem();
-        scoreSystem.Setup(textCurrentScore, textBestScore);
-        //LoadWaves();
     }
+
+    public void AddScore(int point)
+    {
+        scoreService.AddScore(point);
+    }
+
     public void StartWave()
     {
-        if (currentWaveIndex < waveData.waves.Length)
+        if (enemySpawner != null && enemySpawner.IsWaveInProgress)
         {
-            StartGame();
-            int currentWave = currentWaveIndex + 1;
-
-            //textFadeOut.ShowText("Wave : " + currentWave, 1f);
-
-            //«ˆ¿Á ø˛¿Ã∫Í¿« ¡§∫∏ ø°≥ πÃ Ω∫∆˜≥ ø° ≥—∞‹¡‹
-            enemySpawner.StartWave(waveData.waves[currentWaveIndex]);
-            textWaveCount.text = "Wave : " + (currentWave);
+            return;
         }
+
+        if (currentWaveIndex >= waveData.waves.Length)
+        {
+            textFadeOut.ShowText("All Waves Clear", 2f);
+            return;
+        }
+
+        StartGame();
+        int currentWave = currentWaveIndex + 1;
+
+        enemySpawner.StartWave(waveData.waves[currentWaveIndex]);
+        textWaveCount.text = "Wave : " + currentWave;
     }
 
     public void FinishWave()
     {
         startGameButton.sprite = startGameWhiteButton;
         currentWaveIndex++;
+
+        if (currentWaveIndex >= waveData.waves.Length)
+        {
+            textFadeOut.ShowText("All Waves Clear", 2f);
+        }
     }
+
     public void StartGame()
     {
         startGameButton.sprite = startGameBlackButton;
         stopGameButton.sprite = stopGameWhiteButton;
         Time.timeScale = 1.0f;
     }
+
     public void StopGame()
     {
         startGameButton.sprite = startGameWhiteButton;
@@ -86,8 +99,7 @@ public class WaveSystem : MonoBehaviour
 
     public void FinishGame()
     {
-        scoreSystem.AddThisGameScore();
+        scoreService.SaveCurrentRun();
         textFadeOut.ShowText("Game Over", 3f);
     }
-    
 }

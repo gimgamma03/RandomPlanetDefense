@@ -1,4 +1,4 @@
-using System.Collections;
+ï»¿using System.Collections;
 using UnityEngine;
 
 public class EnemyHp : MonoBehaviour
@@ -6,6 +6,9 @@ public class EnemyHp : MonoBehaviour
     public float maxHp;
     public float currentHp;
     private bool isDie = false;
+
+    /// <summary>ì£½ì—ˆê±°ë‚˜ í’€ì— ë“¤ì–´ê°„ ìƒíƒœ. íƒ€ì›Œ íƒ€ê²Ÿ íŒì •ìš©.</summary>
+    public bool IsDead => isDie;
 
     private Enemy enemy;
     private SpriteRenderer spriteRenderer;
@@ -51,9 +54,9 @@ public class EnemyHp : MonoBehaviour
         {
             pooled.ReturnToPool();
         }
-        else if (GameObjectPoolManager.Instance != null)
+        else if (ServiceLocator.TryGet(out IPoolService pool))
         {
-            GameObjectPoolManager.Instance.Return(viewerObject);
+            pool.Return(viewerObject);
         }
         else
         {
@@ -64,14 +67,14 @@ public class EnemyHp : MonoBehaviour
     public void ClearForPool()
     {
         StopAllCoroutines();
-        // Ç®¿¡ ÀÖ´Â µ¿¾ÈÀº Á×Àº »óÅÂ·Î À¯Áö (ÀÜ¿© Åº È÷Æ® ¹æÁö). PrepareForSpawn¿¡¼­ false.
+        // í’€ì— ìˆëŠ” ë™ì•ˆì€ ì£½ì€ ìƒíƒœë¡œ ìœ ì§€ (ì”ì—¬ íƒ„ íˆíŠ¸ ë°©ì§€). PrepareForSpawnì—ì„œ false.
         isDie = true;
         enemyHpViewer = null;
     }
 
     public void TakeDamage(float damage)
     {
-        // ÀÌ¹Ì Á×¾ú°Å³ª Ç®(ºñÈ°¼º)¿¡ µé¾î°£ Àû¿¡´Â µ¥¹ÌÁö/ÄÚ·çÆ¾ ±İÁö
+        // ì´ë¯¸ ì£½ì—ˆê±°ë‚˜ í’€(ë¹„í™œì„±)ì— ë“¤ì–´ê°„ ì ì—ëŠ” ë°ë¯¸ì§€/ì½”ë£¨í‹´ ê¸ˆì§€
         if (isDie || !isActiveAndEnabled || !gameObject.activeInHierarchy)
         {
             return;

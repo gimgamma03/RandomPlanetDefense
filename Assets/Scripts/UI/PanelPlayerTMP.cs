@@ -1,13 +1,8 @@
-using System.Collections;
-using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 
 public class PanelPlayerTMP : MonoBehaviour
 {
-    [SerializeField]
-    private Player player;
-
     [SerializeField]
     private TextMeshProUGUI playerGold;
     [SerializeField]
@@ -15,15 +10,25 @@ public class PanelPlayerTMP : MonoBehaviour
     [SerializeField]
     private TextMeshProUGUI currentScoreText;
 
-    void Start()
+    private IPlayerService playerService;
+
+    private void Start()
     {
-        currentScoreText.text = "0";
+        playerService = ServiceLocator.Get<IPlayerService>();
+        if (currentScoreText != null)
+        {
+            currentScoreText.text = "0";
+        }
     }
 
-    // Update is called once per frame
-    void Update()
+    private void Update()
     {
-        playerGold.text = player.gold.ToString();
-        playerHp.text = player.currentHp.ToString();
+        if (playerService == null)
+        {
+            return;
+        }
+
+        playerGold.text = playerService.Gold.ToString();
+        playerHp.text = playerService.CurrentHp.ToString();
     }
 }

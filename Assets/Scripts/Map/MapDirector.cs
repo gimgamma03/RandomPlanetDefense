@@ -1,8 +1,8 @@
-using System.Collections;
-using System.Collections.Generic;
+Ôªøusing System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Tilemaps;
 using UnityEngine.SceneManagement;
+
 public class MapDirector : MonoBehaviour
 {
     static public MapDirector Instance;
@@ -14,20 +14,20 @@ public class MapDirector : MonoBehaviour
     public Tile WallTile;
     public Tile WalkableTile;
 
-    [SerializeField]
-    private Player player;
-    [SerializeField]
-    private GameObject goal;
-    [SerializeField]
-    private EnemySpawner enemySpawner;
-    [SerializeField]
-    private Pathfinder showPath;
-    [SerializeField]
-    private TextFadeOut warnintMessage;
+    [SerializeField] private GameObject goal;
+    [SerializeField] private EnemySpawner enemySpawner;
+    [SerializeField] private Pathfinder showPath;
+    [SerializeField] private TextFadeOut warnintMessage;
 
-    private Tile GoalTile;
-    private AStarNode GoalNode;
+    private IPlayerService playerService;
 
+    /// <summary>Ïä§Ìè∞‚ÜíÍ≥® Í≥µÏú† Í≤ΩÎ°ú (ÏõîÎìú Ï¢åÌëú). Ïä§ÎÑ§Ïù¥ÌÅ¨ PathRouteÏ≤òÎüº Ï†ÑÏõêÏù¥ Ïù¥ Í≥®Í≤©ÏùÑ ÌÉÑÎã§.</summary>
+    public IReadOnlyList<Vector3> SharedWaypoints => sharedWaypoints;
+
+    private List<Vector3> sharedWaypoints = new List<Vector3>();
+    private List<AStarNode> sharedNodes = new List<AStarNode>();
+
+    /// <summary>Î†àÍ±∞Ïãú Ìò∏ÌôòÏö© (ÎØ∏Î¶¨Î≥¥Í∏∞ Îì±). Í≥µÏú† ÎÖ∏Îìú Î™©Î°ù.</summary>
     public List<AStarNode> StartToEndPath;
 
     public GameObject Boo;
@@ -35,135 +35,223 @@ public class MapDirector : MonoBehaviour
     private void Awake()
     {
         Instance = this;
-        //AStarGird_ = GetComponent<AStarGrid>();
         aStarGrid = new AStarGrid();
         aStarGrid.SetUp(WalkableMap, WallMap);
     }
 
-    // Start is called before the first frame update
-    void Start()
+    private void Start()
     {
+        playerService = ServiceLocator.Get<IPlayerService>();
         StartToEndPath = new List<AStarNode>();
+        RebuildSharedPath();
     }
 
-    // Update is called once per frame
-    void Update()
+    private void Update()
     {
         if (Input.GetKeyDown(KeyCode.Space))
         {
-/*            if (enemySpawner.enemyList.Count > 0)
+            if (playerService == null)
             {
-                //warnintMessage.ShowText("Wall cannot be placed when there are enemies", 3f);
-                Debug.Log("¿˚¿Ã ¿÷¿ª ∂ß¥¬ ∫Æ º≥ƒ° ∫“∞°");
-                return;
-            }*/
-            if (player.gold < Constants.spawnWallGold) //else if
+                playerService = ServiceLocator.Get<IPlayerService>();
+            }
+
+            if (!playerService.TrySpendGold(Constants.spawnWallGold))
             {
-                Debug.Log("∫Æ¿ª ¡ˆ¿ª ∞ÒµÂ∞° ∫Œ¡∑«’¥œ¥Ÿ.");
+                Debug.Log($"Not enough gold for wall. (gold={playerService.Gold})");
                 return;
             }
 
             Vector3 worldPos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-            Vector2 raycasyPoint = worldPos;
-            RaycastHit2D hit = Physics2D.Raycast(raycasyPoint, Vector2.zero, Mathf.Infinity, LayerMask.GetMask("Tile"));
+            RaycastHit2D hit = Physics2D.Raycast(worldPos, Vector2.zero, Mathf.Infinity, LayerMask.GetMask("Tile"));
 
-            //∏∂øÏΩ∫ ¿ßƒ°∞° ∏  πŸ±˘¿Ã æ∆¥œ∞Ì ∫Æ¿Ã æ» º≥ƒ° µ«¿÷¥¬ ∏ 
             if (hit.transform == null || !hit.transform.CompareTag("WalkableMap"))
             {
-                Debug.Log("« µÂ æ»ø° º≥ƒ°«ÿæﬂµÀ¥œ¥Ÿ.");
+                Debug.Log("Place wall inside the field.");
+                playerService.AddGold(Constants.spawnWallGold);
                 return;
             }
 
-            AStarNode Wall = aStarGrid.GetNodeFromWorld(worldPos);
+            AStarNode wallNode = aStarGrid.GetNodeFromWorld(worldPos);
             Vector3Int cellPosition = WalkableMap.WorldToCell(worldPos);
 
-            if (CheckPath(Wall) == false)
+            if (!CheckPath(wallNode))
             {
-                Debug.Log("±Ê¿ª ∏∑Ω¿¥œ¥Ÿ.");
-                Wall.isWalkable = true;
+                Debug.Log("Wall blocks the path.");
+                wallNode.isWalkable = true;
+                playerService.AddGold(Constants.spawnWallGold);
                 return;
             }
 
             WallMap.SetTile(cellPosition, WallTile);
             WalkableMap.SetTile(cellPosition, null);
 
-            aStarGrid.ResetNode();
-            aStarGrid.CreateGrid();
+            // Í∑∏Î¶¨Îìú Ï†ÑÏ≤¥ Ïû¨ÏÉùÏÑ± ÏóÜÏù¥ walkable ÌîåÎûòÍ∑∏Îßå Ïú†ÏßÄÌïú Ï±Ñ Í≥µÏú† Í≤ΩÎ°ú 1Ìöå Ïû¨Í≥ÑÏÇ∞
+            RebuildSharedPath();
             enemySpawner.CheckPathForAllEnemy();
             showPath.ShowPath();
-            player.gold -= Constants.spawnWallGold;
         }
+
         if (Input.GetKeyDown(KeyCode.F12))
         {
             SceneManager.LoadScene("SampleScene");
         }
     }
 
-    public bool CheckPath(AStarNode WallNode)
+    public bool CheckPath(AStarNode wallNode)
     {
-        WallNode.isWalkable = false;
-        AStarNode StartNode = aStarGrid.GetNodeFromWorld(enemySpawner.gameObject.transform.position);
-        AStarNode EndNode = aStarGrid.GetNodeFromWorld(goal.transform.position);
-
-        List<AStarNode> Path = new List<AStarNode>();
-        Path = aStarGrid.pathfinder.CreatePath(StartNode, EndNode);
-
-        if (Path == null)
-        {
-            return false;
-        }
-        else
-        {
-            return true;
-        }
+        wallNode.isWalkable = false;
+        AStarNode startNode = aStarGrid.GetNodeFromWorld(enemySpawner.SpawnWorldPosition);
+        AStarNode endNode = aStarGrid.GetNodeFromWorld(goal.transform.position);
+        return aStarGrid.pathfinder.CreatePath(startNode, endNode) != null;
     }
+
     public bool CheckPath(Vector3Int cellPosition)
     {
         WallMap.SetTile(cellPosition, WallTile);
         WalkableMap.SetTile(cellPosition, null);
 
-        aStarGrid.ResetNode();
-        aStarGrid.CreateGrid();
+        AStarNode wallNode = aStarGrid.GetNodeFromWorld(WalkableMap.GetCellCenterWorld(cellPosition));
+        wallNode.isWalkable = false;
 
-        AStarNode StartNode = aStarGrid.GetNodeFromWorld(enemySpawner.gameObject.transform.position);
-        AStarNode EndNode = aStarGrid.GetNodeFromWorld(goal.transform.position);
+        AStarNode startNode = aStarGrid.GetNodeFromWorld(enemySpawner.SpawnWorldPosition);
+        AStarNode endNode = aStarGrid.GetNodeFromWorld(goal.transform.position);
+        return aStarGrid.pathfinder.CreatePath(startNode, endNode) != null;
+    }
 
-        List <AStarNode> Path = new List <AStarNode>();
-        Path = aStarGrid.pathfinder.CreatePath(StartNode, EndNode);
+    /// <summary>Ïä§Ìè∞‚ÜíÍ≥® A*Î•º Ìïú Î≤àÎßå ÎèåÎ†§ Í≥µÏú† Í≤ΩÎ°úÎ•º Í∞±Ïã†ÌïúÎã§.</summary>
+    public bool RebuildSharedPath()
+    {
+        AStarNode startNode = aStarGrid.GetNodeFromWorld(enemySpawner.SpawnWorldPosition);
+        AStarNode endNode = aStarGrid.GetNodeFromWorld(goal.transform.position);
+        List<AStarNode> path = aStarGrid.pathfinder.CreatePath(startNode, endNode);
 
-        if (Path == null)
+        sharedNodes.Clear();
+        sharedWaypoints.Clear();
+
+        if (path == null || path.Count == 0)
         {
+            StartToEndPath = sharedNodes;
             return false;
         }
-        else
+
+        sharedNodes.AddRange(path);
+        for (int i = 0; i < path.Count; i++)
         {
-            return true;
+            sharedWaypoints.Add(aStarGrid.NodeToWorldCenter(path[i]));
         }
+
+        StartToEndPath = sharedNodes;
+        return true;
     }
-    public List<AStarNode> SetPathFromPosition(Transform StartPosition)
+
+    /// <summary>
+    /// ÏóêÏù¥Ï†ÑÌä∏Ïö© Í≤ΩÎ°ú.
+    /// Í≥µÏú† Í≤ΩÎ°ú ÏúÑÏóê ÏûàÏúºÎ©¥ Ï†ëÎØ∏ÏÇ¨Îßå Î≥µÏÇ¨.
+    /// Î≤óÏñ¥ÎÇò ÏûàÏúºÎ©¥ Ìï©Î•òÏ†êÍπåÏßÄ ÏßßÏùÄ A* + Í≥µÏú† Ï†ëÎØ∏ÏÇ¨ (Ï†ÑÏõê ÌíÄ A* Î∞©ÏßÄ).
+    /// </summary>
+    public List<Vector3> SetPathFromPosition(Transform startPosition)
     {
-        AStarNode StartNode = aStarGrid.GetNodeFromWorld(StartPosition.position);
-        AStarNode EndNode = aStarGrid.GetNodeFromWorld(goal.transform.position);
+        return BuildAgentPath(startPosition.position);
+    }
 
-        //≥ÎµÂ∏¶ ±‚π›, A* æÀ∞Ì∏Æ¡Ú ∞Ê∑Œ √£±‚ . 
-        StartToEndPath = aStarGrid.pathfinder.CreatePath(StartNode, EndNode);
-        
-        //≥ÎµÂ ±‚π›¿« ∞Ê∑Œ¿Ã±‚ ∂ßπÆø° ±◊ ≥ÎµÂ∞° «ÿ¥Áµ«¥¬ ≈∏¿œ¿« ¡ﬂæ”¿∏∑Œ ∞Ê∑Œ ¥ŸµÎ±‚
-        for (int i = 0; i < StartToEndPath.Count; i++)
+    public List<Vector3> BuildAgentPath(Vector3 worldPosition)
+    {
+        if (sharedWaypoints.Count == 0)
         {
-            Vector3Int NodePosition = WalkableMap.WorldToCell(new Vector3(StartToEndPath[i].xPos, StartToEndPath[i].yPos));
-            Vector3 CenterPosition = WalkableMap.GetCellCenterWorld(NodePosition);
-            CenterPosition -= WalkableMap.cellGap / 2;
-
-            StartToEndPath[i].xPos = CenterPosition.x;
-            StartToEndPath[i].yPos = CenterPosition.y;
+            RebuildSharedPath();
         }
 
-        return StartToEndPath;
+        if (sharedWaypoints.Count == 0)
+        {
+            return new List<Vector3>();
+        }
+
+        AStarNode startNode = aStarGrid.GetNodeFromWorld(worldPosition);
+        int onPathIndex = IndexOfSharedNode(startNode);
+        if (onPathIndex >= 0)
+        {
+            return CopySharedFrom(onPathIndex);
+        }
+
+        int joinIndex = FindClosestSharedIndex(worldPosition);
+        AStarNode joinNode = sharedNodes[joinIndex];
+        List<AStarNode> toJoin = aStarGrid.pathfinder.CreatePath(startNode, joinNode);
+
+        List<Vector3> result = new List<Vector3>();
+        if (toJoin != null && toJoin.Count > 0)
+        {
+            for (int i = 0; i < toJoin.Count; i++)
+            {
+                result.Add(aStarGrid.NodeToWorldCenter(toJoin[i]));
+            }
+
+            for (int i = joinIndex + 1; i < sharedWaypoints.Count; i++)
+            {
+                result.Add(sharedWaypoints[i]);
+            }
+
+            return result;
+        }
+
+        // Ìï©Î•ò Ïã§Ìå® Ïãú Í≥®ÍπåÏßÄ ÏßÅÏ†ë (ÏµúÌõÑ ÏàòÎã®)
+        AStarNode goalNode = aStarGrid.GetNodeFromWorld(goal.transform.position);
+        List<AStarNode> direct = aStarGrid.pathfinder.CreatePath(startNode, goalNode);
+        if (direct == null)
+        {
+            return CopySharedFrom(joinIndex);
+        }
+
+        for (int i = 0; i < direct.Count; i++)
+        {
+            result.Add(aStarGrid.NodeToWorldCenter(direct[i]));
+        }
+
+        return result;
+    }
+
+    private int IndexOfSharedNode(AStarNode node)
+    {
+        for (int i = 0; i < sharedNodes.Count; i++)
+        {
+            if (sharedNodes[i] == node)
+            {
+                return i;
+            }
+        }
+
+        return -1;
+    }
+
+    private int FindClosestSharedIndex(Vector3 worldPosition)
+    {
+        int best = 0;
+        float bestSqr = float.MaxValue;
+        for (int i = 0; i < sharedWaypoints.Count; i++)
+        {
+            float sqr = (sharedWaypoints[i] - worldPosition).sqrMagnitude;
+            if (sqr < bestSqr)
+            {
+                bestSqr = sqr;
+                best = i;
+            }
+        }
+
+        return best;
+    }
+
+    private List<Vector3> CopySharedFrom(int index)
+    {
+        List<Vector3> result = new List<Vector3>(sharedWaypoints.Count - index);
+        for (int i = index; i < sharedWaypoints.Count; i++)
+        {
+            result.Add(sharedWaypoints[i]);
+        }
+
+        return result;
     }
 
     public Vector3 GetEnemySpanwerPosition()
     {
-        return enemySpawner.gameObject.transform.position;
+        return enemySpawner.SpawnWorldPosition;
     }
 }

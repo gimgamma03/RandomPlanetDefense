@@ -1,4 +1,4 @@
-using System.Collections;
+ï»¿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -16,8 +16,8 @@ public class ObjectDetector : MonoBehaviour
 
     private Camera mainCamera;
     private RaycastHit2D hit;
-    //private Transform hitTransform = null; // ÀÓ½Ã ÀúÀå
-    //private Transform preiviousHittransfrom = null; //Á÷Àü ¸¶¿ì½º Å¸ÀÏ
+    //private Transform hitTransform = null; // ì„ì‹œ ì €ì¥
+    //private Transform preiviousHittransfrom = null; //ì§ì „ ë§ˆìš°ìŠ¤ íƒ€ì¼
 
     private void Awake()
     {
@@ -32,7 +32,7 @@ public class ObjectDetector : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        //UI Å¬¸¯ÇÏ°í ÀÖÀ»¶§´Â ±»ÀÌ Ç¥½ÃÇØÁÙ µ¥ÀÌÅÍ´Â ¾ø´Ù.
+        // UI í´ë¦­ ì¤‘ì—ëŠ” í‘œì‹œí•  ë°ì´í„° ì—†ìŒ
         if (EventSystem.current.IsPointerOverGameObject() == true)
         {
             //Debug.Log("UI");

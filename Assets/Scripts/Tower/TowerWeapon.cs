@@ -1,24 +1,22 @@
-using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+ï»¿using UnityEngine;
 
-public enum WeaponType 
-{ 
-    Cannon = 0, 
-    Laser, Slow, Buff, 
-    ChainLightning, Bomb, 
+public enum WeaponType
+{
+    Cannon = 0,
+    Laser,
+    Slow,
+    Buff,
+    ChainLightning,
+    Bomb,
     MultiWayShooting,
     MultiBomb,
     MultiLaser
 }
 
-public enum WeaponState 
-{ 
-    SearchTarget = 0, TryAttackCannon,
-    TryAttackLaser, TryAttackChainLightning,
-    TryAttackMultiShooting,
-    TryAttackMultiBomb
-}
+/// <summary>
+/// íƒ€ì›Œ ê³µí†µ í˜¸ìŠ¤íŠ¸: ìŠ¤íƒ¯, ì—…ê·¸ë ˆì´ë“œ, íƒ€ê²Ÿ íƒìƒ‰, í’€ ìŠ¤í°.
+/// ì‹¤ì œ ê³µê²©/ì˜¤ë¼ëŠ” ITowerBehavior ì „ëµì´ ë‹´ë‹¹í•œë‹¤.
+/// </summary>
 public class TowerWeapon : MonoBehaviour
 {
     [SerializeField]
@@ -54,50 +52,68 @@ public class TowerWeapon : MonoBehaviour
     [SerializeField]
     private LineRenderer lineRenderer3;
 
-    private Slow slow;
-    private GameObjectPoolManager poolManager;
-
-    public WeaponState weaponState = WeaponState.SearchTarget;
-    private Transform attackTarget = null;
-    private Vector3 attackTargetVector;
+    private IPoolService poolService;
+    private ITowerBehavior behavior;
     private SpriteRenderer spriteRenderer;
-
     private TowerSpawner towerSpawner;
     private EnemySpawner enemySpawner;
+    private bool statsReady;
+
+    public Transform AttackTarget { get; set; }
+
+    public Transform SpawnPoint => spawnPoint;
+    public GameObject TargetProjectilePrefab => targetProjectilePrefab;
+    public GameObject BombProjectilePrefab => bombProjectilePrefab;
+    public GameObject ProjectilePrefab => projectilePrefab;
+    public GameObject BombPrefab => bombPrefab;
+    public LineRenderer LineRenderer => lineRenderer;
+    public LineRenderer LineRenderer2 => lineRenderer2;
+    public LineRenderer LineRenderer3 => lineRenderer3;
+    public bool DoubleShot => doubleShot;
 
     public TowerGrade towerGrade;
-    public Sprite towerSprite => towerData.sprite;
-    public int level = 1; // ?? ? ? ? ??
+    public Sprite towerSprite => towerData != null ? towerData.sprite : null;
+    public string DisplayName => towerData != null ? towerData.DisplayName : name;
+    public TowerData Definition => towerData;
+    public int level = 1;
     public int upGradeGold;
     public int useGoldToUpGrade = 0;
 
-    [HideInInspector]
-    public float damage;
-    [HideInInspector]
-    public float range;
-    [HideInInspector]
-    public float rate;
-    bool doubleShot;
-
-    //? ?
-    [HideInInspector]
-    public float slowValue;
-
-    // Start is called before the first frame update
-    void Start()
+    /// <summary>ì¹´íƒˆë¡œê·¸ì—ì„œ ê³ ë¥¸ ì •ì˜ë¡œ ë“±ê¸‰Â·íƒ€ì…Â·ìŠ¤íƒ¯ ì†ŒìŠ¤ë¥¼ ë§ì¶˜ë‹¤.</summary>
+    public void BindDefinition(TowerData data)
     {
-        this.damage = towerData.weapon.damage;
-        this.range = towerData.weapon.range;
-        this.rate = towerData.weapon.rate;
-        this.doubleShot = towerData.weapon.doubleShot;
-
-        if (weaponType == WeaponType.Slow)
+        if (data == null)
         {
-            this.slowValue = towerData.weapon.slowValue;
-            slow.SetUp(slowValue, range);
+            return;
         }
 
-        upGradeGold = (int)towerGrade * Constants.upGradeGoldMulti;
+        towerData = data;
+        towerGrade = data.grade;
+        weaponType = data.weaponType;
+        statsReady = false;
+        EnsureStatsFromData();
+    }
+
+    [HideInInspector] public float damage;
+    [HideInInspector] public float range;
+    [HideInInspector] public float rate;
+    private bool doubleShot;
+
+    [HideInInspector] public float slowValue;
+
+    private void Start()
+    {
+        EnsureStatsFromData();
+    }
+
+    private void OnDisable()
+    {
+        behavior?.Deactivate();
+    }
+
+    private void OnDestroy()
+    {
+        behavior?.Deactivate();
     }
 
     public void SetUp(TowerSpawner towerSpawner, EnemySpawner enemySpawner)
@@ -105,33 +121,15 @@ public class TowerWeapon : MonoBehaviour
         spriteRenderer = GetComponent<SpriteRenderer>();
         this.towerSpawner = towerSpawner;
         this.enemySpawner = enemySpawner;
-        poolManager = GameObjectPoolManager.EnsureExists();
+        poolService = ServiceLocator.Get<IPoolService>();
 
-        if (!(weaponType == WeaponType.Slow || weaponType == WeaponType.Buff))
-        {
-            ChangeState(WeaponState.SearchTarget);
-        }
-        else if (weaponType == WeaponType.Slow)
-        {
-            slow = GetComponentInChildren<Slow>();
-        }
+        EnsureStatsFromData();
+
+        behavior?.Deactivate();
+        behavior = TowerBehaviorFactory.Create(weaponType);
+        behavior.Initialize(this);
+        behavior.Activate();
     }
-
-    private GameObject SpawnPooled(GameObject prefab, Vector3 position, Quaternion rotation)
-    {
-        if (poolManager == null)
-        {
-            poolManager = GameObjectPoolManager.EnsureExists();
-        }
-
-        if (poolManager != null && prefab != null)
-        {
-            return poolManager.Spawn(prefab, position, rotation);
-        }
-
-        return Instantiate(prefab, position, rotation);
-    }
-    // Update is called once per frame
 
     public bool UPGrade()
     {
@@ -141,298 +139,142 @@ public class TowerWeapon : MonoBehaviour
         range += towerData.weaponUpGradeValue.range;
         rate += towerData.weaponUpGradeValue.rate;
 
-
         if (weaponType == WeaponType.Slow)
         {
             slowValue += towerData.weaponUpGradeValue.slowValue;
-            slow.SetUp(slowValue, range);
         }
 
         level++;
-
+        behavior?.OnUpgraded();
         return true;
     }
-    public void ChangeState(WeaponState newState)
+
+    public Transform FindClosestAttackTarget()
     {
-        //  ?  
-        StopCoroutine(weaponState.ToString());
-        //  
-        weaponState = newState;
-        // ?  
-        StartCoroutine(weaponState.ToString());
-    }
-    public IEnumerator SearchTarget()
-    {
-        while (true)
+        if (enemySpawner == null)
         {
-            //     ?  () 
-            attackTarget = FindClosestAttackTarget();
-
-            if (attackTarget != null)
-            {
-                switch(weaponType)
-                {
-                    case WeaponType.Cannon:
-                    case WeaponType.Bomb:
-                        ChangeState(WeaponState.TryAttackCannon);
-                        break;
-
-                    case WeaponType.ChainLightning:
-                        ChangeState(WeaponState.TryAttackChainLightning);
-                        break;
-
-                    case WeaponType.Laser:
-                        ChangeState(WeaponState.TryAttackLaser);
-                        break;
-
-                    case WeaponType.MultiWayShooting:
-                        ChangeState(WeaponState.TryAttackMultiShooting);
-                        break;
-
-                    case WeaponType.MultiBomb:
-                        ChangeState(WeaponState.TryAttackMultiBomb);
-                        break;
-                }
-            }
-
-            yield return new WaitForEndOfFrame();
+            AttackTarget = null;
+            return null;
         }
-    }
 
-    private Transform FindClosestAttackTarget()
-    {
-        //   ?  ?    ? ? 
         float closestDistSqr = Mathf.Infinity;
-        // EnemySpawner EnemyList ?  ? ?   ?
+        Transform closest = null;
+
         for (int i = 0; i < enemySpawner.enemyList.Count; ++i)
         {
-            float distance = Vector3.Distance(enemySpawner.enemyList[i].transform.position, transform.position);
-            //  ?   ?  ?,  ?   
+            Enemy enemy = enemySpawner.enemyList[i];
+            if (!IsValidEnemyTarget(enemy))
+            {
+                continue;
+            }
+
+            float distance = Vector3.Distance(enemy.transform.position, transform.position);
             if (distance <= range && distance <= closestDistSqr)
             {
                 closestDistSqr = distance;
-                attackTarget = enemySpawner.enemyList[i].transform;
+                closest = enemy.transform;
             }
         }
 
-        return attackTarget;
+        AttackTarget = closest;
+        return AttackTarget;
     }
 
-    private bool IsPossibleToAttackTarget()
+    public bool IsPossibleToAttackTarget()
     {
-        // target ? ? (? ?  , Goal  ?  )
-        if (attackTarget == null)
+        // í’€ ë°˜í™˜ í›„ Transformì€ íŒŒê´´ë˜ì§€ ì•ŠìŒ â†’ nullì´ ì•„ë‹ˆì–´ë„ ì£½ì€/ë¹„í™œì„±ì¼ ìˆ˜ ìˆìŒ
+        if (!IsValidAttackTarget(AttackTarget))
         {
+            AttackTarget = null;
             return false;
         }
 
-        // target   ? ? ? (  ? ?  )
-        float distance = Vector3.Distance(attackTarget.position, transform.position);
+        float distance = Vector3.Distance(AttackTarget.position, transform.position);
         if (distance > range)
         {
-            attackTarget = null;
+            AttackTarget = null;
             return false;
         }
 
         return true;
     }
 
-    private IEnumerator TryAttackMultiBomb()
+    private static bool IsValidEnemyTarget(Enemy enemy)
     {
-        while (true)
+        if (enemy == null || !enemy.isActiveAndEnabled || !enemy.gameObject.activeInHierarchy)
         {
-            if (IsPossibleToAttackTarget() == false)
-            {
-                ChangeState(WeaponState.SearchTarget);
-                break;
-            }
-
-            SpawnMultiBomb();
-
-            yield return new WaitForSeconds(rate);
-
-        }
-    }
-
-    private IEnumerator TryAttackMultiShooting()
-    {
-        while (true)
-        {
-            if (IsPossibleToAttackTarget() == false)
-            {
-                ChangeState(WeaponState.SearchTarget);
-                break;
-            }
-
-            attackTargetVector = attackTarget.transform.position;
-
-            SpawnMultiProjectile(attackTargetVector);
-
-            //?   ?
-            if (doubleShot)
-            {
-                yield return new WaitForSeconds(0.2f);
-                SpawnMultiProjectile(attackTargetVector);
-            }
-
-            yield return new WaitForSeconds(rate);
-        }
-    }
-    private IEnumerator TryAttackChainLightning()
-    {
-        if (IsPossibleToAttackTarget() == false)
-        {
-            ChangeState(WeaponState.SearchTarget);
-            yield return null;
-        }
-        else
-        {
-            ChainLightning lightning = GetComponent<ChainLightning>();
-            lightning.SetUp(attackTarget.gameObject, damage);
-
-            //try-catch use?
-            lightning.ChainLightningStart();
- 
-            yield return new WaitForSeconds(rate);
-            ChangeState(WeaponState.SearchTarget);
-        }
-    }
-    private IEnumerator TryAttackCannon()
-    {
-        while (true)
-        {
-            if (IsPossibleToAttackTarget() == false)
-            {
-                ChangeState(WeaponState.SearchTarget); 
-                break;
-            }
-
-            if (weaponType == WeaponType.Cannon)
-            {
-                SpawnTargetProjectile();
-            }
-            else if (weaponType == WeaponType.Bomb)
-            {
-                SpawnBombProjectile();
-            }
-
-            yield return new WaitForSeconds(rate);
-        }
-    }
-
-    private IEnumerator TryAttackLaser()
-    {
-        // ,   ? ??
-        EnableLaser();
-
-        while (true)
-        {
-            // target ?  ?
-            if (IsPossibleToAttackTarget() == false)
-            {
-                // ,   ? ??
-                DisableLaser();
-
-                //enable and Research cooltime
-                yield return new WaitForSeconds(rate);
-
-                ChangeState(WeaponState.SearchTarget);
-                break;
-            }
-
-            //  
-            SpawnLaser();
-
-            yield return new WaitForEndOfFrame();
-        }
-    }
-    private void SpawnMultiBomb()
-    {
-        Vector2 bombDirectoin = (attackTarget.transform.position - transform.position).normalized;
-        Vector2 towerPositon = transform.position;
-        float bombRange = 5.0f;
-        int bombCount = 5;
-        Vector2 bombVector = bombDirectoin * bombRange;
-
-        Vector2[] bombPosition = new Vector2[bombCount];
-
-        for(int i = 0; i < bombCount; i++)
-        {
-            bombPosition[i] = towerPositon + bombVector * ((i + 1) * (1.0f / bombCount));
-            GameObject bombs = SpawnPooled(bombPrefab, bombPosition[i], Quaternion.identity);
-            bombs.GetComponent<Bomb>().SetUp(damage);
+            return false;
         }
 
-    }
-    private void SpawnMultiProjectile(Vector3 attackTargetPosition)
-    {
-        Vector3 []targetMove = new Vector3[3] ;
-        targetMove[0] = (attackTargetPosition - transform.position);
-        targetMove[1] = Quaternion.AngleAxis(45f, Vector3.forward) * targetMove[0];
-        targetMove[2] = Quaternion.AngleAxis(-45f, Vector3.forward) * targetMove[0];
-
-        GameObject [] projectileClones = new GameObject[3];
-        float damage = this.damage; //+add damage
-
-        for (int i = 0; i < projectileClones.Length; i++)
+        EnemyHp hp = enemy.GetComponent<EnemyHp>();
+        if (hp != null && hp.IsDead)
         {
-            projectileClones[i] = SpawnPooled(projectilePrefab, spawnPoint.position, Quaternion.identity);
-            projectileClones[i].GetComponent<Projectile>().Setup(targetMove[i], damage);
+            return false;
         }
-    }
-    private void SpawnBombProjectile()
-    {
-        GameObject clone = SpawnPooled(bombProjectilePrefab, spawnPoint.position, Quaternion.identity);
-        //  ? ?(attackTarget)  
-        // ? =  ? ? +   ? ?
-        float damage = this.damage; // +Adddamage
-        clone.GetComponent<BombProjectile>().Setup(attackTarget, damage);
-    }
-    private void SpawnTargetProjectile()
-    {
-        GameObject clone = SpawnPooled(targetProjectilePrefab, spawnPoint.position, Quaternion.identity);
-        //  ? ?(attackTarget)  
-        // ? =  ? ? +   ? ?
-        float damage = this.damage; // +Adddamage
-        clone.GetComponent<TargetProjectile>().Setup(attackTarget, damage);
+
+        return true;
     }
 
-    private void EnableLaser()
+    private bool IsValidAttackTarget(Transform target)
     {
-        lineRenderer.gameObject.SetActive(true);
-        //hitEffect.gameObject.SetActive(true);
-    }
-
-    private void DisableLaser()
-    {
-        lineRenderer.gameObject.SetActive(false);
-        //hitEffect.gameObject.SetActive(false);
-    }
-
-    private void SpawnLaser()
-    {
-        Vector3 direction = attackTarget.position - spawnPoint.position;
-        //RaycastHit2D[] hit = Physics2D.RaycastAll(spawnPoint.position, direction, towerData.weapon[level].range, targetLayer);
-        RaycastHit2D[] hit = Physics2D.RaycastAll(spawnPoint.position, direction, this.range);
-
-        //          attackTarget  ? 
-        for (int i = 0; i < hit.Length; ++i)
+        if (target == null || !target.gameObject.activeInHierarchy)
         {
-            if (hit[i].transform == attackTarget)
-            {
-                //  
-                lineRenderer.SetPosition(0, spawnPoint.position);
-                //  ?
-                lineRenderer.SetPosition(1, new Vector3(hit[i].point.x, hit[i].point.y, 0) + Vector3.back);
-                //  ? ? 
-                //hitEffect.position = hit[i].point;
-                //    (1? damage? )
-                // ? =  ? ? +   ? ?
-                float damage = this.damage; // + AddedDamage;
-                attackTarget.GetComponent<EnemyHp>().TakeDamage(damage * Time.deltaTime);
-            }
+            return false;
         }
+
+        Enemy enemy = target.GetComponent<Enemy>();
+        if (!IsValidEnemyTarget(enemy))
+        {
+            return false;
+        }
+
+        // ì›¨ì´ë¸Œ ëª©ë¡ì— ì—†ìœ¼ë©´ ì´ë¯¸ DestroyEnemy ì²˜ë¦¬ëœ ê²ƒ
+        if (enemySpawner == null || !enemySpawner.enemyList.Contains(enemy))
+        {
+            return false;
+        }
+
+        return true;
     }
 
+    public GameObject SpawnPooled(GameObject prefab, Vector3 position, Quaternion rotation)
+    {
+        if (prefab == null)
+        {
+            return null;
+        }
 
+        if (poolService == null)
+        {
+            poolService = ServiceLocator.Get<IPoolService>();
+        }
+
+        if (poolService != null)
+        {
+            return poolService.Spawn(prefab, position, rotation);
+        }
+
+        return Instantiate(prefab, position, rotation);
+    }
+
+    private void EnsureStatsFromData()
+    {
+        if (statsReady || towerData == null)
+        {
+            return;
+        }
+
+        damage = towerData.weapon.damage;
+        range = towerData.weapon.range;
+        rate = towerData.weapon.rate;
+        doubleShot = towerData.weapon.doubleShot;
+
+        if (weaponType == WeaponType.Slow)
+        {
+            slowValue = towerData.weapon.slowValue;
+        }
+
+        upGradeGold = (int)towerGrade * Constants.upGradeGoldMulti;
+        statsReady = true;
+    }
 }

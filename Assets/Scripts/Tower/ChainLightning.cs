@@ -1,4 +1,4 @@
-using System.Collections;
+ï»¿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -53,7 +53,7 @@ public class ChainLightning : MonoBehaviour
     {
         for (int i = 0; i < chainCount; i++)
         {
-            //Å¸°Ù ¿ÀºêÁ§Æ®¸¦ ÇÇ°İ ¸®½ºÆ®¿¡ ³ÖÀ½
+            // íƒ€ê²Ÿ ì˜¤ë¸Œì íŠ¸ë¥¼ í”¼ê²© ë¦¬ìŠ¤íŠ¸ì— ë„£ìŒ
             if (targetObject != null && !hitList.Contains(targetObject))
             {
                 hitList.Add(targetObject);
@@ -61,10 +61,10 @@ public class ChainLightning : MonoBehaviour
 
             StartCoroutine("LightningEffect");
 
-            startObject = targetObject; // ÀÌÀü Å¸°ÙÀ» »õ·Î¿î ½ÃÀÛ ¿ÀºêÁ§Æ®(±âÁØ)·Î ¼³Á¤
-            targetObject = SearchEnemy(targetObject); // »õ·Î¿î Å¸°ÙÀ» Àü Å¸°Ù ±âÁØÀ¸·Î Ã£À½
+            startObject = targetObject; // ì´ì „ íƒ€ê²Ÿì„ ìƒˆë¡œìš´ ì‹œì‘ ì˜¤ë¸Œì íŠ¸(ê¸°ì¤€)ë¡œ ì„¤ì •
+            targetObject = SearchEnemy(targetObject); // ìƒˆë¡œìš´ íƒ€ê²Ÿì„ ì „ íƒ€ê²Ÿ ê¸°ì¤€ìœ¼ë¡œ ì°¾ìŒ
 
-            //»õ·Î¿î Å¸°ÙÀ» ¸øÃ£À¸¸é °ø°İ Á¾·á
+            // ìƒˆë¡œìš´ íƒ€ê²Ÿì„ ëª»ì°¾ìœ¼ë©´ ê³µê²© ì¢…ë£Œ
             if (targetObject == null)
             {
                 break;
@@ -72,7 +72,7 @@ public class ChainLightning : MonoBehaviour
             yield return new WaitForSeconds(lightningMoveTime);
         }
 
-        //ÇÇ°İµÈ Àû ¸®½ºÆ®¿¡ ÀÖ´Â Àûµé ÇÇ°İ Ã³¸®
+        // í”¼ê²©ëœ ì  ë¦¬ìŠ¤íŠ¸ì— ìˆëŠ” ì ë“¤ í”¼ê²© ì²˜ë¦¬
         foreach (GameObject enemy in hitList)
         {
             if (enemy != null)
@@ -93,17 +93,17 @@ public class ChainLightning : MonoBehaviour
         {
              colliders = Physics2D.OverlapCircleAll(standardObject.transform.position, searchRadius, layerMask);
         }
-        else //¼­Ä¡ µµÁß ±âÁØ ¿ÀºêÁ§Æ®°¡ ÆÄ±«‰Î => null ¸®ÅÏ
+        else // ì„œì¹˜ ë„ì¤‘ ê¸°ì¤€ ì˜¤ë¸Œì íŠ¸ê°€ íŒŒê´´ë¨ => null ë¦¬í„´
         {
             return TargetEnemy;
         }
 
         float closestDistance = Mathf.Infinity;
 
-        //°¡Àå °¡±î¿î Ãæµ¹Ã¼ Ã£À½
+        // ê°€ì¥ ê°€ê¹Œìš´ ì¶©ëŒì²´ ì°¾ìŒ
         foreach (Collider2D collider in colliders)
         {
-            //°ËÃâµÈ Ãæµ¹Ã¼°¡ ÆÄ±«µÇ¾î¼­ null ÀÌ°Å³ª ¼­Ä¡µÈ Ãæµ¹Ã¼°¡ ÀÚ±â¹Û¿¡ ¾ø°Å³ª ÀÌ¹Ì ¸ÂÀº ÀûÀÌ¸é ´ÙÀ½ Ãæµ¹Ã¼ °Ë»ç
+            // ê²€ì¶œëœ ì¶©ëŒì²´ê°€ íŒŒê´´ë˜ì–´ nullì´ê±°ë‚˜, ìê¸° ìì‹ ì´ê±°ë‚˜, ì´ë¯¸ ë§ì€ ì ì´ë©´ ë‹¤ìŒ ê²€ì‚¬
             if (collider == null || standardObject == collider.gameObject
                 || hitList.Contains(collider.gameObject))
             {
@@ -122,7 +122,7 @@ public class ChainLightning : MonoBehaviour
         return TargetEnemy;
     }
 
-    //½ÃÀÛ°ú Å¸°Ù¿¡ ¹ø°³ ÀÌÆåÆ®¸¦ ¿©·¯º¯ ±×·ÁÁÖ´Â ÄÚ·çÆ¾
+    // ì‹œì‘ê³¼ íƒ€ê²Ÿì— ë²ˆê°œ ì´í™íŠ¸ë¥¼ ì—¬ëŸ¬ ë²ˆ ê·¸ë ¤ì£¼ëŠ” ì½”ë£¨í‹´
     public IEnumerator LightningEffect()
     {
         if (startObject == null || targetObject == null) 
@@ -147,7 +147,7 @@ public class ChainLightning : MonoBehaviour
         }
     }
 
-    //¹ø°³ ÀÌÆåÆ® , ¼±ÀÌ ·£´ıÀ¸·Î Áö±×Àç±× ÇüÅÂ¸¦ ¶í´Ù.
+    // ë²ˆê°œ ì´í™íŠ¸ â€” ì„ ì´ ëœë¤ìœ¼ë¡œ ì§€ê·¸ì¬ê·¸ í˜•íƒœë¥¼ ë°
     public void DrawLightning(Vector2 source, Vector2 target, int segments)
     {
         lineRenderer.positionCount = segments;

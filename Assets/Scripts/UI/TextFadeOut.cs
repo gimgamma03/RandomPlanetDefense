@@ -1,4 +1,4 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 using UnityEngine.UI;
 using System.Collections;
 using TMPro;
@@ -6,7 +6,7 @@ using System;
 
 public class TextFadeOut : MonoBehaviour
 {
-    public float fadeDuration = 1.0f; // ÆäÀÌµå ¾Æ¿ô¿¡ °É¸®´Â ½Ã°£
+    public float fadeDuration = 1.0f; // í˜ì´ë“œ ì•„ì›ƒì— ê±¸ë¦¬ëŠ” ì‹œê°„
 
     [SerializeField]
     private TextMeshProUGUI showText;
@@ -26,7 +26,7 @@ public class TextFadeOut : MonoBehaviour
         while (elapsedTime < fadeDuration)
         {
             elapsedTime += Time.deltaTime;
-            float alpha = Mathf.Lerp(1f, 0f, elapsedTime / fadeDuration); // ¾ËÆÄ °ª º¸°£
+            float alpha = Mathf.Lerp(1f, 0f, elapsedTime / fadeDuration); // ì•ŒíŒŒ ê°’ ë³´ê°„
             showText.color = new Color(originalColor.r, originalColor.g, originalColor.b, alpha);
             yield return null;
         }

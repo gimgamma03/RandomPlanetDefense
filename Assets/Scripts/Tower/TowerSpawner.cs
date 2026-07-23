@@ -1,37 +1,13 @@
-using System.Collections;
-using System.Collections.Generic;
-using Unity.VisualScripting;
+Ôªøusing System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Tilemaps;
 
-public enum TowerGrade
-{
-    Grade1 = 1,
-    Grade2,
-    Grade3,
-    Grade4,
-};
 public class TowerSpawner : MonoBehaviour
 {
     public bool testTowerOn;
 
     [SerializeField]
-    private Player player;
-
-    [SerializeField]
-    private TowerData[] towerData;
-
-    [SerializeField]
     private EnemySpawner enemySpawner;
-
-    [SerializeField]
-    private GameObject[] towerGrade1Prefabs;
-    [SerializeField]
-    private GameObject[] towerGrade2Prefabs;
-    [SerializeField]
-    private GameObject[] towerGrade3Prefabs;
-    [SerializeField]
-    private GameObject[] towerGrade4Prefabs;
 
     [SerializeField]
     private GameObject TestTower;
@@ -39,146 +15,214 @@ public class TowerSpawner : MonoBehaviour
     [SerializeField]
     private Tilemap WallMap;
 
-    public List<GameObject[]> towerTypeList;
-    //private float towerCellGoldPercent = 0.8f;
-    private List<GameObject> towerList;
-    private int towerCombineCount = 3;
+    [Tooltip("ÏûàÏúºÎ©¥ Ïù¥Í±∏Î°ú CSV Ï†ÅÏö©. ÏóÜÏúºÎ©¥ Resources/TowerBalance.csv ÏûêÎèô")]
+    [SerializeField]
+    private MonoBehaviour balanceSourceBehaviour;
 
-    // Start is called before the first frame update
-    void Start()
+    [Tooltip("CSVÎ°ú SO ÎçÆÏñ¥Ïì∞Í∏∞. ÎÅÑÎ©¥ Resources CSVÍ∞Ä ÏûàÏñ¥ÎèÑ SO ÏàòÏπòÎßå ÏÇ¨Ïö©")]
+    [SerializeField]
+    private bool applyBalanceCsv = true;
+
+    private TowerCatalog catalog;
+    private List<GameObject> towerList;
+    private IPlayerService playerService;
+    private ITowerBalanceSource balanceSource;
+
+    void Awake()
     {
         towerList = new List<GameObject>();
-        towerTypeList = new List<GameObject[]>
-        {
-            towerGrade1Prefabs,
-            towerGrade2Prefabs,
-            towerGrade3Prefabs,
-            towerGrade4Prefabs
-        };
-
-        //Debug.Log(towerTypeList[2].Length);
+        EnsureCatalog();
     }
 
-    // Update is called once per frame
-    void Update()
+    void Start()
     {
+        playerService = ServiceLocator.Get<IPlayerService>();
+        EnsureCatalog();
+        TryApplyBalance();
+    }
 
+    private void EnsureCatalog()
+    {
+        if (catalog != null)
+        {
+            return;
+        }
+
+        catalog = TowerCatalog.LoadFromResources();
+    }
+
+    private void TryApplyBalance()
+    {
+        if (!applyBalanceCsv || catalog == null)
+        {
+            return;
+        }
+
+        balanceSource = balanceSourceBehaviour as ITowerBalanceSource;
+        if (balanceSource != null)
+        {
+            balanceSource.ApplyToCatalog(catalog);
+            return;
+        }
+
+        TextAsset csv = Resources.Load<TextAsset>("TowerBalance");
+        if (csv != null)
+        {
+            TowerBalanceCsv.Apply(catalog, csv.text);
+        }
+        // CSV ÏóÜÏñ¥ÎèÑ SO Í∞íÏúºÎ°ú ÌîåÎ†àÏù¥ Í∞ÄÎä•
     }
 
     public void SpawnTower(Vector2 towerSpawnPosition)
     {
-        AStarNode WallNode = MapDirector.Instance.aStarGrid.GetNodeFromWorld(towerSpawnPosition);
-
-        if (WallNode.isBuildTower)
-        {
-            return;
-        }
-
-        SpawnTower(towerSpawnPosition, TowerGrade.Grade1);
-        return;
-
-        /*Vector3Int tilePosition = MapDirector.Instance.WallMap.WorldToCell(towerSpawnPosition);
-
-        //¿Ã «‘ºˆ∏¶ ∫Œ∏£¥¬ PanelGameManager¿« «‘ºˆ¥¬ CompareTag∑Œ WallMap ¿Œ¡ˆ »Æ¿Œ¿ª «ﬂ±‚ ∂ßπÆø° hastile ∑Œ √º≈©«œ¥¯∞≈ æ¯æ⁄
-
-        GameObject Tower;
-        if (testTowerOn)
-        {
-            Tower = Instantiate(TestTower, transform.position, Quaternion.identity);
-        }
-        else
-        {
-            Tower = Instantiate(towerGrade1Prefabs[Random.Range(0, towerGrade1Prefabs.Length)], transform.position, Quaternion.identity);
-        }
-
-        towerList.Add(Tower);
-        TowerWeapon towerWeapon = Tower.GetComponent<TowerWeapon>();
-        Tower tower = Tower.GetComponent<Tower>();
-        towerWeapon.SetUp(this, enemySpawner);
-        tower.SetUp(this, WallNode);
-
-        Vector3 CenterPosition = WallMap.GetCellCenterWorld(tilePosition);
-        CenterPosition -= WallMap.cellGap / 2;
-
-        Tower.transform.position = CenterPosition;*/
+        SpawnTower(towerSpawnPosition, (TowerGrade)Constants.ShopSpawnGrade);
     }
+
     public void SpawnTower(Vector2 towerLocation, TowerGrade grade)
     {
-        AStarNode WallNode = MapDirector.Instance.aStarGrid.GetNodeFromWorld(towerLocation);
+        if (towerList == null)
+        {
+            towerList = new List<GameObject>();
+        }
 
-        if (WallNode.isBuildTower)
+        if (MapDirector.Instance == null || MapDirector.Instance.aStarGrid == null)
+        {
+            Debug.LogError("[TowerSpawner] MapDirector not ready.");
+            return;
+        }
+
+        AStarNode wallNode = MapDirector.Instance.aStarGrid.GetNodeFromWorld(towerLocation);
+        if (wallNode != null && wallNode.isBuildTower)
         {
             return;
         }
 
-        int gradeIndex = (int)(grade - 1);
-        Vector3Int tilePosition = MapDirector.Instance.WallMap.WorldToCell(towerLocation);
+        if (WallMap == null)
+        {
+            Debug.LogError("[TowerSpawner] WallMap not assigned.");
+            return;
+        }
 
+        Vector3Int tilePosition = MapDirector.Instance.WallMap.WorldToCell(towerLocation);
         Vector3 tileCenterPosition = MapDirector.Instance.WallMap.GetCellCenterWorld(tilePosition);
-        tileCenterPosition -= WallMap.cellGap / 2;
+        tileCenterPosition -= WallMap.cellGap / 2f;
 
         GameObject spawnTower;
+        TowerData picked = null;
+
         if (testTowerOn)
         {
-            //≈◊Ω∫∆Æ «“ ≈∏øˆ ª˝º∫
+            if (TestTower == null)
+            {
+                Debug.LogError("[TowerSpawner] TestTower is not set.");
+                return;
+            }
+
             spawnTower = Instantiate(TestTower, tileCenterPosition, Quaternion.identity);
         }
         else
         {
-            //¡ˆ¡§µ» µÓ±ﬁ¿« ≈∏øˆ¡ﬂø°º≠ ∑£¥˝¿∏∑Œ º“»Ø, ¿ßƒ°¥¬ ≈∏¿œ¿« ¡ﬂæ”
-            spawnTower = Instantiate(towerTypeList[gradeIndex][Random.Range(0, towerTypeList[gradeIndex].Length)],
-                tileCenterPosition, Quaternion.identity);
+            EnsureCatalog();
+            if (catalog == null)
+            {
+                return;
+            }
+
+            picked = catalog.PickRandom(grade);
+            GameObject prefab = catalog.ResolvePrefab(picked);
+            if (picked == null || prefab == null)
+            {
+                Debug.LogError($"[TowerSpawner] grade {(int)grade} ÌíÄÏù¥ ÎπÑÏóàÏùå. Resources/TowerData Ïùò grade ÌôïÏù∏.");
+                return;
+            }
+
+            spawnTower = Instantiate(prefab, tileCenterPosition, Quaternion.identity);
+        }
+
+        TowerWeapon spawnTowerWeapon = spawnTower.GetComponent<TowerWeapon>();
+        Tower spawnTowerScript = spawnTower.GetComponent<Tower>();
+        if (spawnTowerWeapon == null || spawnTowerScript == null)
+        {
+            Debug.LogError($"[TowerSpawner] Prefab '{spawnTower.name}' missing TowerWeapon/Tower.");
+            Destroy(spawnTower);
+            return;
+        }
+
+        if (enemySpawner == null)
+        {
+            Debug.LogError("[TowerSpawner] EnemySpawner not assigned.");
+            Destroy(spawnTower);
+            return;
+        }
+
+        if (picked != null)
+        {
+            spawnTowerWeapon.BindDefinition(picked);
         }
 
         towerList.Add(spawnTower);
-        TowerWeapon spawntowerWeapon = spawnTower.GetComponent<TowerWeapon>();
-        Tower spawnTowerScript = spawnTower.GetComponent<Tower>();
-        spawntowerWeapon.SetUp(this, enemySpawner);
+        spawnTowerWeapon.SetUp(this, enemySpawner);
         spawnTowerScript.SetUp(this, MapDirector.Instance.aStarGrid.GetNodeFromWorld(tileCenterPosition));
     }
-    
-    public void CombineTower(GameObject Tower)
+
+    public void CombineTower(GameObject tower)
     {
-        TowerWeapon selectTowerWeapon = Tower.GetComponent<TowerWeapon>();
-        Tower selectTowerScript = Tower.GetComponent<Tower>();
-        TowerGrade materialTowerGrade = selectTowerWeapon.towerGrade;
-        WeaponType towerWeaponType = selectTowerWeapon.weaponType;
-
-        Debug.Log("before combine tower Count : " + towerList.Count);
-
-        int[] findSameTower = new int[towerCombineCount];
-        List<GameObject> SameTower = new List<GameObject>();
-        int SearchCount = 0;
-
-        for (int i = 0; i < towerList.Count; i++)
+        TowerWeapon selectTowerWeapon = tower.GetComponent<TowerWeapon>();
+        if (selectTowerWeapon == null)
         {
-            TowerWeapon towerWeaponInList = towerList[i].GetComponent<TowerWeapon>();
-            if (towerWeaponInList.weaponType == selectTowerWeapon.weaponType)
-            {
-                SameTower.Add(towerList[i]);
-                findSameTower[SearchCount] = i;
-                SearchCount++;
-
-                if (SearchCount == Constants.towerCombineCount)
-                {
-                    //upGradeTowerNode = SameTower[Random.Range(0, towerCombineCount)].GetComponent<Tower>().towerNode;
-
-                    //List ø°º≠ «œ≥™æø ¿Œµ¶Ω∫∑Œ ªË¡¶ «ﬂ¥ı¥œ 
-                    //ªË¡¶ »ƒ ∏ÆΩ∫∆Æ ∞° æÀæ∆º≠ ¿Á¡§∫Ò«ÿº≠ ¿Œµ¶Ω∫∞° æ»∏¬æ∆º≠ «—π¯ø° ªË¡¶«œ¥¬Ωƒ¿∏∑Œ «‘
-                    foreach (GameObject materialTower in SameTower)
-                    {
-                        //3∞≥¿« «ˆ¿Á µÓ±ﬁ¿« ¿Á∑· ≈∏øˆ ªË¡¶
-                        Tower towerScript = materialTower.GetComponent<Tower>();
-                        towerScript.DestoryThisTower();
-                    }
-
-                    //¥Ÿ¿Ω µÓ±ﬁ¿« ≈∏øˆ ª˝º∫
-                    SpawnTower(SameTower[Random.Range(0, towerCombineCount)].transform.position, materialTowerGrade + 1);
-                    break;
-                }
-            }
+            return;
         }
 
+        TowerGrade materialGrade = selectTowerWeapon.towerGrade;
+        if ((int)materialGrade >= Constants.MaxTowerGrade)
+        {
+            Debug.Log($"[TowerSpawner] Already max grade {Constants.MaxTowerGrade}.");
+            return;
+        }
+
+        List<GameObject> sameTower = new List<GameObject>();
+        for (int i = 0; i < towerList.Count; i++)
+        {
+            TowerWeapon other = towerList[i].GetComponent<TowerWeapon>();
+            if (other == null)
+            {
+                continue;
+            }
+
+            if (other.weaponType != selectTowerWeapon.weaponType)
+            {
+                continue;
+            }
+
+            if (other.towerGrade != materialGrade)
+            {
+                continue;
+            }
+
+            sameTower.Add(towerList[i]);
+            if (sameTower.Count != Constants.towerCombineCount)
+            {
+                continue;
+            }
+
+            Vector3 spawnPos = sameTower[Random.Range(0, Constants.towerCombineCount)].transform.position;
+
+            foreach (GameObject materialTower in sameTower)
+            {
+                materialTower.GetComponent<Tower>().DestoryThisTower();
+            }
+
+            TowerGrade nextGrade = materialGrade + 1;
+            EnsureCatalog();
+            if (catalog == null || !catalog.HasAny(nextGrade))
+            {
+                Debug.LogError($"[TowerSpawner] No towers for grade {(int)nextGrade}. Resources/TowerData ÌôïÏù∏.");
+                return;
+            }
+
+            SpawnTower(spawnPos, nextGrade);
+            break;
+        }
     }
 
     public void CellTower(GameObject cellTower)
@@ -187,26 +231,21 @@ public class TowerSpawner : MonoBehaviour
         TowerWeapon cellTowerWeapon = cellTower.GetComponent<TowerWeapon>();
 
         int cellGold = Constants.spawnRandomTowerGold;
-
-        //µÓ±ﬁø° µ˚∂Û ±‚∫ª¿˚¿Œ ≈∏øˆø° º“∏µ» ∞ÒµÂ ∞ËªÍ
         for (int i = 1; i < (int)cellTowerWeapon.towerGrade; i++)
         {
             cellGold *= Constants.towerCombineCount;
         }
 
-        //æ˜±◊∑π¿ÃµÂø° ªÁøÎ«— ∞ÒµÂ ∞ËªÍ
         cellGold += cellTowerWeapon.useGoldToUpGrade;
+        cellGold = (int)(cellGold * Constants.cellTowerReturnGoldMulti);
 
-        //∫Ò¿≤ø° µ˚∂Û ∆«∏≈ ∞ÒµÂ ∞ËªÍ
-        float cellGoldCal = cellGold * Constants.cellTowerReturnGoldMulti;
-        cellGold = (int)cellGoldCal;
-
-        player.gold += cellGold;
+        playerService.AddGold(cellGold);
         towerScript.DestoryThisTower();
     }
-    public void DestoryTower(GameObject Tower)
+
+    public void DestoryTower(GameObject tower)
     {
-        towerList.Remove(Tower);
-        Destroy(Tower.gameObject);
+        towerList.Remove(tower);
+        Destroy(tower);
     }
 }

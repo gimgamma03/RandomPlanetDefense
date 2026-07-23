@@ -1,12 +1,15 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using static WaveData;
 
 public class EnemySpawner : MonoBehaviour
 {
+    [Header("Spawn")]
+    [Tooltip("적 출현 위치 (블랙홀/게이트). 비우면 이 오브젝트 Transform 사용")]
     [SerializeField]
-    private Player player;
+    private Transform spawnPoint;
+
     [SerializeField]
     private Transform canvasTransform;
     [SerializeField]
@@ -15,32 +18,39 @@ public class EnemySpawner : MonoBehaviour
     [SerializeField]
     private GameObject enemyHpSliderPrefab;
     [SerializeField]
-    private GameObjectPoolManager poolManager;
-    [SerializeField]
     private int enemyHpPoolInitialSize = 16;
 
-    private float LastSpawnTime;
-    private int currentEnemyCount;
+    private IPoolService poolService;
+    private IPlayerService playerService;
+
     private Wave currentWave;
-    private int currentWaveCount;
+    private Coroutine spawnRoutine;
+
+    /// <summary>스폰 코루틴이 아직 돌고 있거나, 필드에 적이 남아 웨이브 진행 중</summary>
+    private bool waveActive;
+    private bool spawnCompleted;
+
     public List<Enemy> enemyList;
+
+    public bool IsWaveInProgress => waveActive;
+
+    /// <summary>경로 시작점·스폰에 쓰는 월드 좌표</summary>
+    public Vector3 SpawnWorldPosition =>
+        spawnPoint != null ? spawnPoint.position : transform.position;
 
     void Start()
     {
         enemyList = new List<Enemy>();
-        poolManager = GameObjectPoolManager.EnsureExists();
+        poolService = ServiceLocator.Get<IPoolService>();
+        playerService = ServiceLocator.Get<IPlayerService>();
         if (enemyHpSliderPrefab != null)
         {
-            poolManager.EnsurePool(
+            poolService.EnsurePool(
                 PoolId.EnemyHp,
                 enemyHpSliderPrefab,
                 canvasTransform,
                 enemyHpPoolInitialSize);
         }
-    }
-
-    void Update()
-    {
     }
 
     public void CheckPathForAllEnemy()
@@ -56,70 +66,135 @@ public class EnemySpawner : MonoBehaviour
 
     public void StartWave(Wave wave)
     {
+        if (waveActive)
+        {
+            Debug.LogWarning("[EnemySpawner] Wave already in progress.");
+            return;
+        }
+
         currentWave = wave;
-        currentWaveCount = wave.maxEnemyCount;
-        StartCoroutine("SpawnEnemy");
+        waveActive = true;
+        spawnCompleted = false;
+
+        if (spawnRoutine != null)
+        {
+            StopCoroutine(spawnRoutine);
+        }
+
+        spawnRoutine = StartCoroutine(SpawnEnemy());
     }
 
     private IEnumerator SpawnEnemy()
     {
         int spawnEnemyCount = 0;
+        float delay = Mathf.Max(0f, currentWave.spawnDelay);
+
         while (spawnEnemyCount < currentWave.maxEnemyCount)
         {
-            float randomSpawnRoll = Random.value;
-            GameObject selectEnemy = null;
-
-            foreach (var enemyInWave in currentWave.enemies)
+            GameObject selectEnemy = PickEnemyPrefab();
+            if (selectEnemy == null)
             {
-                if (randomSpawnRoll <= enemyInWave.enemyPercentage)
-                {
-                    selectEnemy = enemyInWave.enemyPrefab;
-                    break;
-                }
-
-                randomSpawnRoll -= enemyInWave.enemyPercentage;
+                Debug.LogError("[EnemySpawner] No valid enemy prefab in wave data. Aborting spawn.");
+                break;
             }
 
-            if (selectEnemy != null)
+            if (poolService == null)
             {
-                if (poolManager == null)
-                {
-                    poolManager = GameObjectPoolManager.EnsureExists();
-                }
+                poolService = ServiceLocator.Get<IPoolService>();
+            }
 
-                GameObject enemyObject = poolManager.Spawn(
-                    selectEnemy,
-                    transform.position,
-                    Quaternion.identity,
-                    transform);
-                yield return new WaitForEndOfFrame();
+            GameObject enemyObject = poolService.Spawn(
+                selectEnemy,
+                SpawnWorldPosition,
+                Quaternion.identity,
+                poolService.Root);
+            yield return null;
 
-                GameObject enemyHpSlider = SpawnEnemyHpSlider(enemyObject);
-                Enemy enemy = enemyObject.GetComponent<Enemy>();
-                EnemyHp enemyHp = enemyObject.GetComponent<EnemyHp>();
-                EnemyHpViewer enemyHpViewer = enemyHpSlider.GetComponent<EnemyHpViewer>();
+            GameObject enemyHpSlider = SpawnEnemyHpSlider(enemyObject);
+            Enemy enemy = enemyObject.GetComponent<Enemy>();
+            EnemyHp enemyHp = enemyObject.GetComponent<EnemyHp>();
+            EnemyHpViewer enemyHpViewer = enemyHpSlider.GetComponent<EnemyHpViewer>();
 
-                enemy.PrepareForSpawn(this);
-                enemyHp.PrepareForSpawn(enemyHpViewer);
-                enemyHpViewer.hpSliderUpdate();
+            enemy.PrepareForSpawn(this);
+            enemyHp.PrepareForSpawn(enemyHpViewer);
+            enemyHpViewer.hpSliderUpdate();
 
-                enemyList.Add(enemy);
-                currentEnemyCount++;
+            enemyList.Add(enemy);
+            spawnEnemyCount++;
 
-                spawnEnemyCount++;
-                yield return new WaitForSeconds(currentWave.spawnDelay);
+            if (delay > 0f)
+            {
+                yield return new WaitForSeconds(delay);
             }
         }
 
-        waveSystem.FinishWave();
+        spawnRoutine = null;
+        spawnCompleted = true;
+        TryFinishWave();
+    }
+
+    /// <summary>
+    /// 가중치 합이 1이 아니거나 float 오차가 있어도 반드시 유효 프리팹을 고른다.
+    /// (예전 로직은 롤 실패 시 selectEnemy==null → while이 끝나지 않아 FinishWave가 영구 미호출됨)
+    /// </summary>
+    private GameObject PickEnemyPrefab()
+    {
+        WaveEnemy[] entries = currentWave.enemies;
+        if (entries == null || entries.Length == 0)
+        {
+            return null;
+        }
+
+        float totalWeight = 0f;
+        GameObject lastValid = null;
+
+        for (int i = 0; i < entries.Length; i++)
+        {
+            if (entries[i].enemyPrefab == null)
+            {
+                continue;
+            }
+
+            lastValid = entries[i].enemyPrefab;
+            totalWeight += Mathf.Max(0f, entries[i].enemyPercentage);
+        }
+
+        if (lastValid == null)
+        {
+            return null;
+        }
+
+        if (totalWeight <= 0f)
+        {
+            return lastValid;
+        }
+
+        float roll = Random.Range(0f, totalWeight);
+        float cumulative = 0f;
+
+        for (int i = 0; i < entries.Length; i++)
+        {
+            if (entries[i].enemyPrefab == null)
+            {
+                continue;
+            }
+
+            cumulative += Mathf.Max(0f, entries[i].enemyPercentage);
+            if (roll <= cumulative)
+            {
+                return entries[i].enemyPrefab;
+            }
+        }
+
+        return lastValid;
     }
 
     private GameObject SpawnEnemyHpSlider(GameObject enemy)
     {
-        GameObject sliderClone = poolManager.Spawn(PoolId.EnemyHp, canvasTransform);
+        GameObject sliderClone = poolService.Spawn(PoolId.EnemyHp, canvasTransform);
         if (sliderClone == null)
         {
-            sliderClone = poolManager.Spawn(
+            sliderClone = poolService.Spawn(
                 enemyHpSliderPrefab,
                 Vector3.zero,
                 Quaternion.identity,
@@ -147,15 +222,24 @@ public class EnemySpawner : MonoBehaviour
 
         if (type == EnemyDestroyType.Arrive)
         {
-            player.TakeDamage(Constants.enemyGoalInDamage);
+            if (playerService == null)
+            {
+                playerService = ServiceLocator.Get<IPlayerService>();
+            }
+
+            playerService.TakeDamage(Constants.enemyGoalInDamage);
         }
         else if (type == EnemyDestroyType.Kill)
         {
-            player.gold += gold;
-            waveSystem.scoreSystem.AddScore(scorePoint);
+            if (playerService == null)
+            {
+                playerService = ServiceLocator.Get<IPlayerService>();
+            }
+
+            playerService.AddGold(gold);
+            waveSystem.AddScore(scorePoint);
         }
 
-        currentEnemyCount--;
         enemyList.Remove(enemy);
 
         EnemyHp enemyHp = enemy.GetComponent<EnemyHp>();
@@ -167,11 +251,29 @@ public class EnemySpawner : MonoBehaviour
 
         enemy.ClearForPool();
 
-        if (poolManager == null)
+        if (poolService == null)
         {
-            poolManager = GameObjectPoolManager.EnsureExists();
+            poolService = ServiceLocator.Get<IPoolService>();
         }
 
-        poolManager.Return(enemy.gameObject);
+        poolService.Return(enemy.gameObject);
+        TryFinishWave();
+    }
+
+    /// <summary>스폰이 끝났고 필드 적이 0이면 웨이브 클리어.</summary>
+    private void TryFinishWave()
+    {
+        if (!waveActive || !spawnCompleted)
+        {
+            return;
+        }
+
+        if (enemyList.Count > 0)
+        {
+            return;
+        }
+
+        waveActive = false;
+        waveSystem.FinishWave();
     }
 }

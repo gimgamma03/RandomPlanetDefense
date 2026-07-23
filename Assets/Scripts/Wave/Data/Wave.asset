@@ -17,9 +17,9 @@ MonoBehaviour:
     maxEnemyCount: 5
     enemies:
     - enemyPrefab: {fileID: 5995945161616379720, guid: 344d27fe809501e479291516e6d1881b, type: 3}
-      enemyPercentage: 1
+      enemyPercentage: 0.5956451
     - enemyPrefab: {fileID: 5995945161616379720, guid: 903b56849fb45b54d83e66aa7f46f956, type: 3}
-      enemyPercentage: 0
+      enemyPercentage: 0.4043549
   - spawnDelay: 1
     maxEnemyCount: 10
     enemies:
@@ -31,9 +31,9 @@ MonoBehaviour:
     maxEnemyCount: 15
     enemies:
     - enemyPrefab: {fileID: 5995945161616379720, guid: 344d27fe809501e479291516e6d1881b, type: 3}
-      enemyPercentage: 0.909091
+      enemyPercentage: 0.9090909
     - enemyPrefab: {fileID: 5995945161616379720, guid: 903b56849fb45b54d83e66aa7f46f956, type: 3}
-      enemyPercentage: 0.09090909
+      enemyPercentage: 0.090909086
   - spawnDelay: 1
     maxEnemyCount: 15
     enemies:

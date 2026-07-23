@@ -1,14 +1,9 @@
-using System.Collections;
-using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
 public class PanelTowerDataViewer : MonoBehaviour
 {
-    [SerializeField]
-    private Player player;
-
     [SerializeField]
     private Image towerImage;
     [SerializeField]
@@ -24,22 +19,20 @@ public class PanelTowerDataViewer : MonoBehaviour
     [SerializeField]
     private TextMeshProUGUI textUtility;
 
+    private IPlayerService playerService;
     private TowerWeapon currentTowerWeapon;
-
-    //bool showSpecialData = false;
 
     private void Awake()
     {
         OffPanel();
     }
-    // Start is called before the first frame update
-    void Start()
-    {
 
+    private void Start()
+    {
+        playerService = ServiceLocator.Get<IPlayerService>();
     }
 
-    // Update is called once per frame
-    void Update()
+    private void Update()
     {
         if (Input.GetKeyDown(KeyCode.Escape))
         {
@@ -50,20 +43,20 @@ public class PanelTowerDataViewer : MonoBehaviour
     public void OnPanel(Transform tower)
     {
         currentTowerWeapon = tower.GetComponent<TowerWeapon>();
-        this.gameObject.SetActive(true);
+        gameObject.SetActive(true);
         UpdateTowerData();
-
     }
+
     public void OffPanel()
     {
-        this.gameObject.SetActive(false);
-        //TowerAttackRange.OffAttackRange();
+        gameObject.SetActive(false);
     }
 
     public void UpdateTowerData()
     {
         towerImage.sprite = currentTowerWeapon.towerSprite;
-        textLevel.text = "Level : " + (currentTowerWeapon.level + 1);
+        // Grade = 합성 등급(시트), Level = 골드 업그레이드 단계
+        textLevel.text = $"{currentTowerWeapon.DisplayName}  G{(int)currentTowerWeapon.towerGrade}  Lv{currentTowerWeapon.level}";
         textDamage.text = "Damage : " + currentTowerWeapon.damage;
         textRate.text = "Rate : " + currentTowerWeapon.rate;
         textRange.text = "Range : " + currentTowerWeapon.range.ToString("0.00");
@@ -78,16 +71,21 @@ public class PanelTowerDataViewer : MonoBehaviour
         }
 
         textUpGradeGold.text = "UpGrade : " + currentTowerWeapon.upGradeGold + " Gold";
-
     }
 
     public void UpGradeTowerButton()
     {
-        if (player.gold >= currentTowerWeapon.upGradeGold)
+        if (playerService == null)
+        {
+            playerService = ServiceLocator.Get<IPlayerService>();
+        }
+
+        int cost = currentTowerWeapon.upGradeGold;
+        if (playerService.TrySpendGold(cost))
         {
             currentTowerWeapon.UPGrade();
-            player.gold -= currentTowerWeapon.upGradeGold;
         }
+
         UpdateTowerData();
     }
 }
