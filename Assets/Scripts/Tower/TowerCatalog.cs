@@ -107,14 +107,32 @@ public sealed class TowerCatalog
 
     public GameObject ResolvePrefab(TowerData data)
     {
-        return data != null ? data.towerPrefab : null;
+        return ResolvePrefab(data, TowerBaseLibrary.Load());
+    }
+
+    public GameObject ResolvePrefab(TowerData data, TowerBaseLibrary baseLibrary)
+    {
+        if (data == null)
+        {
+            return null;
+        }
+
+        if (baseLibrary == null)
+        {
+            return null;
+        }
+
+        return baseLibrary.GetBasePrefab(data.weaponType);
     }
 
     private static bool IsSpawnable(TowerData data, TowerGrade grade)
     {
-        return data != null
-            && data.grade == grade
-            && data.towerPrefab != null
-            && data.spawnWeight > 0f;
+        if (data == null || data.grade != grade || data.spawnWeight <= 0f)
+        {
+            return false;
+        }
+
+        // 프리팹은 TowerBaseLibrary(weaponType)로만 해석
+        return true;
     }
 }

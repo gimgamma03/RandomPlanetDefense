@@ -55,6 +55,7 @@ public class PanelTowerDataViewer : MonoBehaviour
     public void UpdateTowerData()
     {
         towerImage.sprite = currentTowerWeapon.towerSprite;
+        towerImage.color = currentTowerWeapon.TowerSpriteColor;
         // Grade = 합성 등급(시트), Level = 골드 업그레이드 단계
         textLevel.text = $"{currentTowerWeapon.DisplayName}  G{(int)currentTowerWeapon.towerGrade}  Lv{currentTowerWeapon.level}";
         textDamage.text = "Damage : " + currentTowerWeapon.damage;
@@ -64,6 +65,14 @@ public class PanelTowerDataViewer : MonoBehaviour
         if (currentTowerWeapon.weaponType == WeaponType.Slow)
         {
             textUtility.text = "Slow : " + (currentTowerWeapon.slowValue * 100f).ToString("0") + "%";
+        }
+        else if (currentTowerWeapon.weaponType == WeaponType.MultiWayShooting)
+        {
+            textUtility.text = "Shots : " + currentTowerWeapon.MultiShotCount;
+        }
+        else if (currentTowerWeapon.weaponType == WeaponType.MultiBomb)
+        {
+            textUtility.text = "Bombs : " + currentTowerWeapon.MultiBombCount;
         }
         else
         {

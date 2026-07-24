@@ -1,133 +1,205 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using TMPro;
-using Unity.Burst.CompilerServices;
-using UnityEngine;
-using UnityEngine.UI;
-using UnityEngine.UIElements;
+﻿using UnityEngine;
+using UnityEngine.EventSystems;
 
+/// <summary>
+/// 빌드/상점 모드와 좌클릭 확정을 한곳에서 처리한다.
+/// (구 PanelGameManager — 씬 버튼 UnityEvent 메서드 이름 유지)
+/// </summary>
 public class PanelGameManager : MonoBehaviour
 {
+    public static PanelGameManager Instance { get; private set; }
+
     [SerializeField]
     private TowerSpawner towerSpawner;
-    [SerializeField]
-    private EnemySpawner enemySpawner;
 
     [SerializeField]
     private GameObject randomTowerSpawnerImage;
 
     private IPlayerService playerService;
-    private bool isTowerCellMode = false;
-    private bool isTowerSpawnMode = false;
-    private bool isTowerCombineMode = false;
-    private bool activeSomeThingButton = false;
-    private RaycastHit2D hit;
+    private BuildMode mode = BuildMode.None;
+    private Renderer cursorRenderer;
+    private Material cursorMaterial;
 
-    //for MouseFollowObject Image color change
-    private Renderer panelGameSystemMouseImageRenderer;
-    private Material panelMaterial;
+    public BuildMode CurrentMode => mode;
+    public bool HasActiveMode => mode != BuildMode.None;
 
-    void Start()
+    private void Awake()
     {
-        playerService = ServiceLocator.Get<IPlayerService>();
-        panelGameSystemMouseImageRenderer = randomTowerSpawnerImage.gameObject.GetComponent<Renderer>();
-        panelMaterial = panelGameSystemMouseImageRenderer.material;
-        randomTowerSpawnerImage.SetActive(false);
+        Instance = this;
     }
 
-    // Update is called once per frame
-    void Update()
+    private void OnDestroy()
     {
-        Vector2 MousePosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+        if (Instance == this)
+        {
+            Instance = null;
+        }
+    }
+
+    private void Start()
+    {
+        playerService = ServiceLocator.Get<IPlayerService>();
+        if (randomTowerSpawnerImage != null)
+        {
+            cursorRenderer = randomTowerSpawnerImage.GetComponent<Renderer>();
+            if (cursorRenderer != null)
+            {
+                cursorMaterial = cursorRenderer.material;
+            }
+
+            randomTowerSpawnerImage.SetActive(false);
+        }
+    }
+
+    private void Update()
+    {
+        if (Camera.main == null)
+        {
+            return;
+        }
+
+        Vector2 mouseWorld = Camera.main.ScreenToWorldPoint(Input.mousePosition);
 
         if (Input.GetKeyDown(KeyCode.Escape) || Input.GetMouseButtonDown(1))
         {
-            CancelSomethingButton();
+            CancelMode();
         }
 
-        if (activeSomeThingButton)
+        // Space: 벽 모드 진입 (타워 버튼과 같은 흐름). 이미 벽 모드면 즉시 설치.
+        if (Input.GetKeyDown(KeyCode.Space))
         {
-            randomTowerSpawnerImage.transform.position = MousePosition;
+            if (mode == BuildMode.PlaceWall)
+            {
+                TryPlaceWall(mouseWorld);
+            }
+            else
+            {
+                PlaceWallButton();
+            }
         }
 
-        if (Input.GetMouseButtonDown(0) && activeSomeThingButton)
+        if (HasActiveMode && randomTowerSpawnerImage != null)
         {
-            // NonRayLayer는 레이캐스트에서 제외
-            int layerMask = ~(1 << LayerMask.NameToLayer("NonRayLayer"));
-            hit = Physics2D.Raycast(MousePosition, Vector2.zero, Mathf.Infinity, layerMask);
-
-            // 1등급 랜덤 타워 스폰
-            if (isTowerSpawnMode)
-            {
-                if (!playerService.TrySpendGold(Constants.spawnRandomTowerGold))
-                {
-                    return;
-                }
-
-                if (hit.transform == null || !hit.transform.CompareTag("WallMap"))
-                {
-                    playerService.AddGold(Constants.spawnRandomTowerGold);
-                    return;
-                }
-
-                towerSpawner.SpawnTower(MousePosition, (TowerGrade)Constants.ShopSpawnGrade);
-            }
-            else if (isTowerCombineMode)
-            {
-                if (hit.transform == null || !hit.transform.CompareTag("Tower"))
-                {
-                    return;
-                }
-
-                towerSpawner.CombineTower(hit.transform.gameObject);
-            }
-            else if (isTowerCellMode)
-            {
-                if (hit.transform == null || !hit.transform.CompareTag("Tower"))
-                {
-                    return;
-                }
-
-                towerSpawner.CellTower(hit.transform.gameObject);
-            }
+            randomTowerSpawnerImage.transform.position = mouseWorld;
         }
 
+        if (!Input.GetMouseButtonDown(0) || !HasActiveMode)
+        {
+            return;
+        }
+
+        if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject())
+        {
+            return;
+        }
+
+        HandleModeClick(mouseWorld);
     }
 
-    private void CancelSomethingButton()
+    private void HandleModeClick(Vector2 mouseWorld)
     {
-        isTowerSpawnMode = false;
-        isTowerCombineMode = false;
-        activeSomeThingButton = false;
-        randomTowerSpawnerImage.SetActive(false);
+        int layerMask = ~(1 << LayerMask.NameToLayer("NonRayLayer"));
+        RaycastHit2D hit = Physics2D.Raycast(mouseWorld, Vector2.zero, Mathf.Infinity, layerMask);
+
+        switch (mode)
+        {
+            case BuildMode.SpawnTower:
+                TrySpawnTower(mouseWorld, hit);
+                break;
+            case BuildMode.Combine:
+                if (hit.transform != null && hit.transform.CompareTag("Tower"))
+                {
+                    towerSpawner.CombineTower(hit.transform.gameObject);
+                }
+
+                break;
+            case BuildMode.Sell:
+                if (hit.transform != null && hit.transform.CompareTag("Tower"))
+                {
+                    towerSpawner.CellTower(hit.transform.gameObject);
+                }
+
+                break;
+            case BuildMode.PlaceWall:
+                TryPlaceWall(mouseWorld);
+                break;
+        }
     }
+
+    private void TrySpawnTower(Vector2 mouseWorld, RaycastHit2D hit)
+    {
+        if (playerService == null)
+        {
+            playerService = ServiceLocator.Get<IPlayerService>();
+        }
+
+        if (!playerService.TrySpendGold(Constants.spawnRandomTowerGold))
+        {
+            return;
+        }
+
+        if (hit.transform == null || !hit.transform.CompareTag("WallMap"))
+        {
+            playerService.AddGold(Constants.spawnRandomTowerGold);
+            return;
+        }
+
+        towerSpawner.SpawnTower(mouseWorld, (TowerGrade)Constants.ShopSpawnGrade);
+    }
+
+    private void TryPlaceWall(Vector2 mouseWorld)
+    {
+        if (MapDirector.Instance == null)
+        {
+            return;
+        }
+
+        MapDirector.Instance.TryPlaceWallAt(mouseWorld);
+    }
+
+    public void CancelMode()
+    {
+        mode = BuildMode.None;
+        if (randomTowerSpawnerImage != null)
+        {
+            randomTowerSpawnerImage.SetActive(false);
+        }
+    }
+
+    private void EnterMode(BuildMode next, Color cursorColor)
+    {
+        CancelMode();
+        mode = next;
+        if (randomTowerSpawnerImage == null)
+        {
+            return;
+        }
+
+        randomTowerSpawnerImage.SetActive(true);
+        if (cursorMaterial != null)
+        {
+            cursorMaterial.color = cursorColor;
+        }
+    }
+
+    /// <summary>씬 버튼 / Space — 벽 설치 모드 (좌클릭으로 설치, 연속 가능).</summary>
+    public void PlaceWallButton()
+    {
+        EnterMode(BuildMode.PlaceWall, new Color(0.85f, 0.85f, 0.2f, 1f));
+    }
+
     public void RandomTowerSpawnerButton()
     {
-        CancelSomethingButton();
-
-        //Debug.Log("enable image");
-        isTowerSpawnMode = true;
-        activeSomeThingButton = true;
-        randomTowerSpawnerImage.gameObject.SetActive(true);
-        panelMaterial.color = Color.green;
+        EnterMode(BuildMode.SpawnTower, Color.green);
     }
+
     public void TowerCombinationButton()
     {
-        CancelSomethingButton();
-
-        isTowerCombineMode = true;
-        activeSomeThingButton = true;
-        randomTowerSpawnerImage.gameObject.SetActive(true);
-        panelMaterial.color = Color.blue;
-
+        EnterMode(BuildMode.Combine, Color.blue);
     }
+
     public void TowerCellButton()
     {
-        CancelSomethingButton();
-
-        isTowerCellMode = true;
-        activeSomeThingButton = true;
-        randomTowerSpawnerImage.gameObject.SetActive(true);
-        panelMaterial.color = Color.red;
+        EnterMode(BuildMode.Sell, Color.red);
     }
 }

@@ -2,6 +2,7 @@
 
 /// <summary>
 /// 타워 정의(로컬 SO).
+/// 프리팹은 TowerBaseLibrary(weaponType)가 담당 — SO에는 두지 않는다.
 /// 구글 시트/엑셀 CSV는 ApplyBalance로 수치·등급·표시이름을 덮어쓴다.
 /// </summary>
 [CreateAssetMenu(menuName = "RPD/Tower Data", fileName = "TowerData")]
@@ -13,8 +14,6 @@ public class TowerData : ScriptableObject
     [Tooltip("UI 표시용. 시트 displayName으로 덮을 수 있음")]
     public string displayName;
 
-    public GameObject towerPrefab;
-    public GameObject followTowerPrefab;
     public Weapon weapon;
     public WeaponUpGradeValue weaponUpGradeValue;
 
@@ -24,9 +23,24 @@ public class TowerData : ScriptableObject
     public WeaponType weaponType;
     public Sprite sprite;
 
+    [Tooltip("같은 스프라이트도 색으로 구분")]
+    public Color spriteColor = Color.white;
+
     [Min(0.01f)]
     [Tooltip("같은 등급 랜덤 스폰 가중치")]
     public float spawnWeight = 1f;
+
+    // 인스펙터는 TowerDataEditor가 weaponType에 따라 표시
+    [HideInInspector]
+    [Min(1)]
+    public int multiShotCount = 3;
+
+    [HideInInspector]
+    public float multiShotSpreadAngle = 45f;
+
+    [HideInInspector]
+    [Min(1)]
+    public int multiBombCount = 5;
 
     public string Id => string.IsNullOrEmpty(towerId) ? name : towerId;
 
@@ -85,7 +99,7 @@ public class TowerData : ScriptableObject
         public int sell;
         public bool doubleShot;
 
-        [Header("About SlowTower (0.0 ~ 1.0)")]
+        [Tooltip("Slow 타입만 사용 (0.0 ~ 1.0)")]
         public float slowValue;
     }
 
@@ -96,7 +110,7 @@ public class TowerData : ScriptableObject
         public float rate;
         public float range;
 
-        [Header("About SlowTower")]
+        [Tooltip("Slow 타입만 사용")]
         public float slowValue;
     }
 }

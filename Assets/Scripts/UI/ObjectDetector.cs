@@ -1,82 +1,82 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.EventSystems;
 
+/// <summary>
+/// 빌드 모드가 아닐 때만 타워 클릭 → 정보 패널.
+/// 좌클릭 확정(설치/머지/판매/벽)은 PanelGameManager가 담당.
+/// </summary>
 public class ObjectDetector : MonoBehaviour
 {
-    [SerializeField]
-    private TowerSpawner towerSpawner;
     [SerializeField]
     private PanelTowerDataViewer towerDataViewer;
     [SerializeField]
     private TowerAttackRange towerAttackRange;
-    [SerializeField]
-    private EnemySpawner enemySpawner;
 
     private Camera mainCamera;
-    private RaycastHit2D hit;
-    //private Transform hitTransform = null; // 임시 저장
-    //private Transform preiviousHittransfrom = null; //직전 마우스 타일
 
     private void Awake()
     {
         mainCamera = Camera.main;
     }
-    // Start is called before the first frame update
-    void Start()
-    {
-        
-    }
 
-    // Update is called once per frame
-    void Update()
+    private void Update()
     {
-        // UI 클릭 중에는 표시할 데이터 없음
-        if (EventSystem.current.IsPointerOverGameObject() == true)
+        if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject())
         {
-            //Debug.Log("UI");
             return;
         }
 
+        // 빌드 모드 중에는 타워 정보/사거리 클릭 무시
+        if (PanelGameManager.Instance != null && PanelGameManager.Instance.HasActiveMode)
+        {
+            if (Input.GetMouseButtonDown(1))
+            {
+                HideAttackRange();
+            }
+
+            return;
+        }
 
         if (Input.GetMouseButtonDown(0))
         {
-            Vector2 raycasyPoint = mainCamera.ScreenToWorldPoint(Input.mousePosition);
+            if (mainCamera == null)
+            {
+                mainCamera = Camera.main;
+            }
 
-            hit = Physics2D.Raycast(raycasyPoint, Vector2.zero);
-
+            Vector2 rayPoint = mainCamera.ScreenToWorldPoint(Input.mousePosition);
+            RaycastHit2D hit = Physics2D.Raycast(rayPoint, Vector2.zero);
             if (hit.transform == null)
             {
                 return;
             }
 
-            //hitTransform = hit.transform;
-
-            if (hit.transform.CompareTag("Tower"))
+            if (!hit.transform.CompareTag("Tower"))
             {
-                TowerWeapon towerWeapon = hit.transform.GetComponent<TowerWeapon>();
-                towerAttackRange.gameObject.SetActive(true);
-                towerAttackRange.OnAttackRange(hit.transform.position, towerWeapon.range);
-                towerDataViewer.OnPanel(hit.transform);
-            }
-            else
-            {
-                //towerAttackRange.gameObject.SetActive(false);
+                return;
             }
 
-/*            else if (hit.transform.CompareTag("Enemy"))
+            TowerWeapon towerWeapon = hit.transform.GetComponent<TowerWeapon>();
+            if (towerWeapon == null || towerAttackRange == null || towerDataViewer == null)
             {
-                Debug.Log("Enemy");
+                return;
+            }
 
-            }*/
-
+            towerAttackRange.gameObject.SetActive(true);
+            towerAttackRange.OnAttackRange(hit.transform.position, towerWeapon.range);
+            towerDataViewer.OnPanel(hit.transform);
         }
         else if (Input.GetMouseButtonDown(1))
+        {
+            HideAttackRange();
+        }
+    }
+
+    private void HideAttackRange()
+    {
+        if (towerAttackRange != null)
         {
             towerAttackRange.gameObject.SetActive(false);
         }
     }
-
-
 }

@@ -33,17 +33,20 @@ public sealed class MultiShotBehavior : AttackBehaviorBase
             return;
         }
 
-        Vector3[] directions = new Vector3[3];
-        directions[0] = attackTargetPosition - Tower.transform.position;
-        directions[1] = Quaternion.AngleAxis(45f, Vector3.forward) * directions[0];
-        directions[2] = Quaternion.AngleAxis(-45f, Vector3.forward) * directions[0];
+        Vector3 center = attackTargetPosition - Tower.transform.position;
+        int count = Tower.MultiShotCount;
+        float spread = Tower.MultiShotSpreadAngle;
 
-        for (int i = 0; i < directions.Length; i++)
+        for (int i = 0; i < count; i++)
         {
+            float t = count == 1 ? 0.5f : (float)i / (count - 1);
+            float angle = Mathf.Lerp(-spread, spread, t);
+            Vector3 direction = Quaternion.AngleAxis(angle, Vector3.forward) * center;
+
             GameObject clone = Tower.SpawnPooled(Tower.ProjectilePrefab, spawn.position, Quaternion.identity);
             if (clone != null)
             {
-                clone.GetComponent<Projectile>().Setup(directions[i], Tower.damage);
+                clone.GetComponent<Projectile>().Setup(direction, Tower.damage);
             }
         }
     }

@@ -73,13 +73,23 @@ public class TowerWeapon : MonoBehaviour
 
     public TowerGrade towerGrade;
     public Sprite towerSprite => towerData != null ? towerData.sprite : null;
+    public Color TowerSpriteColor => towerData != null ? towerData.spriteColor : Color.white;
     public string DisplayName => towerData != null ? towerData.DisplayName : name;
     public TowerData Definition => towerData;
     public int level = 1;
     public int upGradeGold;
     public int useGoldToUpGrade = 0;
 
-    /// <summary>카탈로그에서 고른 정의로 등급·타입·스탯 소스를 맞춘다.</summary>
+    public int MultiShotCount =>
+        towerData != null ? Mathf.Max(1, towerData.multiShotCount) : 3;
+
+    public float MultiShotSpreadAngle =>
+        towerData != null ? towerData.multiShotSpreadAngle : 45f;
+
+    public int MultiBombCount =>
+        towerData != null ? Mathf.Max(1, towerData.multiBombCount) : 5;
+
+    /// <summary>카탈로그에서 고른 정의로 등급·타입·스탯·스프라이트를 맞춘다.</summary>
     public void BindDefinition(TowerData data)
     {
         if (data == null)
@@ -92,6 +102,32 @@ public class TowerWeapon : MonoBehaviour
         weaponType = data.weaponType;
         statsReady = false;
         EnsureStatsFromData();
+        ApplyVisualFromData();
+    }
+
+    private void ApplyVisualFromData()
+    {
+        if (towerData == null)
+        {
+            return;
+        }
+
+        if (spriteRenderer == null)
+        {
+            spriteRenderer = GetComponent<SpriteRenderer>();
+        }
+
+        if (spriteRenderer == null)
+        {
+            return;
+        }
+
+        if (towerData.sprite != null)
+        {
+            spriteRenderer.sprite = towerData.sprite;
+        }
+
+        spriteRenderer.color = towerData.spriteColor;
     }
 
     [HideInInspector] public float damage;

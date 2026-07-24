@@ -4989,6 +4989,8 @@ MonoBehaviour:
   WallMap: {fileID: 281580768}
   balanceSourceBehaviour: {fileID: 0}
   applyBalanceCsv: 1
+  useAddressablesForBases: 1
+  basePrefabLoader: {fileID: 0}
 --- !u!1 &1425653930
 GameObject:
   m_ObjectHideFlags: 0

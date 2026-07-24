@@ -48,53 +48,64 @@ public class MapDirector : MonoBehaviour
 
     private void Update()
     {
-        if (Input.GetKeyDown(KeyCode.Space))
-        {
-            if (playerService == null)
-            {
-                playerService = ServiceLocator.Get<IPlayerService>();
-            }
-
-            if (!playerService.TrySpendGold(Constants.spawnWallGold))
-            {
-                Debug.Log($"Not enough gold for wall. (gold={playerService.Gold})");
-                return;
-            }
-
-            Vector3 worldPos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-            RaycastHit2D hit = Physics2D.Raycast(worldPos, Vector2.zero, Mathf.Infinity, LayerMask.GetMask("Tile"));
-
-            if (hit.transform == null || !hit.transform.CompareTag("WalkableMap"))
-            {
-                Debug.Log("Place wall inside the field.");
-                playerService.AddGold(Constants.spawnWallGold);
-                return;
-            }
-
-            AStarNode wallNode = aStarGrid.GetNodeFromWorld(worldPos);
-            Vector3Int cellPosition = WalkableMap.WorldToCell(worldPos);
-
-            if (!CheckPath(wallNode))
-            {
-                Debug.Log("Wall blocks the path.");
-                wallNode.isWalkable = true;
-                playerService.AddGold(Constants.spawnWallGold);
-                return;
-            }
-
-            WallMap.SetTile(cellPosition, WallTile);
-            WalkableMap.SetTile(cellPosition, null);
-
-            // 그리드 전체 재생성 없이 walkable 플래그만 유지한 채 공유 경로 1회 재계산
-            RebuildSharedPath();
-            enemySpawner.CheckPathForAllEnemy();
-            showPath.ShowPath();
-        }
-
         if (Input.GetKeyDown(KeyCode.F12))
         {
             SceneManager.LoadScene("SampleScene");
         }
+    }
+
+    /// <summary>
+    /// 마우스 월드 좌표에 벽 설치. 골드·경로 검사 포함.
+    /// 입력은 PanelGameManager(빌드 모드)가 담당한다.
+    /// </summary>
+    public bool TryPlaceWallAt(Vector3 worldPos)
+    {
+        if (playerService == null)
+        {
+            playerService = ServiceLocator.Get<IPlayerService>();
+        }
+
+        if (playerService == null)
+        {
+            return false;
+        }
+
+        if (!playerService.TrySpendGold(Constants.spawnWallGold))
+        {
+            Debug.Log($"Not enough gold for wall. (gold={playerService.Gold})");
+            return false;
+        }
+
+        RaycastHit2D hit = Physics2D.Raycast(worldPos, Vector2.zero, Mathf.Infinity, LayerMask.GetMask("Tile"));
+        if (hit.transform == null || !hit.transform.CompareTag("WalkableMap"))
+        {
+            Debug.Log("Place wall inside the field.");
+            playerService.AddGold(Constants.spawnWallGold);
+            return false;
+        }
+
+        AStarNode wallNode = aStarGrid.GetNodeFromWorld(worldPos);
+        Vector3Int cellPosition = WalkableMap.WorldToCell(worldPos);
+
+        if (wallNode == null || !CheckPath(wallNode))
+        {
+            Debug.Log("Wall blocks the path.");
+            if (wallNode != null)
+            {
+                wallNode.isWalkable = true;
+            }
+
+            playerService.AddGold(Constants.spawnWallGold);
+            return false;
+        }
+
+        WallMap.SetTile(cellPosition, WallTile);
+        WalkableMap.SetTile(cellPosition, null);
+
+        RebuildSharedPath();
+        enemySpawner.CheckPathForAllEnemy();
+        showPath.ShowPath();
+        return true;
     }
 
     public bool CheckPath(AStarNode wallNode)

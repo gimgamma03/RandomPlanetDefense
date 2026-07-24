@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Tilemaps;
 
@@ -23,7 +24,17 @@ public class TowerSpawner : MonoBehaviour
     [SerializeField]
     private bool applyBalanceCsv = true;
 
+    [Header("Addressables Pilot")]
+    [Tooltip("ON이면 Base를 주소로 로드. OFF면 예전처럼 Library 직접 참조")]
+    [SerializeField]
+    private bool useAddressablesForBases;
+
+    [Tooltip("비우면 같은 오브젝트에 TowerBasePrefabLoader를 자동 추가")]
+    [SerializeField]
+    private TowerBasePrefabLoader basePrefabLoader;
+
     private TowerCatalog catalog;
+    private TowerBaseLibrary baseLibrary;
     private List<GameObject> towerList;
     private IPlayerService playerService;
     private ITowerBalanceSource balanceSource;
@@ -32,23 +43,48 @@ public class TowerSpawner : MonoBehaviour
     {
         towerList = new List<GameObject>();
         EnsureCatalog();
+        EnsureBaseLoader();
     }
 
     void Start()
     {
         playerService = ServiceLocator.Get<IPlayerService>();
         EnsureCatalog();
+        EnsureBaseLoader();
         TryApplyBalance();
     }
 
     private void EnsureCatalog()
     {
-        if (catalog != null)
+        if (catalog == null)
         {
-            return;
+            catalog = TowerCatalog.LoadFromResources();
         }
 
-        catalog = TowerCatalog.LoadFromResources();
+        if (baseLibrary == null)
+        {
+            baseLibrary = TowerBaseLibrary.Load();
+            if (baseLibrary == null)
+            {
+                Debug.LogWarning("[TowerSpawner] TowerBaseLibrary missing — weaponType Base를 해석할 수 없음.");
+            }
+        }
+    }
+
+    private void EnsureBaseLoader()
+    {
+        if (basePrefabLoader == null)
+        {
+            basePrefabLoader = GetComponent<TowerBasePrefabLoader>();
+        }
+
+        if (basePrefabLoader == null)
+        {
+            basePrefabLoader = gameObject.AddComponent<TowerBasePrefabLoader>();
+        }
+
+        basePrefabLoader.SetUseAddressables(useAddressablesForBases);
+        basePrefabLoader.EnsureLibrary();
     }
 
     private void TryApplyBalance()
@@ -70,7 +106,6 @@ public class TowerSpawner : MonoBehaviour
         {
             TowerBalanceCsv.Apply(catalog, csv.text);
         }
-        // CSV 없어도 SO 값으로 플레이 가능
     }
 
     public void SpawnTower(Vector2 towerSpawnPosition)
@@ -80,6 +115,11 @@ public class TowerSpawner : MonoBehaviour
 
     public void SpawnTower(Vector2 towerLocation, TowerGrade grade)
     {
+        StartCoroutine(SpawnTowerRoutine(towerLocation, grade));
+    }
+
+    private IEnumerator SpawnTowerRoutine(Vector2 towerLocation, TowerGrade grade)
+    {
         if (towerList == null)
         {
             towerList = new List<GameObject>();
@@ -88,19 +128,19 @@ public class TowerSpawner : MonoBehaviour
         if (MapDirector.Instance == null || MapDirector.Instance.aStarGrid == null)
         {
             Debug.LogError("[TowerSpawner] MapDirector not ready.");
-            return;
+            yield break;
         }
 
         AStarNode wallNode = MapDirector.Instance.aStarGrid.GetNodeFromWorld(towerLocation);
         if (wallNode != null && wallNode.isBuildTower)
         {
-            return;
+            yield break;
         }
 
         if (WallMap == null)
         {
             Debug.LogError("[TowerSpawner] WallMap not assigned.");
-            return;
+            yield break;
         }
 
         Vector3Int tilePosition = MapDirector.Instance.WallMap.WorldToCell(towerLocation);
@@ -115,7 +155,7 @@ public class TowerSpawner : MonoBehaviour
             if (TestTower == null)
             {
                 Debug.LogError("[TowerSpawner] TestTower is not set.");
-                return;
+                yield break;
             }
 
             spawnTower = Instantiate(TestTower, tileCenterPosition, Quaternion.identity);
@@ -123,17 +163,31 @@ public class TowerSpawner : MonoBehaviour
         else
         {
             EnsureCatalog();
+            EnsureBaseLoader();
             if (catalog == null)
             {
-                return;
+                yield break;
             }
 
             picked = catalog.PickRandom(grade);
-            GameObject prefab = catalog.ResolvePrefab(picked);
-            if (picked == null || prefab == null)
+            if (picked == null)
             {
-                Debug.LogError($"[TowerSpawner] grade {(int)grade} 풀이 비었음. Resources/TowerData 의 grade 확인.");
-                return;
+                Debug.LogError($"[TowerSpawner] grade {(int)grade} 풀이 비었음.");
+                yield break;
+            }
+
+            GameObject prefab = null;
+            yield return basePrefabLoader.LoadBasePrefab(picked.weaponType, loaded => prefab = loaded);
+
+            if (prefab == null)
+            {
+                prefab = catalog.ResolvePrefab(picked, baseLibrary);
+            }
+
+            if (prefab == null)
+            {
+                Debug.LogError($"[TowerSpawner] grade {(int)grade} 프리팹 없음. Library/Addressables 확인.");
+                yield break;
             }
 
             spawnTower = Instantiate(prefab, tileCenterPosition, Quaternion.identity);
@@ -145,14 +199,14 @@ public class TowerSpawner : MonoBehaviour
         {
             Debug.LogError($"[TowerSpawner] Prefab '{spawnTower.name}' missing TowerWeapon/Tower.");
             Destroy(spawnTower);
-            return;
+            yield break;
         }
 
         if (enemySpawner == null)
         {
             Debug.LogError("[TowerSpawner] EnemySpawner not assigned.");
             Destroy(spawnTower);
-            return;
+            yield break;
         }
 
         if (picked != null)
@@ -216,7 +270,7 @@ public class TowerSpawner : MonoBehaviour
             EnsureCatalog();
             if (catalog == null || !catalog.HasAny(nextGrade))
             {
-                Debug.LogError($"[TowerSpawner] No towers for grade {(int)nextGrade}. Resources/TowerData 확인.");
+                Debug.LogError($"[TowerSpawner] No towers for grade {(int)nextGrade}.");
                 return;
             }
 

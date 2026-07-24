@@ -27,7 +27,7 @@ public sealed class MultiBombBehavior : AttackBehaviorBase
         Vector2 direction = ((Vector2)Tower.AttackTarget.position - (Vector2)Tower.transform.position).normalized;
         Vector2 towerPosition = Tower.transform.position;
         const float bombRange = 5.0f;
-        const int bombCount = 5;
+        int bombCount = Tower.MultiBombCount;
         Vector2 bombVector = direction * bombRange;
 
         for (int i = 0; i < bombCount; i++)
