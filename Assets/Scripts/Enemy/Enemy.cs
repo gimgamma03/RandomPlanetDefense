@@ -9,6 +9,7 @@ public class Enemy : MonoBehaviour
     public List<Vector3> enemyPath;
 
     private EnemySpawner enemySpawner;
+    private SpriteRenderer spriteRenderer;
 
     private int gold;
     private int scorePoint;
@@ -29,7 +30,44 @@ public class Enemy : MonoBehaviour
         this.enemySpawner = enemySpawner;
     }
 
-    /// <summary>스폰 직전 상태 초기화 (Start 대체).</summary>
+    /// <summary>스폰 시 EnemyData로 스탯·비주얼을 맞춘다.</summary>
+    public void BindDefinition(EnemyData data)
+    {
+        if (data == null)
+        {
+            return;
+        }
+
+        enemyData = data;
+        ApplyVisualFromData();
+    }
+
+    private void ApplyVisualFromData()
+    {
+        if (enemyData == null)
+        {
+            return;
+        }
+
+        if (spriteRenderer == null)
+        {
+            spriteRenderer = GetComponent<SpriteRenderer>();
+        }
+
+        if (spriteRenderer == null)
+        {
+            return;
+        }
+
+        if (enemyData.sprite != null)
+        {
+            spriteRenderer.sprite = enemyData.sprite;
+        }
+
+        spriteRenderer.color = enemyData.spriteColor;
+    }
+
+    /// <summary>스폰 직전 상태 초기화 (Start 대체). BindDefinition 이후 호출.</summary>
     public void PrepareForSpawn(EnemySpawner spawner)
     {
         StopAllCoroutines();
@@ -44,15 +82,22 @@ public class Enemy : MonoBehaviour
             enemyPath.Clear();
         }
 
+        if (enemyData == null)
+        {
+            Debug.LogError($"[Enemy] {name} has no EnemyData. BindDefinition first.");
+            return;
+        }
+
         gold = enemyData.gold;
         scorePoint = enemyData.scorePoint;
         moveSpeed = enemyData.moveSpeed;
         rotateSpeed = enemyData.rotateSpeed;
 
-        nextNodeMoveTime = 1.0f * (1f / moveSpeed);
+        nextNodeMoveTime = 1.0f * (1f / Mathf.Max(0.01f, moveSpeed));
         baseNextNodeMoveTime = nextNodeMoveTime;
         obstructed = false;
 
+        ApplyVisualFromData();
         SetPath();
     }
 

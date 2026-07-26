@@ -21,6 +21,10 @@ public class TowerData : ScriptableObject
     public TowerGrade grade;
 
     public WeaponType weaponType;
+
+    [Tooltip("Auto = WeaponType 기본 발사체. None/Homing/Straight…로 덮어쓰기 가능")]
+    public ProjectileType projectileType = ProjectileType.Auto;
+
     public Sprite sprite;
 
     [Tooltip("같은 스프라이트도 색으로 구분")]
@@ -46,6 +50,17 @@ public class TowerData : ScriptableObject
 
     public string DisplayName =>
         string.IsNullOrEmpty(displayName) ? Id : displayName;
+
+    /// <summary>Auto면 WeaponType 기본값, 아니면 SO에 지정한 타입.</summary>
+    public ProjectileType GetEffectiveProjectileType()
+    {
+        if (projectileType == ProjectileType.Auto)
+        {
+            return ProjectileTypeDefaults.FromWeapon(weaponType);
+        }
+
+        return projectileType;
+    }
 
     public void ApplyBalance(
         float damage,

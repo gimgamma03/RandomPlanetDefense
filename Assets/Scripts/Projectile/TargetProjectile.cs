@@ -5,11 +5,31 @@ public class TargetProjectile : MonoBehaviour
     private Transform target;
     private float damage;
     private float moveSpeed = 8.0f;
+    private ProjectileVfx vfx;
+
+    private void Awake()
+    {
+        vfx = GetComponent<ProjectileVfx>();
+        if (vfx == null)
+        {
+            vfx = gameObject.AddComponent<ProjectileVfx>();
+        }
+    }
 
     public void Setup(Transform target, float damage)
     {
         this.target = target;
         this.damage = damage;
+
+        if (target != null)
+        {
+            ProjectileFacing.FacePoint(transform, target.position);
+        }
+
+        if (vfx != null)
+        {
+            vfx.BeginFlight();
+        }
     }
 
     private void Update()
@@ -17,11 +37,12 @@ public class TargetProjectile : MonoBehaviour
         if (target != null && target.gameObject.activeInHierarchy)
         {
             Vector3 direction = (target.position - transform.position).normalized;
+            ProjectileFacing.FaceDirection(transform, direction);
             transform.position += direction * moveSpeed * Time.deltaTime;
         }
         else
         {
-            Release();
+            Release(hit: false);
         }
     }
 
@@ -43,11 +64,23 @@ public class TargetProjectile : MonoBehaviour
             enemyHp.TakeDamage(damage);
         }
 
-        Release();
+        Release(hit: true);
     }
 
-    private void Release()
+    private void Release(bool hit)
     {
+        if (vfx != null)
+        {
+            if (hit)
+            {
+                vfx.NotifyHit(transform.position);
+            }
+            else
+            {
+                vfx.NotifyMiss();
+            }
+        }
+
         target = null;
         PooledObject pooled = GetComponent<PooledObject>();
         if (pooled != null)

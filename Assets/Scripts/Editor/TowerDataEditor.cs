@@ -14,6 +14,7 @@ public sealed class TowerDataEditor : Editor
     private SerializedProperty weaponUpGradeValue;
     private SerializedProperty grade;
     private SerializedProperty weaponType;
+    private SerializedProperty projectileType;
     private SerializedProperty sprite;
     private SerializedProperty spriteColor;
     private SerializedProperty spawnWeight;
@@ -29,6 +30,7 @@ public sealed class TowerDataEditor : Editor
         weaponUpGradeValue = serializedObject.FindProperty("weaponUpGradeValue");
         grade = serializedObject.FindProperty("grade");
         weaponType = serializedObject.FindProperty("weaponType");
+        projectileType = serializedObject.FindProperty("projectileType");
         sprite = serializedObject.FindProperty("sprite");
         spriteColor = serializedObject.FindProperty("spriteColor");
         spawnWeight = serializedObject.FindProperty("spawnWeight");
@@ -51,6 +53,17 @@ public sealed class TowerDataEditor : Editor
 
         WeaponType type = (WeaponType)weaponType.intValue;
         bool isSlow = type == WeaponType.Slow;
+
+        EditorGUILayout.PropertyField(projectileType, new GUIContent("Projectile Type"));
+        ProjectileType proj = (ProjectileType)projectileType.intValue;
+        ProjectileType effective = proj == ProjectileType.Auto
+            ? ProjectileTypeDefaults.FromWeapon(type)
+            : proj;
+        EditorGUILayout.HelpBox(
+            proj == ProjectileType.Auto
+                ? $"Auto → 실제 사용: {effective} (WeaponType 기본)"
+                : $"사용: {effective}",
+            MessageType.None);
 
         DrawWeaponBlock(isSlow);
 

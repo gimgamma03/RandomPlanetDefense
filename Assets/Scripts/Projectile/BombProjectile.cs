@@ -21,6 +21,8 @@ public class BombProjectile : MonoBehaviour
         this.damage = damage;
         isExploding = false;
 
+        ProjectileFacing.FacePoint(transform, this.target);
+
         if (bombParticle != null)
         {
             bombParticle.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
@@ -32,6 +34,7 @@ public class BombProjectile : MonoBehaviour
         if (!isExploding)
         {
             Vector3 direction = (target - transform.position).normalized;
+            ProjectileFacing.FaceDirection(transform, direction);
             transform.position += direction * moveSpeed * Time.deltaTime;
 
             if (Vector2.Distance(transform.position, target) < bombStartDistance)

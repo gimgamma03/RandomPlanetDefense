@@ -44,6 +44,7 @@ public class MapDirector : MonoBehaviour
         playerService = ServiceLocator.Get<IPlayerService>();
         StartToEndPath = new List<AStarNode>();
         RebuildSharedPath();
+        GridHoverOverlay.EnsureExists();
     }
 
     private void Update()

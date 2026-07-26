@@ -11,7 +11,8 @@ public enum PoolId
     Projectile = 1,
     TargetProjectile = 2,
     BombProjectile = 3,
-    Bomb = 4
+    Bomb = 4,
+    Enemy = 5,
 }
 
 [DefaultExecutionOrder(-200)]

@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.UI;
 
 /// <summary>
 /// 빌드/상점 모드와 좌클릭 확정을 한곳에서 처리한다.
@@ -8,6 +9,8 @@ using UnityEngine.EventSystems;
 public class PanelGameManager : MonoBehaviour
 {
     public static PanelGameManager Instance { get; private set; }
+
+    private const string CreateWallObjectName = "CreateWall";
 
     [SerializeField]
     private TowerSpawner towerSpawner;
@@ -19,6 +22,11 @@ public class PanelGameManager : MonoBehaviour
     private BuildMode mode = BuildMode.None;
     private Renderer cursorRenderer;
     private Material cursorMaterial;
+
+    private Button createWallButton;
+    private Graphic createWallGraphic;
+    private Color createWallNormalColor;
+    private Selectable.Transition createWallNormalTransition;
 
     public BuildMode CurrentMode => mode;
     public bool HasActiveMode => mode != BuildMode.None;
@@ -33,6 +41,11 @@ public class PanelGameManager : MonoBehaviour
         if (Instance == this)
         {
             Instance = null;
+        }
+
+        if (createWallButton != null)
+        {
+            createWallButton.onClick.RemoveListener(OnCreateWallClicked);
         }
     }
 
@@ -49,6 +62,46 @@ public class PanelGameManager : MonoBehaviour
 
             randomTowerSpawnerImage.SetActive(false);
         }
+
+        BindCreateWallGuide();
+        RefreshWallGuideVisual();
+    }
+
+    private void BindCreateWallGuide()
+    {
+        GameObject go = GameObject.Find(CreateWallObjectName);
+        if (go == null)
+        {
+            return;
+        }
+
+        createWallButton = go.GetComponent<Button>();
+        if (createWallButton == null)
+        {
+            return;
+        }
+
+        createWallGraphic = createWallButton.targetGraphic;
+        if (createWallGraphic != null)
+        {
+            createWallNormalColor = createWallGraphic.color;
+        }
+
+        createWallNormalTransition = createWallButton.transition;
+        createWallButton.onClick.RemoveListener(OnCreateWallClicked);
+        createWallButton.onClick.AddListener(OnCreateWallClicked);
+    }
+
+    private void OnCreateWallClicked()
+    {
+        // 안내 패널 다시 누르면 모드 해제
+        if (mode == BuildMode.PlaceWall)
+        {
+            CancelMode();
+            return;
+        }
+
+        PlaceWallButton();
     }
 
     private void Update()
@@ -78,7 +131,7 @@ public class PanelGameManager : MonoBehaviour
             }
         }
 
-        if (HasActiveMode && randomTowerSpawnerImage != null)
+        if (HasActiveMode && mode != BuildMode.PlaceWall && randomTowerSpawnerImage != null)
         {
             randomTowerSpawnerImage.transform.position = mouseWorld;
         }
@@ -164,13 +217,18 @@ public class PanelGameManager : MonoBehaviour
         {
             randomTowerSpawnerImage.SetActive(false);
         }
+
+        RefreshWallGuideVisual();
     }
 
     private void EnterMode(BuildMode next, Color cursorColor)
     {
         CancelMode();
         mode = next;
-        if (randomTowerSpawnerImage == null)
+        RefreshWallGuideVisual();
+
+        // 벽 모드는 셀 주황 테두리(GridHoverOverlay)로 표시 — 고스트 커서 끔
+        if (next == BuildMode.PlaceWall || randomTowerSpawnerImage == null)
         {
             return;
         }
@@ -179,6 +237,29 @@ public class PanelGameManager : MonoBehaviour
         if (cursorMaterial != null)
         {
             cursorMaterial.color = cursorColor;
+        }
+    }
+
+    private void RefreshWallGuideVisual()
+    {
+        if (createWallButton == null || createWallGraphic == null)
+        {
+            return;
+        }
+
+        bool pressed = mode == BuildMode.PlaceWall;
+        if (pressed)
+        {
+            // ColorTint가 덮어쓰지 않게 잠시 끄고 Pressed 색 고정
+            createWallButton.transition = Selectable.Transition.None;
+            Color pressedColor = createWallButton.colors.pressedColor;
+            pressedColor.a = createWallNormalColor.a;
+            createWallGraphic.color = pressedColor;
+        }
+        else
+        {
+            createWallButton.transition = createWallNormalTransition;
+            createWallGraphic.color = createWallNormalColor;
         }
     }
 

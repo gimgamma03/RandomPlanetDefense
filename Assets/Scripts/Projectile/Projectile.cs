@@ -6,10 +6,18 @@ public class Projectile : MonoBehaviour
     private Vector3 target;
     private float moveSpeed = 4.5f;
     private float damage;
+    private ProjectileVfx vfx;
 
     private void Awake()
     {
         rigidbody2d = GetComponent<Rigidbody2D>();
+        vfx = GetComponent<ProjectileVfx>();
+        if (vfx != null)
+        {
+            return;
+        }
+
+        vfx = gameObject.AddComponent<ProjectileVfx>();
     }
 
     public void Setup(Vector3 target, float damage)
@@ -24,8 +32,15 @@ public class Projectile : MonoBehaviour
             rigidbody2d.angularVelocity = 0f;
         }
 
+        ProjectileFacing.FaceDirection(transform, target);
         AddForceToTarget(this.target);
-        Invoke(nameof(Release), 3f);
+
+        if (vfx != null)
+        {
+            vfx.BeginFlight();
+        }
+
+        Invoke(nameof(ReleaseMiss), 3f);
     }
 
     public void AddForceToTarget(Vector3 target)
@@ -51,12 +66,30 @@ public class Projectile : MonoBehaviour
             enemyHp.TakeDamage(damage);
         }
 
-        Release();
+        Release(hit: true);
     }
 
-    private void Release()
+    private void ReleaseMiss()
+    {
+        Release(hit: false);
+    }
+
+    private void Release(bool hit)
     {
         CancelInvoke();
+
+        if (vfx != null)
+        {
+            if (hit)
+            {
+                vfx.NotifyHit(transform.position);
+            }
+            else
+            {
+                vfx.NotifyMiss();
+            }
+        }
+
         if (rigidbody2d != null)
         {
             rigidbody2d.linearVelocity = Vector2.zero;

@@ -10,6 +10,10 @@ public class EnemySpawner : MonoBehaviour
     [SerializeField]
     private Transform spawnPoint;
 
+    [Tooltip("공통 적 Base 프리팹 (Prefabs/Enemies/EnemyBase)")]
+    [SerializeField]
+    private GameObject enemyBasePrefab;
+
     [SerializeField]
     private Transform canvasTransform;
     [SerializeField]
@@ -19,6 +23,9 @@ public class EnemySpawner : MonoBehaviour
     private GameObject enemyHpSliderPrefab;
     [SerializeField]
     private int enemyHpPoolInitialSize = 16;
+
+    [SerializeField]
+    private int enemyPoolInitialSize = 16;
 
     private IPoolService poolService;
     private IPlayerService playerService;
@@ -43,6 +50,20 @@ public class EnemySpawner : MonoBehaviour
         enemyList = new List<Enemy>();
         poolService = ServiceLocator.Get<IPoolService>();
         playerService = ServiceLocator.Get<IPlayerService>();
+
+        if (enemyBasePrefab == null)
+        {
+            Debug.LogError("[EnemySpawner] enemyBasePrefab 미할당. Prefabs/Enemies/EnemyBase를 넣으세요.");
+        }
+        else
+        {
+            poolService.EnsurePool(
+                PoolId.Enemy,
+                enemyBasePrefab,
+                poolService.Root,
+                enemyPoolInitialSize);
+        }
+
         if (enemyHpSliderPrefab != null)
         {
             poolService.EnsurePool(
@@ -86,15 +107,24 @@ public class EnemySpawner : MonoBehaviour
 
     private IEnumerator SpawnEnemy()
     {
+        if (enemyBasePrefab == null)
+        {
+            Debug.LogError("[EnemySpawner] No EnemyBase prefab assigned.");
+            spawnRoutine = null;
+            spawnCompleted = true;
+            TryFinishWave();
+            yield break;
+        }
+
         int spawnEnemyCount = 0;
         float delay = Mathf.Max(0f, currentWave.spawnDelay);
 
         while (spawnEnemyCount < currentWave.maxEnemyCount)
         {
-            GameObject selectEnemy = PickEnemyPrefab();
-            if (selectEnemy == null)
+            EnemyData data = PickEnemyData();
+            if (data == null)
             {
-                Debug.LogError("[EnemySpawner] No valid enemy prefab in wave data. Aborting spawn.");
+                Debug.LogError("[EnemySpawner] No valid EnemyData in wave. Aborting spawn.");
                 break;
             }
 
@@ -104,10 +134,19 @@ public class EnemySpawner : MonoBehaviour
             }
 
             GameObject enemyObject = poolService.Spawn(
-                selectEnemy,
+                PoolId.Enemy,
                 SpawnWorldPosition,
                 Quaternion.identity,
                 poolService.Root);
+            if (enemyObject == null)
+            {
+                enemyObject = poolService.Spawn(
+                    enemyBasePrefab,
+                    SpawnWorldPosition,
+                    Quaternion.identity,
+                    poolService.Root);
+            }
+
             yield return null;
 
             GameObject enemyHpSlider = SpawnEnemyHpSlider(enemyObject);
@@ -115,6 +154,7 @@ public class EnemySpawner : MonoBehaviour
             EnemyHp enemyHp = enemyObject.GetComponent<EnemyHp>();
             EnemyHpViewer enemyHpViewer = enemyHpSlider.GetComponent<EnemyHpViewer>();
 
+            enemy.BindDefinition(data);
             enemy.PrepareForSpawn(this);
             enemyHp.PrepareForSpawn(enemyHpViewer);
             enemyHpViewer.hpSliderUpdate();
@@ -134,10 +174,9 @@ public class EnemySpawner : MonoBehaviour
     }
 
     /// <summary>
-    /// 가중치 합이 1이 아니거나 float 오차가 있어도 반드시 유효 프리팹을 고른다.
-    /// (예전 로직은 롤 실패 시 selectEnemy==null → while이 끝나지 않아 FinishWave가 영구 미호출됨)
+    /// 가중치 합이 1이 아니거나 float 오차가 있어도 반드시 유효 데이터를 고른다.
     /// </summary>
-    private GameObject PickEnemyPrefab()
+    private EnemyData PickEnemyData()
     {
         WaveEnemy[] entries = currentWave.enemies;
         if (entries == null || entries.Length == 0)
@@ -146,16 +185,17 @@ public class EnemySpawner : MonoBehaviour
         }
 
         float totalWeight = 0f;
-        GameObject lastValid = null;
+        EnemyData lastValid = null;
 
         for (int i = 0; i < entries.Length; i++)
         {
-            if (entries[i].enemyPrefab == null)
+            EnemyData data = ResolveEnemyData(entries[i]);
+            if (data == null)
             {
                 continue;
             }
 
-            lastValid = entries[i].enemyPrefab;
+            lastValid = data;
             totalWeight += Mathf.Max(0f, entries[i].enemyPercentage);
         }
 
@@ -174,7 +214,8 @@ public class EnemySpawner : MonoBehaviour
 
         for (int i = 0; i < entries.Length; i++)
         {
-            if (entries[i].enemyPrefab == null)
+            EnemyData data = ResolveEnemyData(entries[i]);
+            if (data == null)
             {
                 continue;
             }
@@ -182,11 +223,28 @@ public class EnemySpawner : MonoBehaviour
             cumulative += Mathf.Max(0f, entries[i].enemyPercentage);
             if (roll <= cumulative)
             {
-                return entries[i].enemyPrefab;
+                return data;
             }
         }
 
         return lastValid;
+    }
+
+    private static EnemyData ResolveEnemyData(WaveEnemy entry)
+    {
+        if (entry.enemyData != null)
+        {
+            return entry.enemyData;
+        }
+
+        // 레거시: 프리팹에 박힌 EnemyData
+        if (entry.enemyPrefab == null)
+        {
+            return null;
+        }
+
+        Enemy enemy = entry.enemyPrefab.GetComponent<Enemy>();
+        return enemy != null ? enemy.enemyData : null;
     }
 
     private GameObject SpawnEnemyHpSlider(GameObject enemy)

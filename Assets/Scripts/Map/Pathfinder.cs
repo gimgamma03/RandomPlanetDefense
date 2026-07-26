@@ -6,6 +6,8 @@ public class Pathfinder : MonoBehaviour
 {
     private List<Vector3> path;
     private float nodeArriveDistance = 0.1f;
+    [SerializeField]
+    private float baseNextNodeMoveTime = 0.05f;
     private float nextNodeMoveTime = 0.05f;
     private float currentTime;
     private TrailRenderer trailRenderer;
@@ -16,7 +18,7 @@ public class Pathfinder : MonoBehaviour
         trailRenderer = GetComponent<TrailRenderer>();
         currentTime = Time.time;
         SetPath();
-        StartCoroutine("MoveToPath");
+        StartCoroutine(MoveToPath());
     }
 
     public void ShowPath()
@@ -26,20 +28,22 @@ public class Pathfinder : MonoBehaviour
 
         transform.position = MapDirector.Instance.GetEnemySpanwerPosition();
 
-        StopCoroutine("MoveToPath");
+        StopAllCoroutines();
         trailRenderer.enabled = true;
         SetPath();
-        StartCoroutine("MoveToPath");
+        StartCoroutine(MoveToPath());
     }
 
     public void SetPath()
     {
         path = MapDirector.Instance.SetPathFromPosition(transform);
+        int count = path != null ? path.Count : 0;
+        nextNodeMoveTime = PathLengthSpeedScale.ScaleNodeMoveTime(baseNextNodeMoveTime, count);
     }
 
     public IEnumerator MoveToPath()
     {
-        if (path == null)
+        if (path == null || path.Count == 0)
         {
             yield break;
         }

@@ -17,3 +17,7 @@ MonoBehaviour:
   maxHp: 333
   moveSpeed: 3.5
   rotateSpeed: 0.63
+  sprite: {fileID: 21300000, guid: dfbfc688fada39246972611b5f044966, type: 3}
+  spriteColor: {r: 1, g: 1, b: 1, a: 1}
+  enemyId: Enemy06
+  displayName: 

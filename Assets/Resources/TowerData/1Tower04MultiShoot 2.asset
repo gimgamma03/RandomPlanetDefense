@@ -28,7 +28,8 @@ MonoBehaviour:
     slowValue: 0
   grade: 1
   weaponType: 6
-  sprite: {fileID: 21300000, guid: f61845ff0fcabb149af7e9f6d8b660ea, type: 3}
+  projectileType: 0
+  sprite: {fileID: 21300000, guid: d1633d80f997845418c21db664ba138f, type: 3}
   spriteColor: {r: 1, g: 1, b: 1, a: 1}
   spawnWeight: 1
   multiShotCount: 3

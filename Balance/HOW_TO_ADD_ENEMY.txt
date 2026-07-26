@@ -1,0 +1,28 @@
+========================================================
+적 추가 방법 (EnemyBase + EnemyData)
+========================================================
+
+구조
+  Prefabs/Enemies/EnemyBase.prefab   ← 공통 구조 1개 (이동/콜라이더/HP)
+  Scripts/Enemy/Data/*.asset         ← 스탯·스프라이트·색 (다수)
+  Wave.asset                         ← enemyData + 비중
+
+  ※ Base는 Resources에 두지 않음. EnemySpawner 인스펙터에 직접 할당.
+
+■ 최초 1회 (에디터 메뉴)
+  RPD/Enemies/1. Create EnemyBase Prefab
+  RPD/Enemies/2. Sync Sprites Prefab → EnemyData
+  RPD/Enemies/3. Migrate Wave Prefab → EnemyData
+  RPD/Enemies/4. Assign EnemyBase To Scene Spawner
+
+■ 새 적 추가
+  1) Create → RPD → Enemy Data
+  2) gold / hp / speed / sprite / spriteColor
+  3) Wave 해당 웨이브 enemies에 enemyData + percentage
+
+■ 스폰 흐름
+  EnemyBase 풀 스폰 → BindDefinition(EnemyData) → PrepareForSpawn
+
+■ 하지 않기
+  - 적 종류마다 프리팹 복제 (보스 등 구조 다를 때만 Base 추가)
+  - Base를 Resources에 넣기 (타워 Base와 같이 Prefabs + 참조)

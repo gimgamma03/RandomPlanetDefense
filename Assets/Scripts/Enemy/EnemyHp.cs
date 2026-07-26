@@ -13,6 +13,7 @@ public class EnemyHp : MonoBehaviour
     private Enemy enemy;
     private SpriteRenderer spriteRenderer;
     private EnemyHpViewer enemyHpViewer;
+    private Color baseSpriteColor = Color.white;
 
     public void SetUp(EnemyHpViewer enemyHpViewer)
     {
@@ -24,15 +25,17 @@ public class EnemyHp : MonoBehaviour
         StopAllCoroutines();
         enemy = GetComponent<Enemy>();
         spriteRenderer = GetComponent<SpriteRenderer>();
-        maxHp = enemy.enemyData.maxHp;
+        maxHp = enemy != null && enemy.enemyData != null ? enemy.enemyData.maxHp : maxHp;
         currentHp = maxHp;
         isDie = false;
 
         if (spriteRenderer != null)
         {
-            Color color = spriteRenderer.color;
-            color.a = 1f;
-            spriteRenderer.color = color;
+            baseSpriteColor = enemy != null && enemy.enemyData != null
+                ? enemy.enemyData.spriteColor
+                : spriteRenderer.color;
+            baseSpriteColor.a = 1f;
+            spriteRenderer.color = baseSpriteColor;
         }
 
         SetUp(viewer);
@@ -105,7 +108,7 @@ public class EnemyHp : MonoBehaviour
 
     private IEnumerator HitAlphaAnimation()
     {
-        Color color = spriteRenderer.color;
+        Color color = baseSpriteColor;
 
         color.a = 0.4f;
         spriteRenderer.color = color;

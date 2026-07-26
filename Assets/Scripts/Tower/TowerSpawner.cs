@@ -158,7 +158,7 @@ public class TowerSpawner : MonoBehaviour
                 yield break;
             }
 
-            spawnTower = Instantiate(TestTower, tileCenterPosition, Quaternion.identity);
+            spawnTower = Instantiate(TestTower, tileCenterPosition, Quaternion.identity, transform);
         }
         else
         {
@@ -190,7 +190,7 @@ public class TowerSpawner : MonoBehaviour
                 yield break;
             }
 
-            spawnTower = Instantiate(prefab, tileCenterPosition, Quaternion.identity);
+            spawnTower = Instantiate(prefab, tileCenterPosition, Quaternion.identity, transform);
         }
 
         TowerWeapon spawnTowerWeapon = spawnTower.GetComponent<TowerWeapon>();

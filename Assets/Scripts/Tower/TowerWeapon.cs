@@ -26,7 +26,7 @@ public class TowerWeapon : MonoBehaviour
     [SerializeField]
     public WeaponType weaponType;
 
-    [Header("Projectile")]
+    [Header("Projectile (레거시 폴백 — Library 우선)")]
     [SerializeField]
     private GameObject targetProjectilePrefab;
 
@@ -59,13 +59,18 @@ public class TowerWeapon : MonoBehaviour
     private EnemySpawner enemySpawner;
     private bool statsReady;
 
+    private GameObject resolvedHoming;
+    private GameObject resolvedStraight;
+    private GameObject resolvedBombShot;
+    private GameObject resolvedGroundBomb;
+
     public Transform AttackTarget { get; set; }
 
     public Transform SpawnPoint => spawnPoint;
-    public GameObject TargetProjectilePrefab => targetProjectilePrefab;
-    public GameObject BombProjectilePrefab => bombProjectilePrefab;
-    public GameObject ProjectilePrefab => projectilePrefab;
-    public GameObject BombPrefab => bombPrefab;
+    public GameObject TargetProjectilePrefab => resolvedHoming != null ? resolvedHoming : targetProjectilePrefab;
+    public GameObject BombProjectilePrefab => resolvedBombShot != null ? resolvedBombShot : bombProjectilePrefab;
+    public GameObject ProjectilePrefab => resolvedStraight != null ? resolvedStraight : projectilePrefab;
+    public GameObject BombPrefab => resolvedGroundBomb != null ? resolvedGroundBomb : bombPrefab;
     public LineRenderer LineRenderer => lineRenderer;
     public LineRenderer LineRenderer2 => lineRenderer2;
     public LineRenderer LineRenderer3 => lineRenderer3;
@@ -89,7 +94,20 @@ public class TowerWeapon : MonoBehaviour
     public int MultiBombCount =>
         towerData != null ? Mathf.Max(1, towerData.multiBombCount) : 5;
 
-    /// <summary>카탈로그에서 고른 정의로 등급·타입·스탯·스프라이트를 맞춘다.</summary>
+    public ProjectileType EffectiveProjectileType
+    {
+        get
+        {
+            if (towerData != null)
+            {
+                return towerData.GetEffectiveProjectileType();
+            }
+
+            return ProjectileTypeDefaults.FromWeapon(weaponType);
+        }
+    }
+
+    /// <summary>카탈로그에서 고른 정의로 등급·타입·스탯·스프라이트·발사체를 맞춘다.</summary>
     public void BindDefinition(TowerData data)
     {
         if (data == null)
@@ -103,6 +121,50 @@ public class TowerWeapon : MonoBehaviour
         statsReady = false;
         EnsureStatsFromData();
         ApplyVisualFromData();
+        ResolveProjectilePrefabs();
+    }
+
+    /// <summary>ProjectileBaseLibrary에서 타입 Base를 가져와 슬롯에 올린다. 없으면 프리팹 직렬화 폴백.</summary>
+    private void ResolveProjectilePrefabs()
+    {
+        resolvedHoming = null;
+        resolvedStraight = null;
+        resolvedBombShot = null;
+        resolvedGroundBomb = null;
+
+        ProjectileType type = EffectiveProjectileType;
+        if (type == ProjectileType.None || type == ProjectileType.Auto)
+        {
+            return;
+        }
+
+        ProjectileBaseLibrary library = ProjectileBaseLibrary.Load();
+        if (library == null)
+        {
+            return;
+        }
+
+        GameObject basePrefab = library.GetBasePrefab(type);
+        if (basePrefab == null)
+        {
+            return;
+        }
+
+        switch (type)
+        {
+            case ProjectileType.Homing:
+                resolvedHoming = basePrefab;
+                break;
+            case ProjectileType.Straight:
+                resolvedStraight = basePrefab;
+                break;
+            case ProjectileType.BombShot:
+                resolvedBombShot = basePrefab;
+                break;
+            case ProjectileType.GroundBomb:
+                resolvedGroundBomb = basePrefab;
+                break;
+        }
     }
 
     private void ApplyVisualFromData()
@@ -160,6 +222,7 @@ public class TowerWeapon : MonoBehaviour
         poolService = ServiceLocator.Get<IPoolService>();
 
         EnsureStatsFromData();
+        ResolveProjectilePrefabs();
 
         behavior?.Deactivate();
         behavior = TowerBehaviorFactory.Create(weaponType);

@@ -31,6 +31,11 @@
 ■ 머지
   상점 = grade 1 풀 / 같은 type+grade 3개 → grade+1
 
+■ 발사체
+  TowerData.projectileType (Auto=무기 기본). Library: Resources/ProjectileBaseLibrary
+  상세: Balance/HOW_TO_ADD_PROJECTILE.txt
+  메뉴: RPD/Projectiles/1. Create Or Refresh Base Library
+
 ■ 실수
   - LevelMark 자식을 베이스로 쓰기
   - Library에 새 타입 등록 안 함
