@@ -5,13 +5,8 @@ using UnityEngine.Tilemaps;
 
 public class TowerSpawner : MonoBehaviour
 {
-    public bool testTowerOn;
-
     [SerializeField]
     private EnemySpawner enemySpawner;
-
-    [SerializeField]
-    private GameObject TestTower;
 
     [SerializeField]
     private Tilemap WallMap;
@@ -44,6 +39,13 @@ public class TowerSpawner : MonoBehaviour
         towerList = new List<GameObject>();
         EnsureCatalog();
         EnsureBaseLoader();
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        if (GetComponent<TowerDebugSpawner>() == null)
+        {
+            gameObject.AddComponent<TowerDebugSpawner>();
+        }
+#endif
     }
 
     void Start()
@@ -115,10 +117,38 @@ public class TowerSpawner : MonoBehaviour
 
     public void SpawnTower(Vector2 towerLocation, TowerGrade grade)
     {
-        StartCoroutine(SpawnTowerRoutine(towerLocation, grade));
+        StartCoroutine(SpawnTowerRoutine(towerLocation, grade, null));
     }
 
-    private IEnumerator SpawnTowerRoutine(Vector2 towerLocation, TowerGrade grade)
+    /// <summary>디버그·연출용 지정 스폰. 골드 차감 없이 선택한 TowerData를 사용한다.</summary>
+    public void SpawnTower(Vector2 towerLocation, TowerData towerData)
+    {
+        if (towerData == null)
+        {
+            Debug.LogError("[TowerSpawner] 지정 스폰 TowerData가 null입니다.");
+            return;
+        }
+
+        StartCoroutine(SpawnTowerRoutine(towerLocation, towerData.grade, towerData));
+    }
+
+    public bool SpawnTowerById(Vector2 towerLocation, string towerId)
+    {
+        EnsureCatalog();
+        if (catalog == null || !catalog.TryGet(towerId, out TowerData towerData))
+        {
+            Debug.LogError($"[TowerSpawner] TowerData id를 찾을 수 없습니다: {towerId}");
+            return false;
+        }
+
+        SpawnTower(towerLocation, towerData);
+        return true;
+    }
+
+    private IEnumerator SpawnTowerRoutine(
+        Vector2 towerLocation,
+        TowerGrade grade,
+        TowerData specifiedData)
     {
         if (towerList == null)
         {
@@ -134,6 +164,7 @@ public class TowerSpawner : MonoBehaviour
         AStarNode wallNode = MapDirector.Instance.aStarGrid.GetNodeFromWorld(towerLocation);
         if (wallNode != null && wallNode.isBuildTower)
         {
+            Debug.Log("[TowerSpawner] 이미 타워가 있는 셀입니다.");
             yield break;
         }
 
@@ -147,51 +178,36 @@ public class TowerSpawner : MonoBehaviour
         Vector3 tileCenterPosition = MapDirector.Instance.WallMap.GetCellCenterWorld(tilePosition);
         tileCenterPosition -= WallMap.cellGap / 2f;
 
-        GameObject spawnTower;
-        TowerData picked = null;
-
-        if (testTowerOn)
+        EnsureCatalog();
+        EnsureBaseLoader();
+        if (catalog == null)
         {
-            if (TestTower == null)
-            {
-                Debug.LogError("[TowerSpawner] TestTower is not set.");
-                yield break;
-            }
-
-            spawnTower = Instantiate(TestTower, tileCenterPosition, Quaternion.identity, transform);
+            yield break;
         }
-        else
+
+        TowerData picked = specifiedData != null ? specifiedData : catalog.PickRandom(grade);
+        if (picked == null)
         {
-            EnsureCatalog();
-            EnsureBaseLoader();
-            if (catalog == null)
-            {
-                yield break;
-            }
-
-            picked = catalog.PickRandom(grade);
-            if (picked == null)
-            {
-                Debug.LogError($"[TowerSpawner] grade {(int)grade} 풀이 비었음.");
-                yield break;
-            }
-
-            GameObject prefab = null;
-            yield return basePrefabLoader.LoadBasePrefab(picked.weaponType, loaded => prefab = loaded);
-
-            if (prefab == null)
-            {
-                prefab = catalog.ResolvePrefab(picked, baseLibrary);
-            }
-
-            if (prefab == null)
-            {
-                Debug.LogError($"[TowerSpawner] grade {(int)grade} 프리팹 없음. Library/Addressables 확인.");
-                yield break;
-            }
-
-            spawnTower = Instantiate(prefab, tileCenterPosition, Quaternion.identity, transform);
+            Debug.LogError($"[TowerSpawner] grade {(int)grade} 풀이 비었음.");
+            yield break;
         }
+
+        GameObject prefab = null;
+        yield return basePrefabLoader.LoadBasePrefab(picked.weaponType, loaded => prefab = loaded);
+
+        if (prefab == null)
+        {
+            prefab = catalog.ResolvePrefab(picked, baseLibrary);
+        }
+
+        if (prefab == null)
+        {
+            Debug.LogError($"[TowerSpawner] '{picked.Id}' 프리팹 없음. Library/Addressables 확인.");
+            yield break;
+        }
+
+        GameObject spawnTower =
+            Instantiate(prefab, tileCenterPosition, Quaternion.identity, transform);
 
         TowerWeapon spawnTowerWeapon = spawnTower.GetComponent<TowerWeapon>();
         Tower spawnTowerScript = spawnTower.GetComponent<Tower>();
@@ -209,10 +225,7 @@ public class TowerSpawner : MonoBehaviour
             yield break;
         }
 
-        if (picked != null)
-        {
-            spawnTowerWeapon.BindDefinition(picked);
-        }
+        spawnTowerWeapon.BindDefinition(picked);
 
         towerList.Add(spawnTower);
         spawnTowerWeapon.SetUp(this, enemySpawner);

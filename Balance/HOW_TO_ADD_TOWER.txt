@@ -11,7 +11,10 @@
   1) Resources/TowerData/ 에 TowerData SO
      - towerId, grade, weaponType(기존), sprite, spriteColor, 스탯
      - 프리팹 슬롯 없음 (BaseLibrary가 weaponType으로 연결)
-     - MultiWayShooting / MultiBomb 선택 시 전용 필드(발사 수 등)가 인스펙터에 뜸
+     - 무기 타입별 전용 필드가 인스펙터에 뜸
+       MultiWayShooting : 발사 수 · 확산각
+       GroundBombLine   : 폭탄 수 · 라인 길이 · 설치 간격
+       Laser/MultiLaser : 레이저 굵기 (0이면 프리팹 값)
   2) (선택) TowerBalance.csv 한 줄
   → 같은 CannonBase 등을 쓰며 스프라이트·색·수치만 달라짐
 
@@ -35,6 +38,12 @@
   TowerData.projectileType (Auto=무기 기본). Library: Resources/ProjectileBaseLibrary
   상세: Balance/HOW_TO_ADD_PROJECTILE.txt
   메뉴: RPD/Projectiles/1. Create Or Refresh Base Library
+
+■ 지정 타워 테스트 (Editor / Development Build 전용)
+  1) 플레이 중 F8 → Tower Debug Spawner
+  2) 원하는 TowerData 선택
+  3) 패널 밖 좌클릭으로 WallMap 셀에 즉시 배치
+  - 골드 차감 없음, 실제 TowerData·BaseLibrary·Addressables 로딩 경로는 그대로 사용
 
 ■ 실수
   - LevelMark 자식을 베이스로 쓰기

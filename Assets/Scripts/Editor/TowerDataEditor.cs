@@ -20,7 +20,10 @@ public sealed class TowerDataEditor : Editor
     private SerializedProperty spawnWeight;
     private SerializedProperty multiShotCount;
     private SerializedProperty multiShotSpreadAngle;
-    private SerializedProperty multiBombCount;
+    private SerializedProperty groundBombCount;
+    private SerializedProperty groundBombLineLength;
+    private SerializedProperty groundBombSpawnInterval;
+    private SerializedProperty laserWidth;
 
     private void OnEnable()
     {
@@ -36,7 +39,10 @@ public sealed class TowerDataEditor : Editor
         spawnWeight = serializedObject.FindProperty("spawnWeight");
         multiShotCount = serializedObject.FindProperty("multiShotCount");
         multiShotSpreadAngle = serializedObject.FindProperty("multiShotSpreadAngle");
-        multiBombCount = serializedObject.FindProperty("multiBombCount");
+        groundBombCount = serializedObject.FindProperty("groundBombCount");
+        groundBombLineLength = serializedObject.FindProperty("groundBombLineLength");
+        groundBombSpawnInterval = serializedObject.FindProperty("groundBombSpawnInterval");
+        laserWidth = serializedObject.FindProperty("laserWidth");
     }
 
     public override void OnInspectorGUI()
@@ -132,10 +138,30 @@ public sealed class TowerDataEditor : Editor
                 EditorGUILayout.PropertyField(multiShotSpreadAngle, new GUIContent("Spread Angle"));
                 break;
 
-            case WeaponType.MultiBomb:
+            case WeaponType.Laser:
+            case WeaponType.MultiLaser:
                 EditorGUILayout.Space(8f);
-                EditorGUILayout.LabelField("MultiBomb", EditorStyles.boldLabel);
-                EditorGUILayout.PropertyField(multiBombCount, new GUIContent("Bomb Count"));
+                EditorGUILayout.LabelField("Laser", EditorStyles.boldLabel);
+                EditorGUILayout.PropertyField(
+                    laserWidth,
+                    new GUIContent("Laser Width", "0이면 프리팹 LineRenderer 굵기 그대로"));
+                if (laserWidth.floatValue <= 0f)
+                {
+                    EditorGUILayout.HelpBox("0 → 프리팹 값 사용", MessageType.None);
+                }
+
+                break;
+
+            case WeaponType.GroundBombLine:
+                EditorGUILayout.Space(8f);
+                EditorGUILayout.LabelField("Ground Bomb Line", EditorStyles.boldLabel);
+                EditorGUILayout.PropertyField(groundBombCount, new GUIContent("Bomb Count"));
+                EditorGUILayout.PropertyField(
+                    groundBombLineLength,
+                    new GUIContent("Line Length", "타워에서 마지막 폭탄까지 거리"));
+                EditorGUILayout.PropertyField(
+                    groundBombSpawnInterval,
+                    new GUIContent("Spawn Interval", "0이면 동시 설치, 값이 있으면 순차 설치"));
                 break;
         }
     }

@@ -15,7 +15,7 @@ public enum ProjectileType
     Straight = 3,
     /// <summary>날아가는 폭탄 (구 BombProjectile)</summary>
     BombShot = 4,
-    /// <summary>지점 설치형 폭탄 (구 Bomb / MultiBomb)</summary>
+    /// <summary>지점 설치형 폭탄 (구 Bomb / GroundBombLine)</summary>
     GroundBomb = 5,
 }
 
@@ -32,7 +32,7 @@ public static class ProjectileTypeDefaults
                 return ProjectileType.BombShot;
             case WeaponType.MultiWayShooting:
                 return ProjectileType.Straight;
-            case WeaponType.MultiBomb:
+                case WeaponType.GroundBombLine:
                 return ProjectileType.GroundBomb;
             case WeaponType.Laser:
             case WeaponType.MultiLaser:

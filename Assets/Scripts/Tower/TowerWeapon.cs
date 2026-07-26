@@ -1,5 +1,9 @@
 ﻿using UnityEngine;
 
+/// <summary>
+/// 공격 방식 구분. 이름은 "어떻게 쏘는가"를 나타낸다.
+/// 순서를 바꾸면 기존 SO의 선택이 밀리므로 새 타입은 끝에 추가한다.
+/// </summary>
 public enum WeaponType
 {
     Cannon = 0,
@@ -9,7 +13,9 @@ public enum WeaponType
     ChainLightning,
     Bomb,
     MultiWayShooting,
-    MultiBomb,
+
+    /// <summary>발사체 없이 지면 폭탄을 일렬 설치 (구 MultiBomb)</summary>
+    GroundBombLine,
     MultiLaser
 }
 
@@ -38,7 +44,7 @@ public class TowerWeapon : MonoBehaviour
     [SerializeField]
     private GameObject projectilePrefab;
 
-    [Header("MultiBomb")]
+    [Header("GroundBomb")]
     [SerializeField]
     private GameObject bombPrefab;
 
@@ -91,8 +97,18 @@ public class TowerWeapon : MonoBehaviour
     public float MultiShotSpreadAngle =>
         towerData != null ? towerData.multiShotSpreadAngle : 45f;
 
-    public int MultiBombCount =>
-        towerData != null ? Mathf.Max(1, towerData.multiBombCount) : 5;
+    public int GroundBombCount =>
+        towerData != null ? Mathf.Max(1, towerData.groundBombCount) : 5;
+
+    public float GroundBombLineLength =>
+        towerData != null ? Mathf.Max(0.1f, towerData.groundBombLineLength) : 5f;
+
+    public float GroundBombSpawnInterval =>
+        towerData != null ? Mathf.Max(0f, towerData.groundBombSpawnInterval) : 0f;
+
+    /// <summary>0이면 프리팹 LineRenderer 굵기를 그대로 쓴다.</summary>
+    public float LaserWidth =>
+        towerData != null ? Mathf.Max(0f, towerData.laserWidth) : 0f;
 
     public ProjectileType EffectiveProjectileType
     {

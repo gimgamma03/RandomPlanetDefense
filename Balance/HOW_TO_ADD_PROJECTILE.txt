@@ -18,7 +18,7 @@
     Cannon → Homing
     Bomb → BombShot
     MultiWayShooting → Straight
-    MultiBomb → GroundBomb
+    GroundBombLine → GroundBomb
     Laser/Slow/… → None
   다른 타입으로 바꾸면 같은 무기라도 다른 탄 사용 가능
 

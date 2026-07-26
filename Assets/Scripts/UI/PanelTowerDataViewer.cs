@@ -70,9 +70,9 @@ public class PanelTowerDataViewer : MonoBehaviour
         {
             textUtility.text = "Shots : " + currentTowerWeapon.MultiShotCount;
         }
-        else if (currentTowerWeapon.weaponType == WeaponType.MultiBomb)
+        else if (currentTowerWeapon.weaponType == WeaponType.GroundBombLine)
         {
-            textUtility.text = "Bombs : " + currentTowerWeapon.MultiBombCount;
+            textUtility.text = "Bombs : " + currentTowerWeapon.GroundBombCount;
         }
         else
         {

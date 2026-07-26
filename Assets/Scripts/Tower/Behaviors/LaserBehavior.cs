@@ -12,7 +12,6 @@ public sealed class LaserBehavior : AttackBehaviorBase
             if (!Tower.IsPossibleToAttackTarget())
             {
                 EnableLaser(false);
-                yield return new WaitForSeconds(Tower.rate);
                 yield break;
             }
 
@@ -33,6 +32,43 @@ public sealed class LaserBehavior : AttackBehaviorBase
         {
             line.gameObject.SetActive(enabled);
         }
+
+        if (enabled)
+        {
+            ApplyWidth();
+        }
+    }
+
+    /// <summary>TowerData의 굵기를 적용. 0이면 프리팹 값을 건드리지 않는다.</summary>
+    private void ApplyWidth()
+    {
+        float width = Tower.LaserWidth;
+        if (width <= 0f)
+        {
+            return;
+        }
+
+        SetWidth(Tower.LineRenderer, width);
+        SetWidth(Tower.LineRenderer2, width);
+        SetWidth(Tower.LineRenderer3, width);
+    }
+
+    private static void SetWidth(LineRenderer line, float width)
+    {
+        if (line == null)
+        {
+            return;
+        }
+
+        line.widthMultiplier = 1f;
+        line.startWidth = width;
+        line.endWidth = width;
+
+        // 각진 사각형 → 둥근 캡슐형 빔. 카메라를 향하게 정렬.
+        line.numCapVertices = 8;
+        line.numCornerVertices = 4;
+        line.alignment = LineAlignment.View;
+        line.textureMode = LineTextureMode.Stretch;
     }
 
     private void SpawnLaser()
@@ -55,8 +91,16 @@ public sealed class LaserBehavior : AttackBehaviorBase
                 continue;
             }
 
-            line.SetPosition(0, spawn.position);
-            line.SetPosition(1, new Vector3(hits[i].point.x, hits[i].point.y, 0f) + Vector3.back);
+            // 양 끝 Z가 다르면 굵은 LineRenderer가 3D 판처럼 비틀려 보인다.
+            // 같은 평면에 두고 Sorting Order로 앞뒤를 정한다.
+            float beamZ = spawn.position.z;
+            Vector3 start = new Vector3(spawn.position.x, spawn.position.y, beamZ);
+            Vector3 end = new Vector3(hits[i].point.x, hits[i].point.y, beamZ);
+
+            line.positionCount = 2;
+            line.useWorldSpace = true;
+            line.SetPosition(0, start);
+            line.SetPosition(1, end);
 
             EnemyHp hp = target.GetComponent<EnemyHp>();
             if (hp != null)

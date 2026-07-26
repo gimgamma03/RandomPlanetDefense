@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using UnityEngine.Serialization;
 
 /// <summary>
 /// 타워 정의(로컬 SO).
@@ -44,7 +45,21 @@ public class TowerData : ScriptableObject
 
     [HideInInspector]
     [Min(1)]
-    public int multiBombCount = 5;
+    [FormerlySerializedAs("multiBombCount")]
+    public int groundBombCount = 5;
+
+    [HideInInspector]
+    [Min(0.1f)]
+    public float groundBombLineLength = 5f;
+
+    [HideInInspector]
+    [Min(0f)]
+    public float groundBombSpawnInterval = 0f;
+
+    [HideInInspector]
+    [Min(0f)]
+    [Tooltip("Laser/MultiLaser 굵기. 0이면 프리팹 LineRenderer 값 그대로")]
+    public float laserWidth = 0f;
 
     public string Id => string.IsNullOrEmpty(towerId) ? name : towerId;
 

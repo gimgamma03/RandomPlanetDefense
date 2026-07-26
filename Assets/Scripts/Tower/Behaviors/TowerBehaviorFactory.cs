@@ -18,8 +18,8 @@ public static class TowerBehaviorFactory
                 return new ChainLightningBehavior();
             case WeaponType.MultiWayShooting:
                 return new MultiShotBehavior();
-            case WeaponType.MultiBomb:
-                return new MultiBombBehavior();
+            case WeaponType.GroundBombLine:
+                return new GroundBombLineBehavior();
             case WeaponType.Slow:
                 return new SlowAuraBehavior();
             case WeaponType.Buff:

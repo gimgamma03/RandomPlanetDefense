@@ -85,7 +85,7 @@ SpriteRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 3
   m_MaskInteraction: 0
-  m_Sprite: {fileID: 21300000, guid: 8a75a5c166aa1a44a9c9fe3919f84391, type: 3}
+  m_Sprite: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 0.7529412}
   m_FlipX: 0
   m_FlipY: 0
@@ -93,7 +93,7 @@ SpriteRenderer:
   m_Size: {x: 1, y: 1}
   m_AdaptiveModeThreshold: 0.5
   m_SpriteTileMode: 0
-  m_WasSpriteAssigned: 1
+  m_WasSpriteAssigned: 0
   m_SpriteSortPoint: 0
 --- !u!58 &818800222688501755
 CircleCollider2D:
@@ -245,15 +245,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6192724089161036655, guid: 8842416504fff6742b79aea7a85fc319, type: 3}
       propertyPath: InitialModule.startColor.maxColor.b
-      value: 0.11356357
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 6192724089161036655, guid: 8842416504fff6742b79aea7a85fc319, type: 3}
       propertyPath: InitialModule.startColor.maxColor.g
-      value: 0.27164266
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 6192724089161036655, guid: 8842416504fff6742b79aea7a85fc319, type: 3}
       propertyPath: InitialModule.startColor.maxColor.r
-      value: 0.8301887
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
