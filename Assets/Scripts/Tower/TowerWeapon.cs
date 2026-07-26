@@ -206,6 +206,8 @@ public class TowerWeapon : MonoBehaviour
         }
 
         spriteRenderer.color = towerData.spriteColor;
+
+        TowerGradeRingView.Attach(gameObject, towerGrade);
     }
 
     [HideInInspector] public float damage;

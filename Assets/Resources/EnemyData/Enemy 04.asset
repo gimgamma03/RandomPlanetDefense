@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2b3505e5ce6b5354bb7cad42f50dcbc2, type: 3}
+  m_Name: Enemy 04
+  m_EditorClassIdentifier: 
+  enemyId: Enemy04
+  enemyType: 3
+  displayName: 
+  gold: 6
+  scorePoint: 30
+  maxHp: 150
+  moveSpeed: 4.5
+  rotateSpeed: 0.45
+  sprite: {fileID: 21300000, guid: dcf7fce1cf7e8f5448002dca2b896ec2, type: 3}
+  spriteColor: {r: 1, g: 1, b: 1, a: 1}

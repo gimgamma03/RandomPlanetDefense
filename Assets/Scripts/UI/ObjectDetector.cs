@@ -78,5 +78,10 @@ public class ObjectDetector : MonoBehaviour
         {
             towerAttackRange.gameObject.SetActive(false);
         }
+
+        if (towerDataViewer != null)
+        {
+            towerDataViewer.OffPanel();
+        }
     }
 }

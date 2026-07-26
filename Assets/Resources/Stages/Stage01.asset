@@ -1,0 +1,111 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 29eed0c9ae6f48088921aa8e07e9e95c, type: 3}
+  m_Name: Stage01
+  m_EditorClassIdentifier: 
+  stageId: 1
+  displayName: Stage 1
+  clearBonusGold: 0
+  waves:
+  - spawnDelay: 1.1
+    maxEnemyCount: 10
+    enemies:
+    - enemyType: 0
+      spawnWeight: 100
+  - spawnDelay: 1
+    maxEnemyCount: 11
+    enemies:
+    - enemyType: 0
+      spawnWeight: 1
+  - spawnDelay: 1
+    maxEnemyCount: 15
+    enemies:
+    - enemyType: 0
+      spawnWeight: 91
+    - enemyType: 1
+      spawnWeight: 9
+  - spawnDelay: 1
+    maxEnemyCount: 15
+    enemies:
+    - enemyType: 0
+      spawnWeight: 69
+    - enemyType: 1
+      spawnWeight: 31
+  - spawnDelay: 1
+    maxEnemyCount: 20
+    enemies:
+    - enemyType: 0
+      spawnWeight: 50
+    - enemyType: 1
+      spawnWeight: 50
+  - spawnDelay: 1
+    maxEnemyCount: 20
+    enemies:
+    - enemyType: 0
+      spawnWeight: 10
+    - enemyType: 1
+      spawnWeight: 90
+  - spawnDelay: 1
+    maxEnemyCount: 20
+    enemies:
+    - enemyType: 1
+      spawnWeight: 78
+    - enemyType: 2
+      spawnWeight: 22
+  - spawnDelay: 1
+    maxEnemyCount: 25
+    enemies:
+    - enemyType: 1
+      spawnWeight: 18
+    - enemyType: 2
+      spawnWeight: 56
+    - enemyType: 3
+      spawnWeight: 26
+  - spawnDelay: 1
+    maxEnemyCount: 25
+    enemies:
+    - enemyType: 2
+      spawnWeight: 48
+    - enemyType: 3
+      spawnWeight: 52
+  - spawnDelay: 1
+    maxEnemyCount: 25
+    enemies:
+    - enemyType: 2
+      spawnWeight: 11
+    - enemyType: 3
+      spawnWeight: 89
+  - spawnDelay: 1
+    maxEnemyCount: 30
+    enemies:
+    - enemyType: 2
+      spawnWeight: 8
+    - enemyType: 3
+      spawnWeight: 61
+    - enemyType: 4
+      spawnWeight: 31
+  - spawnDelay: 1
+    maxEnemyCount: 30
+    enemies:
+    - enemyType: 3
+      spawnWeight: 37
+    - enemyType: 4
+      spawnWeight: 63
+  - spawnDelay: 1
+    maxEnemyCount: 30
+    enemies:
+    - enemyType: 3
+      spawnWeight: 23
+    - enemyType: 4
+      spawnWeight: 39
+    - enemyType: 5
+      spawnWeight: 39

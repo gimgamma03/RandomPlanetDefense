@@ -2581,7 +2581,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7a568acfc35fc2d469df1f615195f3b7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  waveData: {fileID: 11400000, guid: 2b6d584108c1bfd4a8f8e9217ad7afd5, type: 2}
+  stageId: 1
+  stageOverride: {fileID: 0}
   enemySpawner: {fileID: 851594189}
   textFadeOut: {fileID: 1193094693}
   textWaveCount: {fileID: 1033951701}
@@ -4983,9 +4984,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5796efed97231894ea85abcdb15e0311, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  testTowerOn: 0
   enemySpawner: {fileID: 851594189}
-  TestTower: {fileID: 3084227731996547674, guid: f54378f3af9403944bb6582881385e31, type: 3}
   WallMap: {fileID: 281580768}
   balanceSourceBehaviour: {fileID: 0}
   applyBalanceCsv: 1
@@ -6980,7 +6979,7 @@ TilemapRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: acacbf776eb68a24ea3710102ca6d2e2, type: 2}
+  - {fileID: 2100000, guid: f4f863d3c40a7404e9e0b83d09bc7098, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0

@@ -6,6 +6,9 @@ public class EnemyData : ScriptableObject
     [Tooltip("밸런스/웨이브 키. 비우면 asset 이름")]
     public string enemyId;
 
+    [Tooltip("스테이지 웨이브 드롭다운과 매칭. Catalog 조회 키")]
+    public EnemyType enemyType;
+
     [Tooltip("UI·로그용. 비우면 Id")]
     public string displayName;
 

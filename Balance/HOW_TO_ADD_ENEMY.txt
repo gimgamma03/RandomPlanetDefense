@@ -1,28 +1,43 @@
 ========================================================
-적 추가 방법 (EnemyBase + EnemyData)
+적·스테이지 추가 방법 (EnemyBase + EnemyData + StageData)
 ========================================================
 
 구조
-  Prefabs/Enemies/EnemyBase.prefab   ← 공통 구조 1개 (이동/콜라이더/HP)
-  Scripts/Enemy/Data/*.asset         ← 스탯·스프라이트·색 (다수)
-  Wave.asset                         ← enemyData + 비중
+  Prefabs/Enemies/EnemyBase.prefab     ← 공통 구조 1개
+  Resources/EnemyData/*.asset          ← 스탯·스프라이트·EnemyType
+  Resources/Stages/StageXX.asset       ← stageId + waves[] (EnemyType + spawnWeight)
 
   ※ Base는 Resources에 두지 않음. EnemySpawner 인스펙터에 직접 할당.
+  ※ 웨이브에 프리팹/EnemyData SO를 직접 넣지 않음. EnemyType 드롭다운만.
 
 ■ 최초 1회 (에디터 메뉴)
   RPD/Enemies/1. Create EnemyBase Prefab
   RPD/Enemies/2. Sync Sprites Prefab → EnemyData
-  RPD/Enemies/3. Migrate Wave Prefab → EnemyData
-  RPD/Enemies/4. Assign EnemyBase To Scene Spawner
+  RPD/Enemies/3. Assign EnemyBase To Scene Spawner
 
 ■ 새 적 추가
-  1) Create → RPD → Enemy Data
-  2) gold / hp / speed / sprite / spriteColor
-  3) Wave 해당 웨이브 enemies에 enemyData + percentage
+  1) EnemyType enum 끝에 값 추가 (순서 바꾸지 말 것)
+  2) Create → RPD → Enemy Data → Resources/EnemyData 에 저장
+  3) enemyType / gold / hp / speed / sprite 설정
+  4) Stage 웨이브 enemies에 enemyType + spawnWeight
+
+■ 새 스테이지 추가 (아웃게임용)
+  1) Create → RPD → Stage Data → Resources/Stages
+  2) stageId (고유), displayName, waves[]
+  3) WaveSystem.stageId 또는 ConfigureStage(id) 로 선택
+
+■ spawnWeight (출현 비중)
+  - 합이 1일 필요 없음. 상대 가중치.
+  - 예: 2와 1 → 약 66% / 33%
+  - 0이면 그 슬롯은 스폰 안 함
+  - 타워 catalog.spawnWeight 와 같은 방식
 
 ■ 스폰 흐름
-  EnemyBase 풀 스폰 → BindDefinition(EnemyData) → PrepareForSpawn
+  StageCatalog(stageId) → Wave → EnemyType
+  → EnemyCatalog → EnemyData
+  → EnemyBase 풀 스폰 → BindDefinition
 
 ■ 하지 않기
   - 적 종류마다 프리팹 복제 (보스 등 구조 다를 때만 Base 추가)
-  - Base를 Resources에 넣기 (타워 Base와 같이 Prefabs + 참조)
+  - Stage에 프리팹/EnemyData 오브젝트 참조
+  - Base를 Resources에 넣기

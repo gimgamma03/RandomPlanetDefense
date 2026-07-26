@@ -21,6 +21,7 @@ public class PanelTowerDataViewer : MonoBehaviour
 
     private IPlayerService playerService;
     private TowerWeapon currentTowerWeapon;
+    private Slow visibleSlowRange;
 
     private void Awake()
     {
@@ -42,14 +43,41 @@ public class PanelTowerDataViewer : MonoBehaviour
 
     public void OnPanel(Transform tower)
     {
+        HideSlowRangeVisual();
         currentTowerWeapon = tower.GetComponent<TowerWeapon>();
         gameObject.SetActive(true);
         UpdateTowerData();
+        ShowSlowRangeIfNeeded();
     }
 
     public void OffPanel()
     {
+        HideSlowRangeVisual();
+        currentTowerWeapon = null;
         gameObject.SetActive(false);
+    }
+
+    private void ShowSlowRangeIfNeeded()
+    {
+        if (currentTowerWeapon == null || currentTowerWeapon.weaponType != WeaponType.Slow)
+        {
+            return;
+        }
+
+        visibleSlowRange = currentTowerWeapon.GetComponentInChildren<Slow>(true);
+        if (visibleSlowRange != null)
+        {
+            visibleSlowRange.SetVisualVisible(true);
+        }
+    }
+
+    private void HideSlowRangeVisual()
+    {
+        if (visibleSlowRange != null)
+        {
+            visibleSlowRange.SetVisualVisible(false);
+            visibleSlowRange = null;
+        }
     }
 
     public void UpdateTowerData()

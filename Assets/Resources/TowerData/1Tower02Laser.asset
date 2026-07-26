@@ -37,4 +37,4 @@ MonoBehaviour:
   groundBombCount: 5
   groundBombLineLength: 5
   groundBombSpawnInterval: 0
-  laserWidth: 0.25
+  laserWidth: 0.15

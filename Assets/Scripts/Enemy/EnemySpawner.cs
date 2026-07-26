@@ -1,7 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using static WaveData;
+using static StageData;
 
 public class EnemySpawner : MonoBehaviour
 {
@@ -29,6 +29,7 @@ public class EnemySpawner : MonoBehaviour
 
     private IPoolService poolService;
     private IPlayerService playerService;
+    private EnemyCatalog enemyCatalog;
 
     private Wave currentWave;
     private Coroutine spawnRoutine;
@@ -50,6 +51,7 @@ public class EnemySpawner : MonoBehaviour
         enemyList = new List<Enemy>();
         poolService = ServiceLocator.Get<IPoolService>();
         playerService = ServiceLocator.Get<IPlayerService>();
+        enemyCatalog = EnemyCatalog.LoadFromResources();
 
         if (enemyBasePrefab == null)
         {
@@ -93,6 +95,11 @@ public class EnemySpawner : MonoBehaviour
             return;
         }
 
+        if (enemyCatalog == null)
+        {
+            enemyCatalog = EnemyCatalog.LoadFromResources();
+        }
+
         currentWave = wave;
         waveActive = true;
         spawnCompleted = false;
@@ -124,7 +131,7 @@ public class EnemySpawner : MonoBehaviour
             EnemyData data = PickEnemyData();
             if (data == null)
             {
-                Debug.LogError("[EnemySpawner] No valid EnemyData in wave. Aborting spawn.");
+                Debug.LogError("[EnemySpawner] No valid EnemyType in wave. Aborting spawn.");
                 break;
             }
 
@@ -174,12 +181,12 @@ public class EnemySpawner : MonoBehaviour
     }
 
     /// <summary>
-    /// 가중치 합이 1이 아니거나 float 오차가 있어도 반드시 유효 데이터를 고른다.
+    /// spawnWeight 상대 비중으로 고른다. 합이 1이 아니어도 된다.
     /// </summary>
     private EnemyData PickEnemyData()
     {
         WaveEnemy[] entries = currentWave.enemies;
-        if (entries == null || entries.Length == 0)
+        if (entries == null || entries.Length == 0 || enemyCatalog == null)
         {
             return null;
         }
@@ -189,14 +196,18 @@ public class EnemySpawner : MonoBehaviour
 
         for (int i = 0; i < entries.Length; i++)
         {
-            EnemyData data = ResolveEnemyData(entries[i]);
-            if (data == null)
+            if (entries[i].spawnWeight <= 0f)
+            {
+                continue;
+            }
+
+            if (!enemyCatalog.TryGet(entries[i].enemyType, out EnemyData data))
             {
                 continue;
             }
 
             lastValid = data;
-            totalWeight += Mathf.Max(0f, entries[i].enemyPercentage);
+            totalWeight += entries[i].spawnWeight;
         }
 
         if (lastValid == null)
@@ -214,13 +225,17 @@ public class EnemySpawner : MonoBehaviour
 
         for (int i = 0; i < entries.Length; i++)
         {
-            EnemyData data = ResolveEnemyData(entries[i]);
-            if (data == null)
+            if (entries[i].spawnWeight <= 0f)
             {
                 continue;
             }
 
-            cumulative += Mathf.Max(0f, entries[i].enemyPercentage);
+            if (!enemyCatalog.TryGet(entries[i].enemyType, out EnemyData data))
+            {
+                continue;
+            }
+
+            cumulative += entries[i].spawnWeight;
             if (roll <= cumulative)
             {
                 return data;
@@ -228,23 +243,6 @@ public class EnemySpawner : MonoBehaviour
         }
 
         return lastValid;
-    }
-
-    private static EnemyData ResolveEnemyData(WaveEnemy entry)
-    {
-        if (entry.enemyData != null)
-        {
-            return entry.enemyData;
-        }
-
-        // 레거시: 프리팹에 박힌 EnemyData
-        if (entry.enemyPrefab == null)
-        {
-            return null;
-        }
-
-        Enemy enemy = entry.enemyPrefab.GetComponent<Enemy>();
-        return enemy != null ? enemy.enemyData : null;
     }
 
     private GameObject SpawnEnemyHpSlider(GameObject enemy)

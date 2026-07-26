@@ -1,21 +1,43 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 public class Slow : MonoBehaviour
 {
     private float slow;
+    private SpriteRenderer rangeVisual;
 
-	public void SetUp(float slow, float range)
-	{
+    private void Awake()
+    {
+        CacheVisual();
+        SetVisualVisible(false);
+    }
+
+    public void SetUp(float slow, float range)
+    {
         this.slow = slow;
         SetRange(range);
     }
 
-	public void SetRange(float range)
-	{
+    public void SetRange(float range)
+    {
         float diameter = range * 2.0f;
         transform.localScale = Vector3.one * diameter;
+    }
+
+    public void SetVisualVisible(bool visible)
+    {
+        CacheVisual();
+        if (rangeVisual != null)
+        {
+            rangeVisual.enabled = visible;
+        }
+    }
+
+    private void CacheVisual()
+    {
+        if (rangeVisual == null)
+        {
+            rangeVisual = GetComponent<SpriteRenderer>();
+        }
     }
 
     private void OnTriggerStay2D(Collider2D collision)
@@ -35,19 +57,18 @@ public class Slow : MonoBehaviour
     }
 
     private void OnTriggerExit2D(Collider2D collision)
-	{
-
-		if (!collision.CompareTag("Enemy"))
-		{
-			return;
-		}
+    {
+        if (!collision.CompareTag("Enemy"))
+        {
+            return;
+        }
 
         Enemy enemy = collision.GetComponent<Enemy>();
 
         if (enemy != null)
         {
             enemy.ReSetSpeed();
-			enemy.obstructed = false;
+            enemy.obstructed = false;
         }
     }
 }

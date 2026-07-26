@@ -202,7 +202,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 723492874}
-        m_TargetAssemblyTypeName: WaveData, Assembly-CSharp
+        m_TargetAssemblyTypeName: WaveSystem, Assembly-CSharp
         m_MethodName: StartGame
         m_Mode: 1
         m_Arguments:
@@ -2581,7 +2581,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7a568acfc35fc2d469df1f615195f3b7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  waveData: {fileID: 11400000, guid: 2b6d584108c1bfd4a8f8e9217ad7afd5, type: 2}
+  stageId: 1
+  stageOverride: {fileID: 0}
   enemySpawner: {fileID: 851594189}
   textFadeOut: {fileID: 1193094693}
   textWaveCount: {fileID: 1033951701}
@@ -2978,7 +2979,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 723492874}
-        m_TargetAssemblyTypeName: WaveData, Assembly-CSharp
+        m_TargetAssemblyTypeName: WaveSystem, Assembly-CSharp
         m_MethodName: StartWave
         m_Mode: 1
         m_Arguments:
@@ -5557,7 +5558,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 723492874}
-        m_TargetAssemblyTypeName: WaveData, Assembly-CSharp
+        m_TargetAssemblyTypeName: WaveSystem, Assembly-CSharp
         m_MethodName: StartWave
         m_Mode: 1
         m_Arguments:
@@ -5887,7 +5888,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 723492874}
-        m_TargetAssemblyTypeName: WaveData, Assembly-CSharp
+        m_TargetAssemblyTypeName: WaveSystem, Assembly-CSharp
         m_MethodName: StopGame
         m_Mode: 1
         m_Arguments:
@@ -6980,7 +6981,7 @@ TilemapRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: acacbf776eb68a24ea3710102ca6d2e2, type: 2}
+  - {fileID: 10754, guid: 0000000000000000f000000000000000, type: 0}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -10282,7 +10283,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 723492874}
-        m_TargetAssemblyTypeName: WaveData, Assembly-CSharp
+        m_TargetAssemblyTypeName: WaveSystem, Assembly-CSharp
         m_MethodName: FinishGame
         m_Mode: 1
         m_Arguments:

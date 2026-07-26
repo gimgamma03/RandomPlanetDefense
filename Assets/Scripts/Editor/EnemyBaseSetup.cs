@@ -4,15 +4,14 @@ using UnityEditor;
 using UnityEngine;
 
 /// <summary>
-/// 적 Base + EnemyData 마이그레이션.
+/// 적 Base + EnemyData 마이그레이션/셋업.
 /// </summary>
 public static class EnemyBaseSetup
 {
     private const string SourcePrefab = "Assets/Prefabs/Enemy 01.prefab";
     private const string BasePrefabPath = "Assets/Prefabs/Enemies/EnemyBase.prefab";
     private const string PrefabFolder = "Assets/Prefabs";
-    private const string EnemyDataFolder = "Assets/Scripts/Enemy/Data";
-    private const string WaveAssetPath = "Assets/Scripts/Wave/Data/Wave.asset";
+    private const string EnemyDataFolder = "Assets/Resources/EnemyData";
 
     [MenuItem("RPD/Enemies/1. Create EnemyBase Prefab")]
     private static void CreateEnemyBase()
@@ -112,59 +111,7 @@ public static class EnemyBaseSetup
         EditorUtility.DisplayDialog("Sync Sprites", $"EnemyData {synced}개에 스프라이트 복사 완료.", "OK");
     }
 
-    [MenuItem("RPD/Enemies/3. Migrate Wave Prefab → EnemyData")]
-    private static void MigrateWaveToEnemyData()
-    {
-        WaveData wave = AssetDatabase.LoadAssetAtPath<WaveData>(WaveAssetPath);
-        if (wave == null || wave.waves == null)
-        {
-            EditorUtility.DisplayDialog("Migrate Wave", $"Wave 없음:\n{WaveAssetPath}", "OK");
-            return;
-        }
-
-        int filled = 0;
-        for (int w = 0; w < wave.waves.Length; w++)
-        {
-            WaveData.WaveEnemy[] enemies = wave.waves[w].enemies;
-            if (enemies == null)
-            {
-                continue;
-            }
-
-            for (int e = 0; e < enemies.Length; e++)
-            {
-                if (enemies[e].enemyData != null)
-                {
-                    continue;
-                }
-
-                GameObject prefab = enemies[e].enemyPrefab;
-                if (prefab == null)
-                {
-                    continue;
-                }
-
-                Enemy enemy = prefab.GetComponent<Enemy>();
-                if (enemy == null || enemy.enemyData == null)
-                {
-                    continue;
-                }
-
-                enemies[e].enemyData = enemy.enemyData;
-                filled++;
-            }
-        }
-
-        EditorUtility.SetDirty(wave);
-        AssetDatabase.SaveAssets();
-        Debug.Log($"[RPD] Migrated {filled} wave enemy slot(s) to EnemyData.");
-        EditorUtility.DisplayDialog(
-            "Migrate Wave",
-            $"Wave 슬롯 {filled}개에 EnemyData 채움.\n(레거시 enemyPrefab은 남겨 둠 — 나중에 비워도 됨)",
-            "OK");
-    }
-
-    [MenuItem("RPD/Enemies/4. Assign EnemyBase To Scene Spawner")]
+    [MenuItem("RPD/Enemies/3. Assign EnemyBase To Scene Spawner")]
     private static void AssignBaseToSpawner()
     {
         GameObject basePrefab = AssetDatabase.LoadAssetAtPath<GameObject>(BasePrefabPath);
