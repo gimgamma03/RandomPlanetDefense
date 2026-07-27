@@ -19,11 +19,22 @@ public class Enemy : MonoBehaviour
     private float baseNextNodeMoveTime;
     public EnemyData enemyData;
 
+    /// <summary>0=일반 스폰, 1+=분열 잔해(재분열 안 함)</summary>
+    private int splitGeneration;
+
     public float nextNodeMoveTime = 1.0f;
     private float currentTime;
     private float nodeArriveDistance = 0.1f;
 
     public bool obstructed = false;
+
+    public EnemyRole Role =>
+        enemyData != null ? enemyData.enemyRole : EnemyRole.Swarm;
+
+    public bool CanSplitOnKill =>
+        enemyData != null
+        && enemyData.CanSplit
+        && splitGeneration == 0;
 
     public void SetUp(EnemySpawner enemySpawner)
     {
@@ -65,13 +76,16 @@ public class Enemy : MonoBehaviour
         }
 
         spriteRenderer.color = enemyData.spriteColor;
+        float scale = Mathf.Max(0.1f, enemyData.visualScale);
+        transform.localScale = Vector3.one * scale;
     }
 
-    /// <summary>스폰 직전 상태 초기화 (Start 대체). BindDefinition 이후 호출.</summary>
-    public void PrepareForSpawn(EnemySpawner spawner)
+    /// <summary>스폰 직전 상태 초기화. BindDefinition 이후 호출.</summary>
+    public void PrepareForSpawn(EnemySpawner spawner, int splitGeneration = 0)
     {
         StopAllCoroutines();
         SetUp(spawner);
+        this.splitGeneration = Mathf.Max(0, splitGeneration);
 
         if (enemyPath == null)
         {
@@ -110,6 +124,8 @@ public class Enemy : MonoBehaviour
         }
 
         enemySpawner = null;
+        splitGeneration = 0;
+        transform.localScale = Vector3.one;
     }
 
     void Update()
@@ -143,7 +159,6 @@ public class Enemy : MonoBehaviour
 
         for (int i = 0; i < enemyPath.Count; i++)
         {
-            // 첫 노드는 현재 셀인 경우가 많아 스킵
             if (i == 0)
             {
                 continue;

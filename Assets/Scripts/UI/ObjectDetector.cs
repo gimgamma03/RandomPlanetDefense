@@ -3,7 +3,7 @@ using UnityEngine.EventSystems;
 
 /// <summary>
 /// 빌드 모드가 아닐 때만 타워 클릭 → 정보 패널.
-/// 좌클릭 확정(설치/머지/판매/벽)은 PanelGameManager가 담당.
+/// 좌클릭 확정(설치/머지/판매/벽)은 BuildModeController가 담당.
 /// </summary>
 public class ObjectDetector : MonoBehaviour
 {
@@ -13,10 +13,28 @@ public class ObjectDetector : MonoBehaviour
     private TowerAttackRange towerAttackRange;
 
     private Camera mainCamera;
+    private IBuildModeState buildModeState;
 
     private void Awake()
     {
         mainCamera = Camera.main;
+        ResolveBuildModeState();
+    }
+
+    private void ResolveBuildModeState()
+    {
+        if (buildModeState != null)
+        {
+            return;
+        }
+
+        if (ServiceLocator.TryGet(out IBuildModeState state))
+        {
+            buildModeState = state;
+            return;
+        }
+
+        buildModeState = BuildModeController.Instance;
     }
 
     private void Update()
@@ -27,7 +45,8 @@ public class ObjectDetector : MonoBehaviour
         }
 
         // 빌드 모드 중에는 타워 정보/사거리 클릭 무시
-        if (PanelGameManager.Instance != null && PanelGameManager.Instance.HasActiveMode)
+        ResolveBuildModeState();
+        if (buildModeState != null && buildModeState.HasActiveMode)
         {
             if (Input.GetMouseButtonDown(1))
             {

@@ -135,38 +135,7 @@ public class EnemySpawner : MonoBehaviour
                 break;
             }
 
-            if (poolService == null)
-            {
-                poolService = ServiceLocator.Get<IPoolService>();
-            }
-
-            GameObject enemyObject = poolService.Spawn(
-                PoolId.Enemy,
-                SpawnWorldPosition,
-                Quaternion.identity,
-                poolService.Root);
-            if (enemyObject == null)
-            {
-                enemyObject = poolService.Spawn(
-                    enemyBasePrefab,
-                    SpawnWorldPosition,
-                    Quaternion.identity,
-                    poolService.Root);
-            }
-
-            yield return null;
-
-            GameObject enemyHpSlider = SpawnEnemyHpSlider(enemyObject);
-            Enemy enemy = enemyObject.GetComponent<Enemy>();
-            EnemyHp enemyHp = enemyObject.GetComponent<EnemyHp>();
-            EnemyHpViewer enemyHpViewer = enemyHpSlider.GetComponent<EnemyHpViewer>();
-
-            enemy.BindDefinition(data);
-            enemy.PrepareForSpawn(this);
-            enemyHp.PrepareForSpawn(enemyHpViewer);
-            enemyHpViewer.hpSliderUpdate();
-
-            enemyList.Add(enemy);
+            SpawnEnemyInstance(data, SpawnWorldPosition, splitGeneration: 0);
             spawnEnemyCount++;
 
             if (delay > 0f)
@@ -275,6 +244,9 @@ public class EnemySpawner : MonoBehaviour
 
         int gold = enemy.GetGold();
         int scorePoint = enemy.GetScorePoint();
+        Vector3 deathPosition = enemy.transform.position;
+        bool shouldSplit = type == EnemyDestroyType.Kill && enemy.CanSplitOnKill;
+        EnemyData splitParentData = enemy.enemyData;
 
         if (type == EnemyDestroyType.Arrive)
         {
@@ -313,7 +285,81 @@ public class EnemySpawner : MonoBehaviour
         }
 
         poolService.Return(enemy.gameObject);
+
+        if (shouldSplit && splitParentData != null)
+        {
+            SpawnSplitChildren(splitParentData, deathPosition);
+        }
+
         TryFinishWave();
+    }
+
+    /// <summary>Splitter 사망 시 잔해 스폰. 웨이브 카운트와 무관하게 enemyList에 추가.</summary>
+    private void SpawnSplitChildren(EnemyData parentData, Vector3 position)
+    {
+        if (enemyCatalog == null)
+        {
+            enemyCatalog = EnemyCatalog.LoadFromResources();
+        }
+
+        if (!enemyCatalog.TryGet(parentData.splitChildType, out EnemyData childData) || childData == null)
+        {
+            Debug.LogWarning(
+                $"[EnemySpawner] Split child type missing: {parentData.splitChildType}");
+            return;
+        }
+
+        int count = Mathf.Max(0, parentData.splitCount);
+        for (int i = 0; i < count; i++)
+        {
+            float angle = (Mathf.PI * 2f / Mathf.Max(1, count)) * i;
+            Vector3 offset = new Vector3(Mathf.Cos(angle), Mathf.Sin(angle), 0f) * 0.25f;
+            SpawnEnemyInstance(childData, position + offset, splitGeneration: 1);
+        }
+    }
+
+    private void SpawnEnemyInstance(EnemyData data, Vector3 position, int splitGeneration)
+    {
+        if (enemyBasePrefab == null || data == null)
+        {
+            return;
+        }
+
+        if (poolService == null)
+        {
+            poolService = ServiceLocator.Get<IPoolService>();
+        }
+
+        GameObject enemyObject = poolService.Spawn(
+            PoolId.Enemy,
+            position,
+            Quaternion.identity,
+            poolService.Root);
+        if (enemyObject == null)
+        {
+            enemyObject = poolService.Spawn(
+                enemyBasePrefab,
+                position,
+                Quaternion.identity,
+                poolService.Root);
+        }
+
+        if (enemyObject == null)
+        {
+            return;
+        }
+
+        GameObject enemyHpSlider = SpawnEnemyHpSlider(enemyObject);
+        Enemy enemy = enemyObject.GetComponent<Enemy>();
+        EnemyHp enemyHp = enemyObject.GetComponent<EnemyHp>();
+        EnemyHpViewer enemyHpViewer = enemyHpSlider.GetComponent<EnemyHpViewer>();
+
+        enemy.BindDefinition(data);
+        enemy.PrepareForSpawn(this, splitGeneration);
+        enemyHp.PrepareForSpawn(enemyHpViewer);
+        enemyHpViewer.hpSliderUpdate();
+
+        enemyList.Add(enemy);
     }
 
     /// <summary>스폰이 끝났고 필드 적이 0이면 웨이브 클리어.</summary>

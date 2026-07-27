@@ -10,15 +10,20 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 2b3505e5ce6b5354bb7cad42f50dcbc2, type: 3}
-  m_Name: Enemy 03
+  m_Name: E06_RunnerElite
   m_EditorClassIdentifier: 
-  enemyId: Enemy03
-  enemyType: 2
-  displayName: 
-  gold: 5
-  scorePoint: 20
-  maxHp: 100
-  moveSpeed: 2.7
-  rotateSpeed: 0.3
-  sprite: {fileID: 21300000, guid: d215ade12833a3843868bede289b8420, type: 3}
-  spriteColor: {r: 1, g: 1, b: 1, a: 1}
+  enemyId: RunnerElite
+  enemyType: 5
+  displayName: Runner Elite
+  enemyRole: 0
+  gold: 8
+  scorePoint: 47
+  maxHp: 80
+  moveSpeed: 4.2
+  rotateSpeed: 0.55
+  visualScale: 1
+  shieldHp: 0
+  splitCount: 2
+  splitChildType: 0
+  sprite: {fileID: 21300000, guid: dfbfc688fada39246972611b5f044966, type: 3}
+  spriteColor: {r: 1, g: 0.45, b: 0.4, a: 1}

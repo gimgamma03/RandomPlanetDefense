@@ -26,6 +26,7 @@ public sealed class TowerDataEditor : Editor
     private SerializedProperty groundBombLineLength;
     private SerializedProperty groundBombSpawnInterval;
     private SerializedProperty laserWidth;
+    private SerializedProperty orbitSatelliteCount;
 
     private void OnEnable()
     {
@@ -45,6 +46,7 @@ public sealed class TowerDataEditor : Editor
         groundBombLineLength = serializedObject.FindProperty("groundBombLineLength");
         groundBombSpawnInterval = serializedObject.FindProperty("groundBombSpawnInterval");
         laserWidth = serializedObject.FindProperty("laserWidth");
+        orbitSatelliteCount = serializedObject.FindProperty("orbitSatelliteCount");
     }
 
     public override void OnInspectorGUI()
@@ -158,6 +160,12 @@ public sealed class TowerDataEditor : Editor
             case WeaponType.Cannon:
                 delivery = "전달: 유도 발사체";
                 break;
+            case WeaponType.ChargePierce:
+                delivery = "전달: 차징 후 관통 직진탄 (Behavior TODO)";
+                break;
+            case WeaponType.OrbitSatellite:
+                delivery = "전달: 궤도 위성 접촉 (Behavior TODO — 발사체 없음)";
+                break;
             default:
                 delivery = "전달: (미분류 — Behavior 확인)";
                 break;
@@ -188,6 +196,7 @@ public sealed class TowerDataEditor : Editor
             case WeaponType.Bomb:
             case WeaponType.MultiWayShooting:
             case WeaponType.GroundBombLine:
+            case WeaponType.ChargePierce:
                 return true;
             default:
                 return false;
@@ -280,11 +289,21 @@ public sealed class TowerDataEditor : Editor
                 EditorGUILayout.EndVertical();
                 break;
 
+            case WeaponType.OrbitSatellite:
+                EditorGUILayout.LabelField("Orbit Satellite", EditorStyles.boldLabel);
+                EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+                EditorGUILayout.PropertyField(
+                    orbitSatelliteCount,
+                    new GUIContent("Satellite Count", "궤도 위성 개수"));
+                EditorGUILayout.EndVertical();
+                break;
+
             case WeaponType.Slow:
             case WeaponType.Buff:
             case WeaponType.ChainLightning:
             case WeaponType.Cannon:
             case WeaponType.Bomb:
+            case WeaponType.ChargePierce:
                 // 전용 수치 없음 — Combat 요약만으로 충분
                 break;
         }

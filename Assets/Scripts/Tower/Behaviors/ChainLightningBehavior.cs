@@ -11,10 +11,9 @@ public sealed class ChainLightningBehavior : AttackBehaviorBase
         }
 
         ChainLightning lightning = Tower.GetComponent<ChainLightning>();
-        if (lightning != null && Tower.AttackTarget != null)
+        if (lightning != null && !lightning.IsBusy && Tower.AttackTarget != null)
         {
-            lightning.SetUp(Tower.AttackTarget.gameObject, Tower.damage);
-            lightning.ChainLightningStart();
+            lightning.Fire(Tower.AttackTarget, Tower.damage);
         }
 
         yield return new WaitForSeconds(Tower.rate);

@@ -94,9 +94,51 @@ public class ProjectileVfx : MonoBehaviour
         transform.localScale = new Vector3(baseScale.x * sx, baseScale.y * sy, baseScale.z);
     }
 
+    public void SetTrailEnabled(bool enabled)
+    {
+        enableTrail = enabled;
+        if (trail == null)
+        {
+            return;
+        }
+
+        if (!enabled)
+        {
+            trail.emitting = false;
+            trail.Clear();
+            trail.enabled = false;
+            return;
+        }
+
+        trail.enabled = true;
+    }
+
+    /// <summary>스프라이트/스케일을 런타임에 바꾼 뒤 BeginFlight 전에 호출.</summary>
+    public void RecaptureScale()
+    {
+        baseScale = transform.localScale;
+        if (baseScale.sqrMagnitude < 0.0001f)
+        {
+            baseScale = Vector3.one;
+        }
+
+        baseScaleCaptured = true;
+    }
+
     public void BeginFlight()
     {
-        CaptureBaseScale();
+        if (!baseScaleCaptured)
+        {
+            CaptureBaseScale();
+        }
+        else
+        {
+            // 풀 재사용·런타임 스프라이트 교체 후 현재 스케일 유지
+            baseScale = transform.localScale.sqrMagnitude > 0.0001f
+                ? transform.localScale
+                : baseScale;
+        }
+
         inFlight = true;
         transform.localScale = baseScale;
 
@@ -106,6 +148,11 @@ public class ProjectileVfx : MonoBehaviour
             trail.Clear();
             trail.emitting = true;
             trail.enabled = true;
+        }
+        else if (trail != null)
+        {
+            trail.emitting = false;
+            trail.enabled = false;
         }
     }
 

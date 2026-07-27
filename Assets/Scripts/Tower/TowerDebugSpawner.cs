@@ -71,9 +71,9 @@ public sealed class TowerDebugSpawner : MonoBehaviour
             return;
         }
 
-        if (PanelGameManager.Instance != null)
+        if (BuildModeController.Instance != null)
         {
-            PanelGameManager.Instance.CancelMode();
+            BuildModeController.Instance.CancelMode();
         }
 
         towerSpawner.SpawnTower(worldPosition, selected);
@@ -121,9 +121,9 @@ public sealed class TowerDebugSpawner : MonoBehaviour
             if (GUILayout.Button(label))
             {
                 selected = data;
-                if (PanelGameManager.Instance != null)
+                if (BuildModeController.Instance != null)
                 {
-                    PanelGameManager.Instance.CancelMode();
+                    BuildModeController.Instance.CancelMode();
                 }
             }
 

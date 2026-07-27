@@ -10,15 +10,20 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 2b3505e5ce6b5354bb7cad42f50dcbc2, type: 3}
-  m_Name: Enemy 04
+  m_Name: E03_Tank
   m_EditorClassIdentifier: 
-  enemyId: Enemy04
-  enemyType: 3
-  displayName: 
-  gold: 6
-  scorePoint: 30
-  maxHp: 150
-  moveSpeed: 4.5
-  rotateSpeed: 0.45
-  sprite: {fileID: 21300000, guid: dcf7fce1cf7e8f5448002dca2b896ec2, type: 3}
-  spriteColor: {r: 1, g: 1, b: 1, a: 1}
+  enemyId: Tank
+  enemyType: 2
+  displayName: Tank
+  enemyRole: 1
+  gold: 5
+  scorePoint: 20
+  maxHp: 140
+  moveSpeed: 1.6
+  rotateSpeed: 0.2
+  visualScale: 1.15
+  shieldHp: 0
+  splitCount: 2
+  splitChildType: 0
+  sprite: {fileID: 21300000, guid: d215ade12833a3843868bede289b8420, type: 3}
+  spriteColor: {r: 1, g: 0.9, b: 0.75, a: 1}

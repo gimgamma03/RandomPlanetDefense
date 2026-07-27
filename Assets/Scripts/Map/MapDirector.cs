@@ -57,7 +57,7 @@ public class MapDirector : MonoBehaviour
 
     /// <summary>
     /// 마우스 월드 좌표에 벽 설치. 골드·경로 검사 포함.
-    /// 입력은 PanelGameManager(빌드 모드)가 담당한다.
+    /// 입력은 BuildModeController(빌드 모드)가 담당한다.
     /// </summary>
     public bool TryPlaceWallAt(Vector3 worldPos)
     {

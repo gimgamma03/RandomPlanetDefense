@@ -3,7 +3,7 @@ using UnityEditor;
 using UnityEngine;
 
 /// <summary>
-/// EnemyData: 섹션 정리 + 스프라이트 미리보기.
+/// EnemyData: 역할별 관련 필드 + 스프라이트 미리보기.
 /// </summary>
 [CustomEditor(typeof(EnemyData))]
 [CanEditMultipleObjects]
@@ -12,11 +12,16 @@ public sealed class EnemyDataEditor : Editor
     private SerializedProperty enemyId;
     private SerializedProperty enemyType;
     private SerializedProperty displayName;
+    private SerializedProperty enemyRole;
     private SerializedProperty gold;
     private SerializedProperty scorePoint;
     private SerializedProperty maxHp;
     private SerializedProperty moveSpeed;
     private SerializedProperty rotateSpeed;
+    private SerializedProperty visualScale;
+    private SerializedProperty shieldHp;
+    private SerializedProperty splitCount;
+    private SerializedProperty splitChildType;
     private SerializedProperty sprite;
     private SerializedProperty spriteColor;
 
@@ -25,11 +30,16 @@ public sealed class EnemyDataEditor : Editor
         enemyId = serializedObject.FindProperty("enemyId");
         enemyType = serializedObject.FindProperty("enemyType");
         displayName = serializedObject.FindProperty("displayName");
+        enemyRole = serializedObject.FindProperty("enemyRole");
         gold = serializedObject.FindProperty("gold");
         scorePoint = serializedObject.FindProperty("scorePoint");
         maxHp = serializedObject.FindProperty("maxHp");
         moveSpeed = serializedObject.FindProperty("moveSpeed");
         rotateSpeed = serializedObject.FindProperty("rotateSpeed");
+        visualScale = serializedObject.FindProperty("visualScale");
+        shieldHp = serializedObject.FindProperty("shieldHp");
+        splitCount = serializedObject.FindProperty("splitCount");
+        splitChildType = serializedObject.FindProperty("splitChildType");
         sprite = serializedObject.FindProperty("sprite");
         spriteColor = serializedObject.FindProperty("spriteColor");
     }
@@ -38,17 +48,20 @@ public sealed class EnemyDataEditor : Editor
     {
         serializedObject.Update();
 
+        EnemyRole role = (EnemyRole)enemyRole.intValue;
+
         EditorGUILayout.LabelField("Identity", EditorStyles.boldLabel);
         EditorGUILayout.BeginVertical(EditorStyles.helpBox);
         EditorGUILayout.PropertyField(enemyId, new GUIContent("Enemy Id", "비우면 asset 이름"));
         EditorGUILayout.PropertyField(enemyType, new GUIContent("Enemy Type", "Stage 웨이브 드롭다운 키"));
         EditorGUILayout.PropertyField(displayName, new GUIContent("Display Name", "비우면 Id"));
+        EditorGUILayout.PropertyField(enemyRole, new GUIContent("Role", "전투 역할"));
 
         EnemyData data = target as EnemyData;
         if (data != null)
         {
             EditorGUILayout.HelpBox(
-                $"Catalog 키: {data.enemyType}  ·  Id: {data.Id}  ·  표시: {data.DisplayName}",
+                $"Catalog: {data.enemyType}  ·  Role: {data.enemyRole}  ·  Id: {data.Id}",
                 MessageType.None);
         }
 
@@ -62,17 +75,58 @@ public sealed class EnemyDataEditor : Editor
         EditorGUILayout.PropertyField(rotateSpeed);
         EditorGUILayout.PropertyField(gold);
         EditorGUILayout.PropertyField(scorePoint);
+        EditorGUILayout.PropertyField(visualScale);
         EditorGUILayout.EndVertical();
+
+        EditorGUILayout.Space(8f);
+        DrawRoleFields(role);
 
         EditorGUILayout.Space(8f);
         EditorGUILayout.LabelField("Visual", EditorStyles.boldLabel);
         EditorGUILayout.BeginVertical(EditorStyles.helpBox);
         EditorGUILayout.PropertyField(sprite);
-        EditorGUILayout.PropertyField(spriteColor);
+        EditorGUILayout.PropertyField(spriteColor, new GUIContent("Sprite Color", "같은 스프라이트 변형용"));
         DrawSpritePreview();
         EditorGUILayout.EndVertical();
 
         serializedObject.ApplyModifiedProperties();
+    }
+
+    private void DrawRoleFields(EnemyRole role)
+    {
+        switch (role)
+        {
+            case EnemyRole.Shielded:
+                EditorGUILayout.LabelField("Shielded", EditorStyles.boldLabel);
+                EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+                EditorGUILayout.PropertyField(
+                    shieldHp,
+                    new GUIContent("Shield Hp", "본체 HP보다 먼저 깎임"));
+                EditorGUILayout.HelpBox("실드가 남아 있으면 본체 HP는 안 깎인다.", MessageType.None);
+                EditorGUILayout.EndVertical();
+                break;
+
+            case EnemyRole.Splitter:
+                EditorGUILayout.LabelField("Splitter", EditorStyles.boldLabel);
+                EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+                EditorGUILayout.PropertyField(splitCount, new GUIContent("Split Count"));
+                EditorGUILayout.PropertyField(
+                    splitChildType,
+                    new GUIContent("Split Child Type", "보통 Swarm EnemyType"));
+                EditorGUILayout.HelpBox("Kill 시에만 분열. Arrive·연쇄 분열(자식)은 안 함.", MessageType.None);
+                EditorGUILayout.EndVertical();
+                break;
+
+            case EnemyRole.Runner:
+                EditorGUILayout.HelpBox("Runner: 빠른 스탯 위주. 엘리트는 색·수치만 다른 SO.", MessageType.None);
+                break;
+            case EnemyRole.Tank:
+                EditorGUILayout.HelpBox("Tank: 높은 HP·낮은 속도 권장.", MessageType.None);
+                break;
+            case EnemyRole.Swarm:
+                EditorGUILayout.HelpBox("Swarm: 약한 다수. Splitter 잔해로도 자주 사용.", MessageType.None);
+                break;
+        }
     }
 
     private void DrawSpritePreview()

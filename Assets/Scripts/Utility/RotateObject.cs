@@ -7,16 +7,13 @@ public class RotateObject : MonoBehaviour
     [SerializeField]
     private float RotateSpeed = 0.1f;
 
-    // Start is called before the first frame update
-    void Start()
+    public void SetSpeed(float speed)
     {
-
+        RotateSpeed = speed;
     }
 
-    // Update is called once per frame
     void Update()
     {
         transform.Rotate(Vector3.forward * -RotateSpeed);
-
     }
 }

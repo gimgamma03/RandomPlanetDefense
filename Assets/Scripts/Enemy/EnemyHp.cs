@@ -5,15 +5,19 @@ public class EnemyHp : MonoBehaviour
 {
     public float maxHp;
     public float currentHp;
+    private float currentShield;
     private bool isDie = false;
 
     /// <summary>죽었거나 풀에 들어간 상태. 타워 타겟 판정용.</summary>
     public bool IsDead => isDie;
 
+    public bool HasActiveShield => currentShield > 0f;
+
     private Enemy enemy;
     private SpriteRenderer spriteRenderer;
     private EnemyHpViewer enemyHpViewer;
     private Color baseSpriteColor = Color.white;
+    private static readonly Color ShieldTint = new Color(0.55f, 0.85f, 1f, 1f);
 
     public void SetUp(EnemyHpViewer enemyHpViewer)
     {
@@ -27,6 +31,9 @@ public class EnemyHp : MonoBehaviour
         spriteRenderer = GetComponent<SpriteRenderer>();
         maxHp = enemy != null && enemy.enemyData != null ? enemy.enemyData.maxHp : maxHp;
         currentHp = maxHp;
+        currentShield = enemy != null && enemy.enemyData != null && enemy.enemyData.HasShield
+            ? enemy.enemyData.shieldHp
+            : 0f;
         isDie = false;
 
         if (spriteRenderer != null)
@@ -35,7 +42,7 @@ public class EnemyHp : MonoBehaviour
                 ? enemy.enemyData.spriteColor
                 : spriteRenderer.color;
             baseSpriteColor.a = 1f;
-            spriteRenderer.color = baseSpriteColor;
+            ApplyDisplayColor();
         }
 
         SetUp(viewer);
@@ -70,20 +77,37 @@ public class EnemyHp : MonoBehaviour
     public void ClearForPool()
     {
         StopAllCoroutines();
-        // 풀에 있는 동안은 죽은 상태로 유지 (잔여 탄 히트 방지). PrepareForSpawn에서 false.
         isDie = true;
+        currentShield = 0f;
         enemyHpViewer = null;
     }
 
     public void TakeDamage(float damage)
     {
-        // 이미 죽었거나 풀(비활성)에 들어간 적에는 데미지/코루틴 금지
         if (isDie || !isActiveAndEnabled || !gameObject.activeInHierarchy)
         {
             return;
         }
 
-        currentHp -= damage;
+        float remaining = damage;
+
+        if (currentShield > 0f)
+        {
+            float absorbed = Mathf.Min(currentShield, remaining);
+            currentShield -= absorbed;
+            remaining -= absorbed;
+
+            if (currentShield <= 0f)
+            {
+                currentShield = 0f;
+                ApplyDisplayColor();
+            }
+        }
+
+        if (remaining > 0f)
+        {
+            currentHp -= remaining;
+        }
 
         if (gameObject.activeInHierarchy)
         {
@@ -96,7 +120,7 @@ public class EnemyHp : MonoBehaviour
             enemyHpViewer.hpSliderUpdate();
         }
 
-        if (currentHp <= 0)
+        if (currentHp <= 0f)
         {
             isDie = true;
             if (enemy != null)
@@ -106,9 +130,23 @@ public class EnemyHp : MonoBehaviour
         }
     }
 
+    private void ApplyDisplayColor()
+    {
+        if (spriteRenderer == null)
+        {
+            return;
+        }
+
+        spriteRenderer.color = HasActiveShield
+            ? Color.Lerp(baseSpriteColor, ShieldTint, 0.55f)
+            : baseSpriteColor;
+    }
+
     private IEnumerator HitAlphaAnimation()
     {
-        Color color = baseSpriteColor;
+        Color color = HasActiveShield
+            ? Color.Lerp(baseSpriteColor, ShieldTint, 0.55f)
+            : baseSpriteColor;
 
         color.a = 0.4f;
         spriteRenderer.color = color;
@@ -117,5 +155,6 @@ public class EnemyHp : MonoBehaviour
 
         color.a = 1.0f;
         spriteRenderer.color = color;
+        ApplyDisplayColor();
     }
 }

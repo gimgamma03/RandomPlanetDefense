@@ -61,6 +61,11 @@ public class TowerData : ScriptableObject
     [Tooltip("Laser/MultiLaser 굵기. 0이면 프리팹 LineRenderer 값 그대로")]
     public float laserWidth = 0f;
 
+    [HideInInspector]
+    [Min(1)]
+    [Tooltip("OrbitSatellite 궤도 위성 개수")]
+    public int orbitSatelliteCount = 2;
+
     public string Id => string.IsNullOrEmpty(towerId) ? name : towerId;
 
     public string DisplayName =>

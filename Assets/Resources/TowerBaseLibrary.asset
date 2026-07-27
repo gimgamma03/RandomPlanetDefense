@@ -34,4 +34,13 @@ MonoBehaviour:
   - weaponType: 7
     basePrefab: {fileID: 3084227731996547674, guid: 80c2775fe27b410792d9355aebdc4173, type: 3}
     address: Towers/Bases/MultiBombBase
+  - weaponType: 8
+    basePrefab: {fileID: 3084227731996547674, guid: 1e48b68823154213bc5136fb792e8cdf, type: 3}
+    address: Towers/Bases/LaserBase
+  - weaponType: 9
+    basePrefab: {fileID: 3084227731996547674, guid: 17201d00870e4c9dabd769892fe278b4, type: 3}
+    address: Towers/Bases/CannonBase
+  - weaponType: 10
+    basePrefab: {fileID: 3084227731996547674, guid: 17201d00870e4c9dabd769892fe278b4, type: 3}
+    address: Towers/Bases/CannonBase
   towerBasePrefab: {fileID: 3084227731996547674, guid: bdd85757af9a43f79145821e28438d2c, type: 3}

@@ -22,6 +22,10 @@ public static class TowerBehaviorFactory
                 return new GroundBombLineBehavior();
             case WeaponType.Slow:
                 return new SlowAuraBehavior();
+            case WeaponType.ChargePierce:
+                return new ChargePierceBehavior();
+            case WeaponType.OrbitSatellite:
+                return new OrbitSatelliteBehavior();
             case WeaponType.Buff:
             default:
                 return new PassiveNoOpBehavior();

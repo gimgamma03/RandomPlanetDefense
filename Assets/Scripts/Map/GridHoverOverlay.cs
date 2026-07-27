@@ -4,7 +4,7 @@ using UnityEngine.Tilemaps;
 
 /// <summary>
 /// 마우스 아래 그리드 셀 테두리.
-/// 기본: 흰색(현재 보고 있는 노드) / 벽 건설 모드: 주황색(여기에 건설).
+/// 기본 흰색 / 벽 주황 / 소환 초록 / 조합 파랑 / 판매 빨강.
 /// </summary>
 public class GridHoverOverlay : MonoBehaviour
 {
@@ -13,6 +13,12 @@ public class GridHoverOverlay : MonoBehaviour
     [SerializeField]
     private Color wallBuildColor = new Color(1f, 0.55f, 0.1f, 1f);
     [SerializeField]
+    private Color spawnTowerColor = Color.green;
+    [SerializeField]
+    private Color combineColor = Color.blue;
+    [SerializeField]
+    private Color sellColor = Color.red;
+    [SerializeField]
     private float lineWidth = 0.06f;
     [SerializeField]
     private float inset = 0.04f;
@@ -20,6 +26,7 @@ public class GridHoverOverlay : MonoBehaviour
     private LineRenderer line;
     private Tilemap walkableMap;
     private Tilemap wallMap;
+    private IBuildModeState buildModeState;
     private Vector3Int lastCell = new Vector3Int(int.MinValue, 0, 0);
     private bool visible;
 
@@ -54,6 +61,7 @@ public class GridHoverOverlay : MonoBehaviour
     private void Start()
     {
         BindMaps();
+        ResolveBuildModeState();
     }
 
     private void BindMaps()
@@ -65,6 +73,22 @@ public class GridHoverOverlay : MonoBehaviour
 
         walkableMap = MapDirector.Instance.WalkableMap;
         wallMap = MapDirector.Instance.WallMap;
+    }
+
+    private void ResolveBuildModeState()
+    {
+        if (buildModeState != null)
+        {
+            return;
+        }
+
+        if (ServiceLocator.TryGet(out IBuildModeState state))
+        {
+            buildModeState = state;
+            return;
+        }
+
+        buildModeState = BuildModeController.Instance;
     }
 
     private void LateUpdate()
@@ -94,12 +118,14 @@ public class GridHoverOverlay : MonoBehaviour
         Vector3 mouseWorld = Camera.main.ScreenToWorldPoint(Input.mousePosition);
         mouseWorld.z = 0f;
         Vector3Int cell = walkableMap.WorldToCell(mouseWorld);
+        ResolveBuildModeState();
 
-        bool wallMode = PanelGameManager.Instance != null
-            && PanelGameManager.Instance.CurrentMode == BuildMode.PlaceWall;
+        BuildMode mode = buildModeState != null
+            ? buildModeState.CurrentMode
+            : BuildMode.None;
 
         bool show;
-        if (wallMode)
+        if (mode == BuildMode.PlaceWall)
         {
             // 건설 가능 칸만 (빈 walkable)
             show = walkableMap.HasTile(cell);
@@ -116,7 +142,7 @@ public class GridHoverOverlay : MonoBehaviour
             return;
         }
 
-        Color color = wallMode ? wallBuildColor : viewColor;
+        Color color = GetModeColor(mode);
         if (!visible || cell != lastCell || line.startColor != color)
         {
             DrawCell(cell, color);
@@ -124,6 +150,23 @@ public class GridHoverOverlay : MonoBehaviour
         }
 
         SetVisible(true);
+    }
+
+    private Color GetModeColor(BuildMode mode)
+    {
+        switch (mode)
+        {
+            case BuildMode.PlaceWall:
+                return wallBuildColor;
+            case BuildMode.SpawnTower:
+                return spawnTowerColor;
+            case BuildMode.Combine:
+                return combineColor;
+            case BuildMode.Sell:
+                return sellColor;
+            default:
+                return viewColor;
+        }
     }
 
     private void DrawCell(Vector3Int cell, Color color)

@@ -10,15 +10,20 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 2b3505e5ce6b5354bb7cad42f50dcbc2, type: 3}
-  m_Name: Enemy 06
+  m_Name: E02_Runner
   m_EditorClassIdentifier: 
-  enemyId: Enemy06
-  enemyType: 5
-  displayName: 
-  gold: 7
-  scorePoint: 47
-  maxHp: 333
-  moveSpeed: 3.5
-  rotateSpeed: 0.63
-  sprite: {fileID: 21300000, guid: dfbfc688fada39246972611b5f044966, type: 3}
-  spriteColor: {r: 1, g: 1, b: 1, a: 1}
+  enemyId: Runner
+  enemyType: 1
+  displayName: Runner
+  enemyRole: 0
+  gold: 3
+  scorePoint: 15
+  maxHp: 40
+  moveSpeed: 3.2
+  rotateSpeed: 0.35
+  visualScale: 0.95
+  shieldHp: 0
+  splitCount: 2
+  splitChildType: 0
+  sprite: {fileID: 21300000, guid: 583ad1e81cfd9cc498a79e15e1e56c73, type: 3}
+  spriteColor: {r: 0.75, g: 1, b: 0.95, a: 1}

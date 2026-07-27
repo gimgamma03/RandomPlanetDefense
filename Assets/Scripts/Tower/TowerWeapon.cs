@@ -16,7 +16,13 @@ public enum WeaponType
 
     /// <summary>발사체 없이 지면 폭탄을 일렬 설치 (구 MultiBomb)</summary>
     GroundBombLine,
-    MultiLaser
+    MultiLaser,
+
+    /// <summary>차징 후 관통 직진탄 (Behavior 미구현 시 NoOp)</summary>
+    ChargePierce,
+
+    /// <summary>궤도 위성 접촉 피해 (Behavior 미구현 시 NoOp)</summary>
+    OrbitSatellite
 }
 
 /// <summary>
@@ -25,6 +31,8 @@ public enum WeaponType
 /// </summary>
 public class TowerWeapon : MonoBehaviour
 {
+    #region Identity / Prefab wiring
+
     [SerializeField]
     private TowerData towerData;
     [SerializeField]
@@ -58,38 +66,36 @@ public class TowerWeapon : MonoBehaviour
     [SerializeField]
     private LineRenderer lineRenderer3;
 
-    private IPoolService poolService;
-    private ITowerBehavior behavior;
-    private SpriteRenderer spriteRenderer;
-    private TowerSpawner towerSpawner;
-    private EnemySpawner enemySpawner;
-    private bool statsReady;
-
-    private GameObject resolvedHoming;
-    private GameObject resolvedStraight;
-    private GameObject resolvedBombShot;
-    private GameObject resolvedGroundBomb;
-
-    public Transform AttackTarget { get; set; }
-
     public Transform SpawnPoint => spawnPoint;
-    public GameObject TargetProjectilePrefab => resolvedHoming != null ? resolvedHoming : targetProjectilePrefab;
-    public GameObject BombProjectilePrefab => resolvedBombShot != null ? resolvedBombShot : bombProjectilePrefab;
-    public GameObject ProjectilePrefab => resolvedStraight != null ? resolvedStraight : projectilePrefab;
-    public GameObject BombPrefab => resolvedGroundBomb != null ? resolvedGroundBomb : bombPrefab;
-    public LineRenderer LineRenderer => lineRenderer;
-    public LineRenderer LineRenderer2 => lineRenderer2;
-    public LineRenderer LineRenderer3 => lineRenderer3;
-    public bool DoubleShot => doubleShot;
-
-    public TowerGrade towerGrade;
+    public TowerData Definition => towerData;
     public Sprite towerSprite => towerData != null ? towerData.sprite : null;
     public Color TowerSpriteColor => towerData != null ? towerData.spriteColor : Color.white;
     public string DisplayName => towerData != null ? towerData.DisplayName : name;
-    public TowerData Definition => towerData;
+
+    public LineRenderer LineRenderer => lineRenderer;
+    public LineRenderer LineRenderer2 => lineRenderer2;
+    public LineRenderer LineRenderer3 => lineRenderer3;
+
+    #endregion
+
+    #region Runtime stats
+
+    public TowerGrade towerGrade;
     public int level = 1;
     public int upGradeGold;
-    public int useGoldToUpGrade = 0;
+
+    /// <summary>판매 환불에 쓰는 누적 업그레이드 골드</summary>
+    public int useGoldToUpGrade;
+
+    [HideInInspector] public float damage;
+    [HideInInspector] public float range;
+    [HideInInspector] public float rate;
+    [HideInInspector] public float slowValue;
+
+    private bool doubleShot;
+    private bool statsReady;
+
+    public bool DoubleShot => doubleShot;
 
     public int MultiShotCount =>
         towerData != null ? Mathf.Max(1, towerData.multiShotCount) : 3;
@@ -110,6 +116,30 @@ public class TowerWeapon : MonoBehaviour
     public float LaserWidth =>
         towerData != null ? Mathf.Max(0f, towerData.laserWidth) : 0f;
 
+    public int OrbitSatelliteCount =>
+        towerData != null ? Mathf.Max(1, towerData.orbitSatelliteCount) : 2;
+
+    #endregion
+
+    #region Projectile resolve (Library → 레거시 폴백)
+
+    private GameObject resolvedHoming;
+    private GameObject resolvedStraight;
+    private GameObject resolvedBombShot;
+    private GameObject resolvedGroundBomb;
+
+    public GameObject TargetProjectilePrefab =>
+        resolvedHoming != null ? resolvedHoming : targetProjectilePrefab;
+
+    public GameObject BombProjectilePrefab =>
+        resolvedBombShot != null ? resolvedBombShot : bombProjectilePrefab;
+
+    public GameObject ProjectilePrefab =>
+        resolvedStraight != null ? resolvedStraight : projectilePrefab;
+
+    public GameObject BombPrefab =>
+        resolvedGroundBomb != null ? resolvedGroundBomb : bombPrefab;
+
     public ProjectileType EffectiveProjectileType
     {
         get
@@ -121,23 +151,6 @@ public class TowerWeapon : MonoBehaviour
 
             return ProjectileTypeDefaults.FromWeapon(weaponType);
         }
-    }
-
-    /// <summary>카탈로그에서 고른 정의로 등급·타입·스탯·스프라이트·발사체를 맞춘다.</summary>
-    public void BindDefinition(TowerData data)
-    {
-        if (data == null)
-        {
-            return;
-        }
-
-        towerData = data;
-        towerGrade = data.grade;
-        weaponType = data.weaponType;
-        statsReady = false;
-        EnsureStatsFromData();
-        ApplyVisualFromData();
-        ResolveProjectilePrefabs();
     }
 
     /// <summary>ProjectileBaseLibrary에서 타입 Base를 가져와 슬롯에 올린다. 없으면 프리팹 직렬화 폴백.</summary>
@@ -183,88 +196,13 @@ public class TowerWeapon : MonoBehaviour
         }
     }
 
-    private void ApplyVisualFromData()
-    {
-        if (towerData == null)
-        {
-            return;
-        }
+    #endregion
 
-        if (spriteRenderer == null)
-        {
-            spriteRenderer = GetComponent<SpriteRenderer>();
-        }
+    #region Targeting
 
-        if (spriteRenderer == null)
-        {
-            return;
-        }
+    public Transform AttackTarget { get; set; }
 
-        if (towerData.sprite != null)
-        {
-            spriteRenderer.sprite = towerData.sprite;
-        }
-
-        spriteRenderer.color = towerData.spriteColor;
-
-        TowerGradeRingView.Attach(gameObject, towerGrade);
-    }
-
-    [HideInInspector] public float damage;
-    [HideInInspector] public float range;
-    [HideInInspector] public float rate;
-    private bool doubleShot;
-
-    [HideInInspector] public float slowValue;
-
-    private void Start()
-    {
-        EnsureStatsFromData();
-    }
-
-    private void OnDisable()
-    {
-        behavior?.Deactivate();
-    }
-
-    private void OnDestroy()
-    {
-        behavior?.Deactivate();
-    }
-
-    public void SetUp(TowerSpawner towerSpawner, EnemySpawner enemySpawner)
-    {
-        spriteRenderer = GetComponent<SpriteRenderer>();
-        this.towerSpawner = towerSpawner;
-        this.enemySpawner = enemySpawner;
-        poolService = ServiceLocator.Get<IPoolService>();
-
-        EnsureStatsFromData();
-        ResolveProjectilePrefabs();
-
-        behavior?.Deactivate();
-        behavior = TowerBehaviorFactory.Create(weaponType);
-        behavior.Initialize(this);
-        behavior.Activate();
-    }
-
-    public bool UPGrade()
-    {
-        useGoldToUpGrade += upGradeGold;
-        upGradeGold += (int)towerGrade;
-        damage += towerData.weaponUpGradeValue.damage;
-        range += towerData.weaponUpGradeValue.range;
-        rate += towerData.weaponUpGradeValue.rate;
-
-        if (weaponType == WeaponType.Slow)
-        {
-            slowValue += towerData.weaponUpGradeValue.slowValue;
-        }
-
-        level++;
-        behavior?.OnUpgraded();
-        return true;
-    }
+    private EnemySpawner enemySpawner;
 
     public Transform FindClosestAttackTarget()
     {
@@ -354,6 +292,12 @@ public class TowerWeapon : MonoBehaviour
         return true;
     }
 
+    #endregion
+
+    #region Pool
+
+    private IPoolService poolService;
+
     public GameObject SpawnPooled(GameObject prefab, Vector3 position, Quaternion rotation)
     {
         if (prefab == null)
@@ -372,6 +316,106 @@ public class TowerWeapon : MonoBehaviour
         }
 
         return Instantiate(prefab, position, rotation);
+    }
+
+    #endregion
+
+    #region Behavior lifecycle
+
+    private ITowerBehavior behavior;
+    private SpriteRenderer spriteRenderer;
+
+    /// <summary>카탈로그에서 고른 정의로 등급·타입·스탯·스프라이트·발사체를 맞춘다.</summary>
+    public void BindDefinition(TowerData data)
+    {
+        if (data == null)
+        {
+            return;
+        }
+
+        towerData = data;
+        towerGrade = data.grade;
+        weaponType = data.weaponType;
+        statsReady = false;
+        EnsureStatsFromData();
+        ApplyVisualFromData();
+        ResolveProjectilePrefabs();
+    }
+
+    public void SetUp(TowerSpawner _, EnemySpawner enemySpawner)
+    {
+        // TowerSpawner는 Tower MB가 보관. 여기선 타겟·풀·Behavior만.
+        spriteRenderer = GetComponent<SpriteRenderer>();
+        this.enemySpawner = enemySpawner;
+        poolService = ServiceLocator.Get<IPoolService>();
+
+        EnsureStatsFromData();
+        ResolveProjectilePrefabs();
+
+        behavior?.Deactivate();
+        behavior = TowerBehaviorFactory.Create(weaponType);
+        behavior.Initialize(this);
+        behavior.Activate();
+    }
+
+    public bool UPGrade()
+    {
+        useGoldToUpGrade += upGradeGold;
+        upGradeGold += (int)towerGrade;
+        damage += towerData.weaponUpGradeValue.damage;
+        range += towerData.weaponUpGradeValue.range;
+        rate += towerData.weaponUpGradeValue.rate;
+
+        if (weaponType == WeaponType.Slow)
+        {
+            slowValue += towerData.weaponUpGradeValue.slowValue;
+        }
+
+        level++;
+        behavior?.OnUpgraded();
+        return true;
+    }
+
+    private void Start()
+    {
+        EnsureStatsFromData();
+    }
+
+    private void OnDisable()
+    {
+        behavior?.Deactivate();
+    }
+
+    private void OnDestroy()
+    {
+        behavior?.Deactivate();
+    }
+
+    private void ApplyVisualFromData()
+    {
+        if (towerData == null)
+        {
+            return;
+        }
+
+        if (spriteRenderer == null)
+        {
+            spriteRenderer = GetComponent<SpriteRenderer>();
+        }
+
+        if (spriteRenderer == null)
+        {
+            return;
+        }
+
+        if (towerData.sprite != null)
+        {
+            spriteRenderer.sprite = towerData.sprite;
+        }
+
+        spriteRenderer.color = towerData.spriteColor;
+
+        TowerGradeRingView.Attach(gameObject, towerGrade);
     }
 
     private void EnsureStatsFromData()
@@ -394,4 +438,6 @@ public class TowerWeapon : MonoBehaviour
         upGradeGold = (int)towerGrade * Constants.upGradeGoldMulti;
         statsReady = true;
     }
+
+    #endregion
 }

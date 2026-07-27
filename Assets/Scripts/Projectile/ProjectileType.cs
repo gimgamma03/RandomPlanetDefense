@@ -31,14 +31,16 @@ public static class ProjectileTypeDefaults
             case WeaponType.Bomb:
                 return ProjectileType.BombShot;
             case WeaponType.MultiWayShooting:
+            case WeaponType.ChargePierce:
                 return ProjectileType.Straight;
-                case WeaponType.GroundBombLine:
+            case WeaponType.GroundBombLine:
                 return ProjectileType.GroundBomb;
             case WeaponType.Laser:
             case WeaponType.MultiLaser:
             case WeaponType.Slow:
             case WeaponType.Buff:
             case WeaponType.ChainLightning:
+            case WeaponType.OrbitSatellite:
             default:
                 return ProjectileType.None;
         }
