@@ -2436,7 +2436,7 @@ MonoBehaviour:
   sceneDirector: {fileID: 1255973014}
   stageSelectPanel: {fileID: 1316672573}
   towerUpgradePanel: {fileID: 1383563515}
-  startButton: {fileID: 0}
+  startButton: {fileID: 1727124170}
   upgradeButton: {fileID: 1848052596}
   exitButton: {fileID: 1074491684}
   titleBanner: {fileID: 424378761}
@@ -3146,7 +3146,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 1727124171}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 1255973013}
+        m_TargetAssemblyTypeName: TitleFlow, Assembly-CSharp
+        m_MethodName: OnClickStart
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!114 &1727124171
 MonoBehaviour:
   m_ObjectHideFlags: 0

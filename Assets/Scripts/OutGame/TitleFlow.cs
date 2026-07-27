@@ -59,11 +59,79 @@ public sealed class TitleFlow : MonoBehaviour
             }
         }
 
+        ResolveButtons();
+
         Wire(startButton, OnClickStart);
         Wire(upgradeButton, OnClickUpgrade);
         Wire(exitButton, OnClickExit);
         ShowTitle();
         RefreshCrystalHud();
+    }
+
+    private void ResolveButtons()
+    {
+        Transform searchRoot = panelTitle != null ? panelTitle.transform : transform;
+
+        if (startButton == null)
+        {
+            startButton = FindButton(searchRoot, "ButtonStage")
+                ?? FindButton(searchRoot, "ButtonGameStart")
+                ?? FindButton(transform, "ButtonStage")
+                ?? FindButton(transform, "ButtonGameStart");
+        }
+
+        if (upgradeButton == null)
+        {
+            upgradeButton = FindButton(searchRoot, "ButtonTowerUpgrade")
+                ?? FindButton(transform, "ButtonTowerUpgrade");
+        }
+
+        if (exitButton == null)
+        {
+            exitButton = FindButton(searchRoot, "ButtonGameExit")
+                ?? FindButton(transform, "ButtonGameExit");
+        }
+    }
+
+    private static Button FindButton(Transform root, string name)
+    {
+        if (root == null)
+        {
+            return null;
+        }
+
+        Transform t = FindDeep(root, name);
+        return t != null ? t.GetComponent<Button>() : null;
+    }
+
+    private static Transform FindDeep(Transform root, string name)
+    {
+        if (root.name == name)
+        {
+            return root;
+        }
+
+        for (int i = 0; i < root.childCount; i++)
+        {
+            Transform found = FindDeep(root.GetChild(i), name);
+            if (found != null)
+            {
+                return found;
+            }
+        }
+
+        return null;
+    }
+
+    private static void Wire(Button button, UnityEngine.Events.UnityAction action)
+    {
+        if (button == null)
+        {
+            return;
+        }
+
+        button.onClick.RemoveAllListeners();
+        button.onClick.AddListener(action);
     }
 
     public void OnClickStart()
@@ -120,6 +188,12 @@ public sealed class TitleFlow : MonoBehaviour
         SetPanel(panelStageSelect, true);
         SetPanel(panelTowerUpgrade, false);
         SetPanel(titleBanner, false);
+
+        if (stageSelectPanel == null && panelStageSelect != null)
+        {
+            stageSelectPanel = panelStageSelect.GetComponent<StageSelectPanel>();
+        }
+
         stageSelectPanel?.Refresh();
     }
 
@@ -147,17 +221,6 @@ public sealed class TitleFlow : MonoBehaviour
         }
 
         crystalHudText.text = crystals.ToString();
-    }
-
-    private static void Wire(Button button, UnityEngine.Events.UnityAction action)
-    {
-        if (button == null)
-        {
-            return;
-        }
-
-        button.onClick.RemoveListener(action);
-        button.onClick.AddListener(action);
     }
 
     private static void SetPanel(GameObject panel, bool active)

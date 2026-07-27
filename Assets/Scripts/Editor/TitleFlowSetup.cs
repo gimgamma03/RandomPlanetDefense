@@ -58,7 +58,8 @@ public static class TitleFlowSetup
             MoveIfExists(bg, "ButtonGameExit", panelTitle.transform);
         }
 
-        Button startButton = FindButton(panelTitle.transform, "ButtonGameStart");
+        Button startButton = FindButton(panelTitle.transform, "ButtonGameStart")
+            ?? FindButton(panelTitle.transform, "ButtonStage");
         Button exitButton = FindButton(panelTitle.transform, "ButtonGameExit");
         // Start는 Awake에서 Wire. 영구 리스너도 맞춰 둔다.
         if (startButton != null)
@@ -257,7 +258,8 @@ public static class TitleFlowSetup
         }
 
         // Start 라벨을 Stages로 (있으면)
-        Button startButton = FindButton(panelTitle.transform, "ButtonGameStart");
+        Button startButton = FindButton(panelTitle.transform, "ButtonGameStart")
+            ?? FindButton(panelTitle.transform, "ButtonStage");
         if (startButton != null)
         {
             EnsureButtonLabel(startButton.transform, "Stages", orbitFont);
