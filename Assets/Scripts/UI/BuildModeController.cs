@@ -130,9 +130,25 @@ public class BuildModeController : MonoBehaviour, IBuildModeState
 
         Vector2 mouseWorld = Camera.main.ScreenToWorldPoint(Input.mousePosition);
 
-        if (Input.GetKeyDown(KeyCode.Escape) || Input.GetMouseButtonDown(1))
+        if (Input.GetKeyDown(KeyCode.Escape))
         {
             CancelMode();
+        }
+        else if (Input.GetMouseButtonDown(1))
+        {
+            // 벽 모드: 빈 벽 우클릭 → 철거. 그 외/실패 시 모드 취소
+            if (mode == BuildMode.PlaceWall
+                && EventSystem.current != null
+                && !EventSystem.current.IsPointerOverGameObject()
+                && MapDirector.Instance != null
+                && MapDirector.Instance.TryRemoveWallAt(mouseWorld))
+            {
+                // 철거 성공 — 벽 모드 유지
+            }
+            else
+            {
+                CancelMode();
+            }
         }
 
         // Space: 벽 모드 진입 (타워 버튼과 같은 흐름). 이미 벽 모드면 즉시 설치.

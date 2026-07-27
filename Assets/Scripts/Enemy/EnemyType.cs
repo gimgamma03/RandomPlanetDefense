@@ -10,5 +10,6 @@ public enum EnemyType
     Tank = 2,        // 구 Enemy03
     Shielded = 3,    // 구 Enemy04
     Splitter = 4,    // 구 Enemy05
-    RunnerElite = 5, // 구 Enemy06
+    RunnerElite = 5, // 레거시. 웨이브에 남아 있으면 Runner T2로 해석
+    Boss = 6,        // 스테이지 최종 웨이브 보스
 }

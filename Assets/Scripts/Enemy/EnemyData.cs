@@ -15,6 +15,9 @@ public class EnemyData : ScriptableObject
     [Tooltip("전투 역할. 스탯 변형은 SO 복제+색으로")]
     public EnemyRole enemyRole = EnemyRole.Swarm;
 
+    [Tooltip("강도 티어 1~3. 웨이브에서 Type+Tier로 고른다")]
+    public EnemyTier enemyTier = EnemyTier.Tier1;
+
     public int gold = 1;
     public int scorePoint = 10;
     public float maxHp = 10f;
@@ -39,6 +42,13 @@ public class EnemyData : ScriptableObject
 
     [Tooltip("같은 스프라이트도 색으로 구분 (엘리트 러너 등)")]
     public Color spriteColor = Color.white;
+
+    [Header("Boss")]
+    [Tooltip("보스 실루엣 네온 + 왕관 마커")]
+    public bool isBoss;
+
+    [Tooltip("보스 주위를 도는 보조 왕관 스프라이트 (노란 네온 등)")]
+    public Sprite bossCrownSprite;
 
     public string Id => string.IsNullOrEmpty(enemyId) ? name : enemyId;
 

@@ -33,6 +33,7 @@ public class EnemySpawner : MonoBehaviour
 
     private Wave currentWave;
     private Coroutine spawnRoutine;
+    private StageData pendingBossStage;
 
     /// <summary>스폰 코루틴이 아직 돌고 있거나, 필드에 적이 남아 웨이브 진행 중</summary>
     private bool waveActive;
@@ -89,6 +90,12 @@ public class EnemySpawner : MonoBehaviour
 
     public void StartWave(Wave wave)
     {
+        StartWave(wave, null);
+    }
+
+    /// <param name="bossStage">최종 웨이브일 때 StageData를 넘기면 보스 1마리 추가</param>
+    public void StartWave(Wave wave, StageData bossStage)
+    {
         if (waveActive)
         {
             Debug.LogWarning("[EnemySpawner] Wave already in progress.");
@@ -101,6 +108,7 @@ public class EnemySpawner : MonoBehaviour
         }
 
         currentWave = wave;
+        pendingBossStage = bossStage;
         waveActive = true;
         spawnCompleted = false;
 
@@ -122,6 +130,14 @@ public class EnemySpawner : MonoBehaviour
             TryFinishWave();
             yield break;
         }
+
+        // 최종 웨이브: 보스 먼저 1마리
+        if (pendingBossStage != null && pendingBossStage.spawnBossOnFinalWave)
+        {
+            TrySpawnStageBoss(pendingBossStage);
+        }
+
+        pendingBossStage = null;
 
         int spawnEnemyCount = 0;
         float delay = Mathf.Max(0f, currentWave.spawnDelay);
@@ -149,6 +165,24 @@ public class EnemySpawner : MonoBehaviour
         TryFinishWave();
     }
 
+    private void TrySpawnStageBoss(StageData stage)
+    {
+        if (enemyCatalog == null)
+        {
+            enemyCatalog = EnemyCatalog.LoadFromResources();
+        }
+
+        if (!enemyCatalog.TryGet(stage.bossEnemyType, stage.bossEnemyTier, out EnemyData boss)
+            || boss == null)
+        {
+            Debug.LogWarning(
+                $"[EnemySpawner] Boss missing: {stage.bossEnemyType} T{(int)stage.bossEnemyTier}");
+            return;
+        }
+
+        SpawnEnemyInstance(boss, SpawnWorldPosition, splitGeneration: 0);
+    }
+
     /// <summary>
     /// spawnWeight 상대 비중으로 고른다. 합이 1이 아니어도 된다.
     /// </summary>
@@ -170,7 +204,7 @@ public class EnemySpawner : MonoBehaviour
                 continue;
             }
 
-            if (!enemyCatalog.TryGet(entries[i].enemyType, out EnemyData data))
+            if (!enemyCatalog.TryGet(entries[i].enemyType, ResolveTier(entries[i]), out EnemyData data))
             {
                 continue;
             }
@@ -199,7 +233,7 @@ public class EnemySpawner : MonoBehaviour
                 continue;
             }
 
-            if (!enemyCatalog.TryGet(entries[i].enemyType, out EnemyData data))
+            if (!enemyCatalog.TryGet(entries[i].enemyType, ResolveTier(entries[i]), out EnemyData data))
             {
                 continue;
             }
@@ -212,6 +246,29 @@ public class EnemySpawner : MonoBehaviour
         }
 
         return lastValid;
+    }
+
+    private static EnemyTier ResolveTier(WaveEnemy entry)
+    {
+        // 구 Stage SO에 enemyTier 필드가 없으면 0 → Tier1
+        // 레거시 RunnerElite 타입은 Runner T2로 취급
+        if (entry.enemyType == EnemyType.RunnerElite)
+        {
+            return EnemyTier.Tier2;
+        }
+
+        int value = (int)entry.enemyTier;
+        if (value < (int)EnemyTier.Tier1)
+        {
+            return EnemyTier.Tier1;
+        }
+
+        if (value > (int)EnemyTier.Tier3)
+        {
+            return EnemyTier.Tier3;
+        }
+
+        return entry.enemyTier;
     }
 
     private GameObject SpawnEnemyHpSlider(GameObject enemy)
@@ -302,7 +359,7 @@ public class EnemySpawner : MonoBehaviour
             enemyCatalog = EnemyCatalog.LoadFromResources();
         }
 
-        if (!enemyCatalog.TryGet(parentData.splitChildType, out EnemyData childData) || childData == null)
+        if (!enemyCatalog.TryGet(parentData.splitChildType, EnemyTier.Tier1, out EnemyData childData) || childData == null)
         {
             Debug.LogWarning(
                 $"[EnemySpawner] Split child type missing: {parentData.splitChildType}");

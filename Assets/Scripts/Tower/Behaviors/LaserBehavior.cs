@@ -3,6 +3,23 @@ using UnityEngine;
 
 public sealed class LaserBehavior : AttackBehaviorBase
 {
+    private const int MultiBeamCount = 3;
+
+    private readonly Transform[] multiTargets = new Transform[MultiBeamCount];
+    private bool multiTarget;
+
+    public override void Initialize(TowerWeapon tower)
+    {
+        base.Initialize(tower);
+        multiTarget = tower.weaponType == WeaponType.MultiLaser
+            || tower.towerGrade >= TowerBehaviorFactory.PassiveUnlockGrade;
+
+        if (multiTarget)
+        {
+            tower.EnsureMultiLaserLines();
+        }
+    }
+
     protected override IEnumerator AttackLoop()
     {
         EnableLaser(true);
@@ -15,7 +32,15 @@ public sealed class LaserBehavior : AttackBehaviorBase
                 yield break;
             }
 
-            SpawnLaser();
+            if (multiTarget)
+            {
+                SpawnMultiLaser();
+            }
+            else
+            {
+                SpawnLaser(Tower.AttackTarget, Tower.LineRenderer);
+            }
+
             yield return null;
         }
     }
@@ -27,10 +52,14 @@ public sealed class LaserBehavior : AttackBehaviorBase
 
     private void EnableLaser(bool enabled)
     {
-        LineRenderer line = Tower.LineRenderer;
-        if (line != null)
+        int beamCount = multiTarget ? MultiBeamCount : 1;
+        for (int i = 0; i < beamCount; i++)
         {
-            line.gameObject.SetActive(enabled);
+            LineRenderer line = Tower.GetLaserLine(i);
+            if (line != null)
+            {
+                line.gameObject.SetActive(enabled);
+            }
         }
 
         if (enabled)
@@ -48,9 +77,11 @@ public sealed class LaserBehavior : AttackBehaviorBase
             return;
         }
 
-        SetWidth(Tower.LineRenderer, width);
-        SetWidth(Tower.LineRenderer2, width);
-        SetWidth(Tower.LineRenderer3, width);
+        int beamCount = multiTarget ? MultiBeamCount : 1;
+        for (int i = 0; i < beamCount; i++)
+        {
+            SetWidth(Tower.GetLaserLine(i), width);
+        }
     }
 
     private static void SetWidth(LineRenderer line, float width)
@@ -71,11 +102,37 @@ public sealed class LaserBehavior : AttackBehaviorBase
         line.textureMode = LineTextureMode.Stretch;
     }
 
-    private void SpawnLaser()
+    private void SpawnMultiLaser()
     {
-        Transform target = Tower.AttackTarget;
+        int count = Tower.CollectClosestAttackTargets(multiTargets);
+        if (count <= 0)
+        {
+            return;
+        }
+
+        for (int i = 0; i < MultiBeamCount; i++)
+        {
+            LineRenderer line = Tower.GetLaserLine(i);
+            Transform target = i < count ? multiTargets[i] : null;
+
+            if (target == null || line == null)
+            {
+                if (line != null)
+                {
+                    line.gameObject.SetActive(false);
+                }
+
+                continue;
+            }
+
+            line.gameObject.SetActive(true);
+            SpawnLaser(target, line);
+        }
+    }
+
+    private void SpawnLaser(Transform target, LineRenderer line)
+    {
         Transform spawn = Tower.SpawnPoint;
-        LineRenderer line = Tower.LineRenderer;
         if (target == null || spawn == null || line == null)
         {
             return;

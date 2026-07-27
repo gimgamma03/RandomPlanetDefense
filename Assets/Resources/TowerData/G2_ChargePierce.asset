@@ -16,7 +16,7 @@ MonoBehaviour:
   displayName: "\uCC28\uC9D5\uD0C0\uC6CC"
   weapon:
     damage: 9.0
-    rate: 1.32
+    rate: 1.4
     range: 3.78
     sell: 0
     doubleShot: 0

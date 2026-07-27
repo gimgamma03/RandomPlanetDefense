@@ -12,10 +12,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2b3505e5ce6b5354bb7cad42f50dcbc2, type: 3}
   m_Name: E01_Swarm
   m_EditorClassIdentifier: 
-  enemyId: Swarm
+  enemyId: Swarm_T1
   enemyType: 0
   displayName: Swarm
   enemyRole: 2
+  enemyTier: 1
   gold: 1
   scorePoint: 10
   maxHp: 10

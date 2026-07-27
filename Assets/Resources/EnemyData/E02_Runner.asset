@@ -12,10 +12,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2b3505e5ce6b5354bb7cad42f50dcbc2, type: 3}
   m_Name: E02_Runner
   m_EditorClassIdentifier: 
-  enemyId: Runner
+  enemyId: Runner_T1
   enemyType: 1
   displayName: Runner
   enemyRole: 0
+  enemyTier: 1
   gold: 3
   scorePoint: 15
   maxHp: 40
@@ -26,4 +27,4 @@ MonoBehaviour:
   splitCount: 2
   splitChildType: 0
   sprite: {fileID: 21300000, guid: 583ad1e81cfd9cc498a79e15e1e56c73, type: 3}
-  spriteColor: {r: 0.75, g: 1, b: 0.95, a: 1}
+  spriteColor: {r: 0.7490196, g: 1, b: 0.9490197, a: 1}

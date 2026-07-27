@@ -38,6 +38,12 @@ public sealed class StageDataEditor : Editor
         EditorGUILayout.PropertyField(displayName);
         EditorGUILayout.PropertyField(clearBonusGold);
 
+        EditorGUILayout.Space(8f);
+        EditorGUILayout.LabelField("Boss (Final Wave)", EditorStyles.boldLabel);
+        EditorGUILayout.PropertyField(serializedObject.FindProperty("spawnBossOnFinalWave"));
+        EditorGUILayout.PropertyField(serializedObject.FindProperty("bossEnemyType"));
+        EditorGUILayout.PropertyField(serializedObject.FindProperty("bossEnemyTier"));
+
         EditorGUILayout.Space(12f);
         DrawWaveToolbar();
         EditorGUILayout.Space(6f);
@@ -98,6 +104,7 @@ public sealed class StageDataEditor : Editor
             enemies.ClearArray();
             enemies.arraySize = 1;
             enemies.GetArrayElementAtIndex(0).FindPropertyRelative("enemyType").enumValueIndex = 0;
+            enemies.GetArrayElementAtIndex(0).FindPropertyRelative("enemyTier").intValue = (int)EnemyTier.Tier1;
             enemies.GetArrayElementAtIndex(0).FindPropertyRelative("spawnWeight").floatValue = 1f;
             selectedWaveIndex = insertAt;
             RebuildEnemyList();
@@ -180,15 +187,22 @@ public sealed class StageDataEditor : Editor
             drawHeaderCallback = rect =>
             {
                 float w = rect.width;
-                EditorGUI.LabelField(new Rect(rect.x, rect.y, w * 0.45f, rect.height), "Enemy Type");
-                EditorGUI.LabelField(new Rect(rect.x + w * 0.45f, rect.y, w * 0.28f, rect.height), "Weight");
-                EditorGUI.LabelField(new Rect(rect.x + w * 0.73f, rect.y, w * 0.27f, rect.height), "%");
+                EditorGUI.LabelField(new Rect(rect.x, rect.y, w * 0.34f, rect.height), "Enemy Type");
+                EditorGUI.LabelField(new Rect(rect.x + w * 0.34f, rect.y, w * 0.18f, rect.height), "Tier");
+                EditorGUI.LabelField(new Rect(rect.x + w * 0.52f, rect.y, w * 0.24f, rect.height), "Weight");
+                EditorGUI.LabelField(new Rect(rect.x + w * 0.76f, rect.y, w * 0.24f, rect.height), "%");
             },
             drawElementCallback = (rect, index, active, focused) =>
             {
                 SerializedProperty element = enemies.GetArrayElementAtIndex(index);
                 SerializedProperty typeProp = element.FindPropertyRelative("enemyType");
+                SerializedProperty tierProp = element.FindPropertyRelative("enemyTier");
                 SerializedProperty weightProp = element.FindPropertyRelative("spawnWeight");
+
+                if (tierProp.intValue < (int)EnemyTier.Tier1)
+                {
+                    tierProp.intValue = (int)EnemyTier.Tier1;
+                }
 
                 float total = SumWeights(enemies);
                 float weight = Mathf.Max(0f, weightProp.floatValue);
@@ -199,17 +213,22 @@ public sealed class StageDataEditor : Editor
                 float w = rect.width;
 
                 EditorGUI.PropertyField(
-                    new Rect(rect.x, rect.y, w * 0.45f - 4f, rect.height),
+                    new Rect(rect.x, rect.y, w * 0.34f - 4f, rect.height),
                     typeProp,
                     GUIContent.none);
 
                 EditorGUI.PropertyField(
-                    new Rect(rect.x + w * 0.45f, rect.y, w * 0.28f - 4f, rect.height),
+                    new Rect(rect.x + w * 0.34f, rect.y, w * 0.18f - 4f, rect.height),
+                    tierProp,
+                    GUIContent.none);
+
+                EditorGUI.PropertyField(
+                    new Rect(rect.x + w * 0.52f, rect.y, w * 0.24f - 4f, rect.height),
                     weightProp,
                     GUIContent.none);
 
                 EditorGUI.LabelField(
-                    new Rect(rect.x + w * 0.73f, rect.y, w * 0.27f, rect.height),
+                    new Rect(rect.x + w * 0.76f, rect.y, w * 0.24f, rect.height),
                     $"{pct:0.#}%",
                     EditorStyles.miniLabel);
             },
@@ -238,6 +257,12 @@ public sealed class StageDataEditor : Editor
         {
             SerializedProperty e = enemies.GetArrayElementAtIndex(i);
             EnemyType type = (EnemyType)e.FindPropertyRelative("enemyType").enumValueIndex;
+            int tierValue = e.FindPropertyRelative("enemyTier").intValue;
+            if (tierValue < (int)EnemyTier.Tier1)
+            {
+                tierValue = (int)EnemyTier.Tier1;
+            }
+
             float w = Mathf.Max(0f, e.FindPropertyRelative("spawnWeight").floatValue);
             float pct = w / total * 100f;
             if (i > 0)
@@ -245,7 +270,7 @@ public sealed class StageDataEditor : Editor
                 sb.Append(" · ");
             }
 
-            sb.Append($"{type} {pct:0.#}%");
+            sb.Append($"{type} T{tierValue} {pct:0.#}%");
         }
 
         EditorGUILayout.HelpBox(sb.ToString(), MessageType.None);

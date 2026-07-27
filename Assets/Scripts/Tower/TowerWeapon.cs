@@ -174,25 +174,29 @@ public class TowerWeapon : MonoBehaviour
         }
 
         GameObject basePrefab = library.GetBasePrefab(type);
-        if (basePrefab == null)
+        if (basePrefab != null)
         {
-            return;
+            switch (type)
+            {
+                case ProjectileType.Homing:
+                    resolvedHoming = basePrefab;
+                    break;
+                case ProjectileType.Straight:
+                    resolvedStraight = basePrefab;
+                    break;
+                case ProjectileType.BombShot:
+                    resolvedBombShot = basePrefab;
+                    break;
+                case ProjectileType.GroundBomb:
+                    resolvedGroundBomb = basePrefab;
+                    break;
+            }
         }
 
-        switch (type)
+        // Bomb G3+ 라인폭탄 패시브: BombShot과 별도로 GroundBomb Base도 필요
+        if (weaponType == WeaponType.Bomb && towerGrade >= TowerBehaviorFactory.PassiveUnlockGrade)
         {
-            case ProjectileType.Homing:
-                resolvedHoming = basePrefab;
-                break;
-            case ProjectileType.Straight:
-                resolvedStraight = basePrefab;
-                break;
-            case ProjectileType.BombShot:
-                resolvedBombShot = basePrefab;
-                break;
-            case ProjectileType.GroundBomb:
-                resolvedGroundBomb = basePrefab;
-                break;
+            resolvedGroundBomb = library.GetBasePrefab(ProjectileType.GroundBomb);
         }
     }
 
@@ -233,6 +237,135 @@ public class TowerWeapon : MonoBehaviour
 
         AttackTarget = closest;
         return AttackTarget;
+    }
+
+    /// <summary>
+    /// 사거리 안 적을 가까운 순으로 최대 buffer.Length개 담는다.
+    /// AttackTarget은 1순위(가장 가까운)로 맞춘다.
+    /// </summary>
+    public int CollectClosestAttackTargets(Transform[] buffer)
+    {
+        if (buffer == null || buffer.Length == 0 || enemySpawner == null)
+        {
+            AttackTarget = null;
+            return 0;
+        }
+
+        for (int i = 0; i < buffer.Length; i++)
+        {
+            buffer[i] = null;
+        }
+
+        // 거리 병행 버퍼(고정 크기 — 레이저 빔 수와 맞춤)
+        float d0 = float.PositiveInfinity;
+        float d1 = float.PositiveInfinity;
+        float d2 = float.PositiveInfinity;
+
+        for (int i = 0; i < enemySpawner.enemyList.Count; ++i)
+        {
+            Enemy enemy = enemySpawner.enemyList[i];
+            if (!IsValidEnemyTarget(enemy))
+            {
+                continue;
+            }
+
+            float distance = Vector3.Distance(enemy.transform.position, transform.position);
+            if (distance > range)
+            {
+                continue;
+            }
+
+            Transform t = enemy.transform;
+            if (buffer.Length >= 1 && (buffer[0] == null || distance < d0))
+            {
+                if (buffer.Length >= 3)
+                {
+                    buffer[2] = buffer[1];
+                    d2 = d1;
+                }
+
+                if (buffer.Length >= 2)
+                {
+                    buffer[1] = buffer[0];
+                    d1 = d0;
+                }
+
+                buffer[0] = t;
+                d0 = distance;
+            }
+            else if (buffer.Length >= 2 && (buffer[1] == null || distance < d1))
+            {
+                if (buffer.Length >= 3)
+                {
+                    buffer[2] = buffer[1];
+                    d2 = d1;
+                }
+
+                buffer[1] = t;
+                d1 = distance;
+            }
+            else if (buffer.Length >= 3 && (buffer[2] == null || distance < d2))
+            {
+                buffer[2] = t;
+                d2 = distance;
+            }
+        }
+
+        int count = 0;
+        for (int i = 0; i < buffer.Length; i++)
+        {
+            if (buffer[i] != null)
+            {
+                count++;
+            }
+        }
+
+        AttackTarget = buffer[0];
+        return count;
+    }
+
+    /// <summary>
+    /// MultiLaser / G3+ 레이저용. LaserEffect를 복제해 lineRenderer2·3을 채운다.
+    /// </summary>
+    public void EnsureMultiLaserLines()
+    {
+        if (lineRenderer == null)
+        {
+            return;
+        }
+
+        if (lineRenderer2 == null)
+        {
+            lineRenderer2 = CloneLaserLineRenderer("LaserEffect_2");
+        }
+
+        if (lineRenderer3 == null)
+        {
+            lineRenderer3 = CloneLaserLineRenderer("LaserEffect_3");
+        }
+    }
+
+    private LineRenderer CloneLaserLineRenderer(string objectName)
+    {
+        Transform parent = lineRenderer.transform.parent;
+        GameObject clone = Object.Instantiate(lineRenderer.gameObject, parent);
+        clone.name = objectName;
+        return clone.GetComponent<LineRenderer>();
+    }
+
+    public LineRenderer GetLaserLine(int index)
+    {
+        switch (index)
+        {
+            case 0:
+                return lineRenderer;
+            case 1:
+                return lineRenderer2;
+            case 2:
+                return lineRenderer3;
+            default:
+                return null;
+        }
     }
 
     public bool IsPossibleToAttackTarget()
@@ -353,7 +486,7 @@ public class TowerWeapon : MonoBehaviour
         ResolveProjectilePrefabs();
 
         behavior?.Deactivate();
-        behavior = TowerBehaviorFactory.Create(weaponType);
+        behavior = TowerBehaviorFactory.Create(weaponType, towerGrade);
         behavior.Initialize(this);
         behavior.Activate();
     }

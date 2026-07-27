@@ -12,10 +12,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2b3505e5ce6b5354bb7cad42f50dcbc2, type: 3}
   m_Name: E04_Shielded
   m_EditorClassIdentifier: 
-  enemyId: Shielded
+  enemyId: Shielded_T1
   enemyType: 3
   displayName: Shielded
   enemyRole: 3
+  enemyTier: 1
   gold: 6
   scorePoint: 30
   maxHp: 90

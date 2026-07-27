@@ -50,6 +50,12 @@ public class WaveSystem : MonoBehaviour
 
     private void Awake()
     {
+        // 아웃게임에서 고른 스테이지 반영 (인스펙터 기본값은 폴백)
+        if (stageOverride == null)
+        {
+            stageId = GameSession.SelectedStageId;
+        }
+
         EnsureStageLoaded();
     }
 
@@ -116,8 +122,10 @@ public class WaveSystem : MonoBehaviour
 
         StartGame();
         int currentWave = currentWaveIndex + 1;
+        bool isFinalWave = currentWaveIndex >= stageData.waves.Length - 1;
+        StageData bossStage = isFinalWave ? stageData : null;
 
-        enemySpawner.StartWave(stageData.waves[currentWaveIndex]);
+        enemySpawner.StartWave(stageData.waves[currentWaveIndex], bossStage);
         textWaveCount.text = "Wave : " + currentWave;
     }
 

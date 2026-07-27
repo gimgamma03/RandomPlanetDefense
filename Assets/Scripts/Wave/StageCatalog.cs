@@ -16,6 +16,7 @@ public sealed class StageCatalog
     public StageCatalog(StageData[] stages)
     {
         all = stages ?? System.Array.Empty<StageData>();
+        System.Array.Sort(all, CompareByStageId);
 
         for (int i = 0; i < all.Length; i++)
         {
@@ -35,6 +36,26 @@ public sealed class StageCatalog
 
             byId[stage.stageId] = stage;
         }
+    }
+
+    private static int CompareByStageId(StageData a, StageData b)
+    {
+        if (ReferenceEquals(a, b))
+        {
+            return 0;
+        }
+
+        if (a == null)
+        {
+            return 1;
+        }
+
+        if (b == null)
+        {
+            return -1;
+        }
+
+        return a.stageId.CompareTo(b.stageId);
     }
 
     public static StageCatalog LoadFromResources()

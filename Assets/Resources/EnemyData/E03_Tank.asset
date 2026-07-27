@@ -12,10 +12,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2b3505e5ce6b5354bb7cad42f50dcbc2, type: 3}
   m_Name: E03_Tank
   m_EditorClassIdentifier: 
-  enemyId: Tank
+  enemyId: Tank_T1
   enemyType: 2
   displayName: Tank
   enemyRole: 1
+  enemyTier: 1
   gold: 5
   scorePoint: 20
   maxHp: 140

@@ -15,97 +15,127 @@ MonoBehaviour:
   stageId: 1
   displayName: Stage 1
   clearBonusGold: 0
+  spawnBossOnFinalWave: 1
+  bossEnemyType: 6
+  bossEnemyTier: 1
   waves:
   - spawnDelay: 1.1
     maxEnemyCount: 10
     enemies:
-    - enemyType: 0
+    - enemyType: 1
+      enemyTier: 1
       spawnWeight: 100
   - spawnDelay: 1
     maxEnemyCount: 11
     enemies:
     - enemyType: 0
+      enemyTier: 0
       spawnWeight: 1
   - spawnDelay: 1
     maxEnemyCount: 15
     enemies:
     - enemyType: 0
+      enemyTier: 0
       spawnWeight: 91
     - enemyType: 1
+      enemyTier: 0
       spawnWeight: 9
   - spawnDelay: 1
     maxEnemyCount: 15
     enemies:
     - enemyType: 0
+      enemyTier: 0
       spawnWeight: 69
     - enemyType: 1
+      enemyTier: 0
       spawnWeight: 31
   - spawnDelay: 1
     maxEnemyCount: 20
     enemies:
     - enemyType: 0
+      enemyTier: 0
       spawnWeight: 50
     - enemyType: 1
+      enemyTier: 0
       spawnWeight: 50
   - spawnDelay: 1
     maxEnemyCount: 20
     enemies:
     - enemyType: 0
+      enemyTier: 0
       spawnWeight: 10
     - enemyType: 1
+      enemyTier: 0
       spawnWeight: 90
   - spawnDelay: 1
     maxEnemyCount: 20
     enemies:
     - enemyType: 1
+      enemyTier: 0
       spawnWeight: 78
     - enemyType: 2
+      enemyTier: 0
       spawnWeight: 22
   - spawnDelay: 1
     maxEnemyCount: 25
     enemies:
     - enemyType: 1
+      enemyTier: 0
       spawnWeight: 18
     - enemyType: 2
+      enemyTier: 0
       spawnWeight: 56
     - enemyType: 3
+      enemyTier: 0
       spawnWeight: 26
   - spawnDelay: 1
     maxEnemyCount: 25
     enemies:
     - enemyType: 2
+      enemyTier: 0
       spawnWeight: 48
     - enemyType: 3
+      enemyTier: 0
       spawnWeight: 52
   - spawnDelay: 1
     maxEnemyCount: 25
     enemies:
     - enemyType: 2
+      enemyTier: 0
       spawnWeight: 11
     - enemyType: 3
+      enemyTier: 0
       spawnWeight: 89
   - spawnDelay: 1
     maxEnemyCount: 30
     enemies:
     - enemyType: 2
+      enemyTier: 0
       spawnWeight: 8
     - enemyType: 3
+      enemyTier: 0
       spawnWeight: 61
     - enemyType: 4
+      enemyTier: 0
       spawnWeight: 31
   - spawnDelay: 1
     maxEnemyCount: 30
     enemies:
     - enemyType: 3
+      enemyTier: 0
       spawnWeight: 37
     - enemyType: 4
+      enemyTier: 0
       spawnWeight: 63
   - spawnDelay: 1
     maxEnemyCount: 30
     enemies:
     - enemyType: 3
+      enemyTier: 0
       spawnWeight: 23
     - enemyType: 4
+      enemyTier: 0
       spawnWeight: 39
     - enemyType: 5
+      enemyTier: 0
       spawnWeight: 39

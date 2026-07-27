@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2b3505e5ce6b5354bb7cad42f50dcbc2, type: 3}
+  m_Name: E02_Runner_T2
+  m_EditorClassIdentifier: 
+  enemyId: Runner_T2
+  enemyType: 1
+  displayName: Runner
+  enemyRole: 0
+  enemyTier: 2
+  gold: 8
+  scorePoint: 47
+  maxHp: 80.0
+  moveSpeed: 4.2
+  rotateSpeed: 0.55
+  visualScale: 1.0
+  shieldHp: 0
+  splitCount: 2
+  splitChildType: 0
+  sprite: {fileID: 21300000, guid: dfbfc688fada39246972611b5f044966, type: 3}
+  spriteColor: {r: 0.75, g: 1, b: 0.95, a: 1}

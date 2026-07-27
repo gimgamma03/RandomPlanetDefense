@@ -4,11 +4,11 @@
 
 구조
   Prefabs/Enemies/EnemyBase.prefab     ← 공통 구조 1개
-  Resources/EnemyData/*.asset          ← 스탯·스프라이트·EnemyType·EnemyRole
-  Resources/Stages/StageXX.asset       ← stageId + waves[] (EnemyType + spawnWeight)
+  Resources/EnemyData/*.asset          ← 스탯·스프라이트·EnemyType·EnemyRole·EnemyTier
+  Resources/Stages/StageXX.asset       ← stageId + waves[] (EnemyType + EnemyTier + spawnWeight)
 
   ※ Base는 Resources에 두지 않음. EnemySpawner 인스펙터에 직접 할당.
-  ※ 웨이브에 프리팹/EnemyData SO를 직접 넣지 않음. EnemyType 드롭다운만.
+  ※ 웨이브에 프리팹/EnemyData SO를 직접 넣지 않음. Type+Tier 드롭다운만.
 
 ■ 최초 1회 (에디터 메뉴)
   RPD/Enemies/1. Create EnemyBase Prefab
@@ -16,21 +16,26 @@
   RPD/Enemies/3. Assign EnemyBase To Scene Spawner
 
 ■ 새 적 추가
-  1) EnemyType enum 끝에 값 추가 (순서 바꾸지 말 것)
+  1) 새 역할이면 EnemyType enum 끝에 값 추가 (순서 바꾸지 말 것)
+     같은 역할의 상위 강도만이면 Type 추가 없이 enemyTier만 올린 SO 생성
   2) Create → RPD → Enemy Data → Resources/EnemyData 에 저장
-     파일명 예: E07_Carrier (번호+역할)
-  3) enemyType / enemyRole / gold / hp / speed / sprite / spriteColor 설정
-     - Runner/Tank/Swarm: 스탯·색·스케일로 차별
+     파일명 예: E01_Swarm_T2, E07_Carrier_T1
+  3) enemyType / enemyRole / enemyTier / gold / hp / speed / sprite 설정
+     - Tier↑: HP·속도·골드 위주 (역할별 비율 다름)
      - Shielded: shieldHp > 0
-     - Splitter: splitCount + splitChildType (보통 Swarm)
-  4) Stage 웨이브 enemies에 enemyType + spawnWeight
+     - Splitter: splitCount + splitChildType (보통 Swarm T1)
+  4) Stage 웨이브 enemies에 enemyType + enemyTier + spawnWeight
 
-■ 역할 (EnemyRole) — EnemyType과 별개
-  Runner   빠름. 엘리트는 같은 Role + 다른 색/수치 SO
+■ 역할 (EnemyRole) — Type/Tier와 별개
+  Runner   빠름. 상위는 같은 Type + Tier2/3
   Tank     높은 HP·낮은 속도
-  Swarm    약한 다수. Splitter 잔해로도 사용
-  Shielded 실드 HP가 본체보다 먼저 깎임 (실드 중 하늘색 tint)
-  Splitter Kill 시 잔해 스폰. Arrive·잔해의 재분열은 안 함
+  Swarm    약한 다수. Splitter 잔해는 Swarm T1
+  Shielded 실드 HP가 본체보다 먼저 깎임
+  Splitter Kill 시 잔해 스폰
+
+■ 티어 (EnemyTier) 1~3
+  같은 EnemyType의 강도 단계. 웨이브에서 Type과 함께 지정.
+  레거시 RunnerElite 슬롯은 Runner T2로 자동 해석.
 
 ■ 새 스테이지 추가 (아웃게임용)
   1) Create → RPD → Stage Data → Resources/Stages

@@ -109,6 +109,59 @@ public class MapDirector : MonoBehaviour
         return true;
     }
 
+    /// <summary>
+    /// 빈 벽(타워 없음)을 Walkable로 되돌린다. 벽 설치 골드 환불.
+    /// </summary>
+    public bool TryRemoveWallAt(Vector3 worldPos)
+    {
+        if (WallMap == null || WalkableMap == null || aStarGrid == null)
+        {
+            return false;
+        }
+
+        Vector3Int cellPosition = WallMap.WorldToCell(worldPos);
+        if (!WallMap.HasTile(cellPosition))
+        {
+            return false;
+        }
+
+        AStarNode node = aStarGrid.GetNodeFromWorld(WallMap.GetCellCenterWorld(cellPosition));
+        if (node != null && node.isBuildTower)
+        {
+            Debug.Log("[MapDirector] 타워가 있는 벽은 철거할 수 없습니다.");
+            return false;
+        }
+
+        WallMap.SetTile(cellPosition, null);
+        WalkableMap.SetTile(cellPosition, WalkableTile);
+
+        if (node != null)
+        {
+            node.isWalkable = true;
+            node.isBuildTower = false;
+        }
+
+        if (playerService == null)
+        {
+            playerService = ServiceLocator.Get<IPlayerService>();
+        }
+
+        playerService?.AddGold(Constants.spawnWallGold);
+
+        RebuildSharedPath();
+        if (enemySpawner != null)
+        {
+            enemySpawner.CheckPathForAllEnemy();
+        }
+
+        if (showPath != null)
+        {
+            showPath.ShowPath();
+        }
+
+        return true;
+    }
+
     public bool CheckPath(AStarNode wallNode)
     {
         wallNode.isWalkable = false;

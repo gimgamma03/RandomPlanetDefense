@@ -31,7 +31,7 @@ MonoBehaviour:
   projectileType: 0
   sprite: {fileID: 21300000, guid: ef1bf2ecc16140f4195ed991ac4136c1, type: 3}
   spriteColor: {r: 1, g: 1, b: 1, a: 1}
-  spawnWeight: 0.5
+  spawnWeight: 0.3
   multiShotCount: 3
   multiShotSpreadAngle: 45
   groundBombCount: 5

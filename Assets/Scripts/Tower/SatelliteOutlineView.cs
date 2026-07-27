@@ -11,7 +11,7 @@ public sealed class SatelliteOutlineView : MonoBehaviour
     private const float DiameterScale = 1.08f;
     private const float Thickness = 0.12f;
 
-    private static readonly Color OutlineColor = new Color(0.75f, 0.95f, 1f, 0.95f);
+    private static readonly Color OutlineColor = new Color(0.75f, 0.95f, 1f, 0.32f);
     private static Sprite cachedRing;
 
     /// <summary>위성 본체 SpriteRenderer 기준으로 테두리 child 생성·갱신.</summary>

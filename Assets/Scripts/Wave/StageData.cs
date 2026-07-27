@@ -16,6 +16,16 @@ public class StageData : ScriptableObject
     [Tooltip("전 웨이브 클리어 시 인게임 보너스 골드 (아웃게임 보상과 별개)")]
     public int clearBonusGold;
 
+    [Header("Boss")]
+    [Tooltip("마지막 웨이브 시작 시 보스 1마리 추가 스폰")]
+    public bool spawnBossOnFinalWave = true;
+
+    [Tooltip("최종 웨이브에 넣을 보스 EnemyType (Resources EnemyData)")]
+    public EnemyType bossEnemyType = EnemyType.Boss;
+
+    [Tooltip("보스 티어")]
+    public EnemyTier bossEnemyTier = EnemyTier.Tier1;
+
     public Wave[] waves;
 
     public string DisplayName =>
@@ -41,6 +51,9 @@ public class StageData : ScriptableObject
     {
         [Tooltip("적 종류 (드롭다운). 프리팹/SO 직접 참조 안 함")]
         public EnemyType enemyType;
+
+        [Tooltip("강도 티어. Type+Tier로 EnemyData를 고른다")]
+        public EnemyTier enemyTier;
 
         [Min(0f)]
         [Tooltip("상대 가중치. 예: 2와 1이면 약 66% / 33%. 0이면 스폰 안 함")]

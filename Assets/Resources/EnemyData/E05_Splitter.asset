@@ -12,10 +12,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2b3505e5ce6b5354bb7cad42f50dcbc2, type: 3}
   m_Name: E05_Splitter
   m_EditorClassIdentifier: 
-  enemyId: Splitter
+  enemyId: Splitter_T1
   enemyType: 4
   displayName: Splitter
   enemyRole: 4
+  enemyTier: 1
   gold: 7
   scorePoint: 39
   maxHp: 160

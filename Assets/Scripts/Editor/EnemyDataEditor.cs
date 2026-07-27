@@ -13,6 +13,7 @@ public sealed class EnemyDataEditor : Editor
     private SerializedProperty enemyType;
     private SerializedProperty displayName;
     private SerializedProperty enemyRole;
+    private SerializedProperty enemyTier;
     private SerializedProperty gold;
     private SerializedProperty scorePoint;
     private SerializedProperty maxHp;
@@ -24,6 +25,8 @@ public sealed class EnemyDataEditor : Editor
     private SerializedProperty splitChildType;
     private SerializedProperty sprite;
     private SerializedProperty spriteColor;
+    private SerializedProperty isBoss;
+    private SerializedProperty bossCrownSprite;
 
     private void OnEnable()
     {
@@ -31,6 +34,7 @@ public sealed class EnemyDataEditor : Editor
         enemyType = serializedObject.FindProperty("enemyType");
         displayName = serializedObject.FindProperty("displayName");
         enemyRole = serializedObject.FindProperty("enemyRole");
+        enemyTier = serializedObject.FindProperty("enemyTier");
         gold = serializedObject.FindProperty("gold");
         scorePoint = serializedObject.FindProperty("scorePoint");
         maxHp = serializedObject.FindProperty("maxHp");
@@ -42,6 +46,8 @@ public sealed class EnemyDataEditor : Editor
         splitChildType = serializedObject.FindProperty("splitChildType");
         sprite = serializedObject.FindProperty("sprite");
         spriteColor = serializedObject.FindProperty("spriteColor");
+        isBoss = serializedObject.FindProperty("isBoss");
+        bossCrownSprite = serializedObject.FindProperty("bossCrownSprite");
     }
 
     public override void OnInspectorGUI()
@@ -56,12 +62,13 @@ public sealed class EnemyDataEditor : Editor
         EditorGUILayout.PropertyField(enemyType, new GUIContent("Enemy Type", "Stage 웨이브 드롭다운 키"));
         EditorGUILayout.PropertyField(displayName, new GUIContent("Display Name", "비우면 Id"));
         EditorGUILayout.PropertyField(enemyRole, new GUIContent("Role", "전투 역할"));
+        EditorGUILayout.PropertyField(enemyTier, new GUIContent("Tier", "강도 1~3"));
 
         EnemyData data = target as EnemyData;
         if (data != null)
         {
             EditorGUILayout.HelpBox(
-                $"Catalog: {data.enemyType}  ·  Role: {data.enemyRole}  ·  Id: {data.Id}",
+                $"Catalog: {data.enemyType} T{(int)data.enemyTier}  ·  Role: {data.enemyRole}  ·  Id: {data.Id}",
                 MessageType.None);
         }
 
@@ -87,6 +94,22 @@ public sealed class EnemyDataEditor : Editor
         EditorGUILayout.PropertyField(sprite);
         EditorGUILayout.PropertyField(spriteColor, new GUIContent("Sprite Color", "같은 스프라이트 변형용"));
         DrawSpritePreview();
+        EditorGUILayout.EndVertical();
+
+        EditorGUILayout.Space(8f);
+        EditorGUILayout.LabelField("Boss", EditorStyles.boldLabel);
+        EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+        EditorGUILayout.PropertyField(isBoss, new GUIContent("Is Boss", "네온 실루엣 + 왕관"));
+        if (isBoss.boolValue)
+        {
+            EditorGUILayout.HelpBox(
+                "Is Boss면 본체 스프라이트 실루엣 네온.\nOrbit Crown: 킹 주위를 도는 보조 왕관.",
+                MessageType.None);
+            EditorGUILayout.PropertyField(
+                bossCrownSprite,
+                new GUIContent("Orbit Crown", "예: 노란 neon crown"));
+        }
+
         EditorGUILayout.EndVertical();
 
         serializedObject.ApplyModifiedProperties();

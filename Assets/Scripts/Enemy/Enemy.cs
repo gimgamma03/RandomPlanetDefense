@@ -78,6 +78,34 @@ public class Enemy : MonoBehaviour
         spriteRenderer.color = enemyData.spriteColor;
         float scale = Mathf.Max(0.1f, enemyData.visualScale);
         transform.localScale = Vector3.one * scale;
+
+        ApplyBossVisual();
+    }
+
+    private void ApplyBossVisual()
+    {
+        EnemyBossVisual bossVisual = GetComponent<EnemyBossVisual>();
+        if (enemyData == null || !enemyData.isBoss)
+        {
+            if (bossVisual != null)
+            {
+                bossVisual.Clear();
+            }
+
+            return;
+        }
+
+        if (bossVisual == null)
+        {
+            bossVisual = gameObject.AddComponent<EnemyBossVisual>();
+        }
+
+        if (spriteRenderer == null)
+        {
+            spriteRenderer = GetComponent<SpriteRenderer>();
+        }
+
+        bossVisual.Apply(spriteRenderer, enemyData.bossCrownSprite);
     }
 
     /// <summary>스폰 직전 상태 초기화. BindDefinition 이후 호출.</summary>
@@ -107,6 +135,12 @@ public class Enemy : MonoBehaviour
         moveSpeed = enemyData.moveSpeed;
         rotateSpeed = enemyData.rotateSpeed;
 
+        if (enemyData.isBoss)
+        {
+            transform.localRotation = Quaternion.identity;
+            rotateSpeed = 0f;
+        }
+
         nextNodeMoveTime = 1.0f * (1f / Mathf.Max(0.01f, moveSpeed));
         baseNextNodeMoveTime = nextNodeMoveTime;
         obstructed = false;
@@ -126,10 +160,22 @@ public class Enemy : MonoBehaviour
         enemySpawner = null;
         splitGeneration = 0;
         transform.localScale = Vector3.one;
+
+        EnemyBossVisual bossVisual = GetComponent<EnemyBossVisual>();
+        if (bossVisual != null)
+        {
+            bossVisual.Clear();
+        }
     }
 
     void Update()
     {
+        // 보스는 왕관 등 방향 있는 실루엣 — 자전하지 않음
+        if (enemyData != null && enemyData.isBoss)
+        {
+            return;
+        }
+
         transform.Rotate(Vector3.forward * -rotateSpeed * (1 - nextNodeMoveTime));
     }
 
