@@ -1,0 +1,10 @@
+---
+description: RandomPlanetDefense UI 폰트(Orbit) 사실
+alwaysApply: true
+---
+
+# Orbit 폰트
+
+- TMP UI 기본 폰트: `Assets/Fonts/Orbit-Regular SDF.asset`
+- **Orbit는 한글 글리프 사용 가능** (사용자 확인 사실). 한글 UI 문구를 위해 별도 한글 폰트/폴백을 가정하지 말 것.
+- TMP를 쓰면 Orbit로 통일.

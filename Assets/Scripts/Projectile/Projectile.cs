@@ -8,6 +8,13 @@ public class Projectile : MonoBehaviour
     private float moveSpeed = 4.5f;
     private float damage;
     private ProjectileVfx vfx;
+    private SpriteRenderer spriteRenderer;
+
+    // ChargePierce가 같은 Straight 풀에서 스프라이트/스케일을 바꾸므로 재사용 전 복구
+    private Sprite defaultSprite;
+    private Color defaultColor = Color.white;
+    private Vector3 defaultScale = Vector3.one;
+    private bool defaultsCaptured;
 
     private bool pierce;
     private bool despawnWhenOffScreen;
@@ -19,17 +26,19 @@ public class Projectile : MonoBehaviour
     private void Awake()
     {
         rigidbody2d = GetComponent<Rigidbody2D>();
-        vfx = GetComponent<ProjectileVfx>();
-        if (vfx != null)
-        {
-            return;
-        }
+        spriteRenderer = GetComponent<SpriteRenderer>();
+        CaptureVisualDefaults();
 
-        vfx = gameObject.AddComponent<ProjectileVfx>();
+        vfx = GetComponent<ProjectileVfx>();
+        if (vfx == null)
+        {
+            vfx = gameObject.AddComponent<ProjectileVfx>();
+        }
     }
 
     public void Setup(Vector3 target, float damage)
     {
+        RestoreVisualDefaults();
         pierce = false;
         despawnWhenOffScreen = false;
         piercedEnemyIds.Clear();
@@ -41,6 +50,7 @@ public class Projectile : MonoBehaviour
     /// <summary>직진 관통 — 적마다 1회 피해, 화면 밖으로 나가면 소멸.</summary>
     public void SetupPierce(Vector3 direction, float damage, float spinSpeed = 360f)
     {
+        // 비주얼은 ChargePierceBehavior.ApplyMeteoVisual이 SetupPierce 전에 적용
         pierce = true;
         despawnWhenOffScreen = true;
         piercedEnemyIds.Clear();
@@ -52,8 +62,45 @@ public class Projectile : MonoBehaviour
             ? direction.normalized
             : Vector3.right;
 
-        // 안전망: 카메라 없을 때 무한 비행 방지
         ApplySetup(normalized, damage, 25f, enableTrail: false);
+    }
+
+    private void CaptureVisualDefaults()
+    {
+        if (defaultsCaptured)
+        {
+            return;
+        }
+
+        if (spriteRenderer != null)
+        {
+            defaultSprite = spriteRenderer.sprite;
+            defaultColor = spriteRenderer.color;
+        }
+
+        defaultScale = transform.localScale.sqrMagnitude > 0.0001f
+            ? transform.localScale
+            : Vector3.one;
+        defaultsCaptured = true;
+    }
+
+    private void RestoreVisualDefaults()
+    {
+        CaptureVisualDefaults();
+
+        if (spriteRenderer != null)
+        {
+            spriteRenderer.sprite = defaultSprite;
+            spriteRenderer.color = defaultColor;
+        }
+
+        transform.localScale = defaultScale;
+        transform.rotation = Quaternion.identity;
+
+        if (vfx != null)
+        {
+            vfx.ResetToPrefabVisual(defaultScale);
+        }
     }
 
     private void ApplySetup(Vector3 direction, float damage, float lifetime, bool enableTrail = true)
@@ -194,6 +241,13 @@ public class Projectile : MonoBehaviour
             rigidbody2d.linearVelocity = Vector2.zero;
             rigidbody2d.angularVelocity = 0f;
         }
+
+        // 풀 반환 전 메테오 비주얼 잔여 제거 (MultiShot과 Straight 풀 공유)
+        RestoreVisualDefaults();
+        pierce = false;
+        despawnWhenOffScreen = false;
+        spinSpeed = 0f;
+        piercedEnemyIds.Clear();
 
         PooledObject pooled = GetComponent<PooledObject>();
         if (pooled != null)

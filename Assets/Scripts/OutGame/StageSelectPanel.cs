@@ -24,6 +24,8 @@ public sealed class StageSelectPanel : MonoBehaviour
     private Sprite buttonPressedSprite;
     [SerializeField]
     private Color buttonColor = Color.white;
+    [SerializeField]
+    private TMP_FontAsset orbitFont;
 
     private StageCatalog catalog;
 
@@ -95,16 +97,35 @@ public sealed class StageSelectPanel : MonoBehaviour
         ApplyButtonSkin(button);
 
         TextMeshProUGUI label = button.GetComponentInChildren<TextMeshProUGUI>(true);
+        string display = stage.DisplayName;
+        if (ServiceLocator.TryGet(out IMetaProgressService meta))
+        {
+            if (meta.IsStageCleared(stage.stageId))
+            {
+                display += " [Clear]";
+            }
+
+            int best = meta.GetStageBestScore(stage.stageId);
+            if (best > 0)
+            {
+                display += $"  Best {best}";
+            }
+        }
+
         if (label != null)
         {
-            label.text = stage.DisplayName;
+            label.text = display;
+            if (orbitFont != null)
+            {
+                label.font = orbitFont;
+            }
         }
         else
         {
             Text legacy = button.GetComponentInChildren<Text>(true);
             if (legacy != null)
             {
-                legacy.text = stage.DisplayName;
+                legacy.text = display;
             }
         }
 
@@ -215,6 +236,10 @@ public sealed class StageSelectPanel : MonoBehaviour
         tmp.fontSize = 36f;
         tmp.color = Color.white;
         tmp.text = "Stage";
+        if (orbitFont != null)
+        {
+            tmp.font = orbitFont;
+        }
 
         Button button = root.GetComponent<Button>();
         button.targetGraphic = image;

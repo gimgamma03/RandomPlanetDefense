@@ -60,8 +60,12 @@ public class GameBootstrapper : MonoBehaviour
         ServiceLocator.Register<IPlayerService>(playerService);
         playerService.Initialize();
 
+        MetaProgressService metaProgress = new MetaProgressService();
+        ServiceLocator.Register<IMetaProgressService>(metaProgress);
+        metaProgress.Initialize();
+
         pureServicesReady = true;
-        Debug.Log("[GameBootstrapper] Pure 서비스 등록: IScoreService, IPlayerService");
+        Debug.Log("[GameBootstrapper] Pure 서비스 등록: IScoreService, IPlayerService, IMetaProgressService");
     }
 
     private void Awake()

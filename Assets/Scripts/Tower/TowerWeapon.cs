@@ -568,8 +568,35 @@ public class TowerWeapon : MonoBehaviour
             slowValue = towerData.weapon.slowValue;
         }
 
+        ApplyPermanentMetaUpgrades();
+
         upGradeGold = (int)towerGrade * Constants.upGradeGoldMulti;
         statsReady = true;
+    }
+
+    /// <summary>아웃게임 크리스탈 강화 — 같은 weaponType 전원에게 적용.</summary>
+    private void ApplyPermanentMetaUpgrades()
+    {
+        if (!ServiceLocator.TryGet(out IMetaProgressService meta))
+        {
+            return;
+        }
+
+        int metaLevel = meta.GetWeaponUpgradeLevel(weaponType);
+        if (metaLevel <= 0)
+        {
+            return;
+        }
+
+        float slow = slowValue;
+        TowerMetaUpgradeRules.ApplyToStats(
+            metaLevel,
+            ref damage,
+            ref range,
+            ref rate,
+            ref slow,
+            applySlow: weaponType == WeaponType.Slow);
+        slowValue = slow;
     }
 
     #endregion

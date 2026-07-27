@@ -29,6 +29,7 @@ public class WaveSystem : MonoBehaviour
 
     /// <summary>ServiceLocator에서 가져온 점수 서비스</summary>
     private IScoreService scoreService;
+    private IMetaProgressService metaProgress;
 
     public int StageId => stageData != null ? stageData.stageId : stageId;
     public int MaxWave => stageData != null && stageData.waves != null ? stageData.waves.Length : 0;
@@ -62,8 +63,15 @@ public class WaveSystem : MonoBehaviour
     private void Start()
     {
         scoreService = ServiceLocator.Get<IScoreService>();
+        metaProgress = ServiceLocator.Get<IMetaProgressService>();
         scoreService.ResetRun();
         scoreService.BindHud(textCurrentScore, textBestScore);
+
+        // HUD Best는 기존 Score.json + 메타 전체 베스트 중 큰 쪽을 쓰도록 메타도 반영
+        if (textBestScore != null && metaProgress != null && metaProgress.BestScore > 0)
+        {
+            textBestScore.text = "Best Score : " + metaProgress.BestScore;
+        }
 
         textWaveCount.text = "Wave : " + 1;
     }
@@ -134,12 +142,24 @@ public class WaveSystem : MonoBehaviour
         startGameButton.sprite = startGameWhiteButton;
         currentWaveIndex++;
 
+        // 웨이브마다 크리스탈
+        if (metaProgress != null)
+        {
+            metaProgress.AddCrystals(TowerMetaUpgradeRules.CrystalsPerWave);
+        }
+
         if (stageData == null || stageData.waves == null || currentWaveIndex >= stageData.waves.Length)
         {
             if (stageData != null && stageData.clearBonusGold > 0)
             {
                 IPlayerService player = ServiceLocator.Get<IPlayerService>();
                 player.AddGold(stageData.clearBonusGold);
+            }
+
+            RecordMetaProgress(stageCleared: true);
+            if (scoreService != null)
+            {
+                scoreService.SaveCurrentRun();
             }
 
             textFadeOut.ShowText("All Waves Clear", 2f);
@@ -162,7 +182,26 @@ public class WaveSystem : MonoBehaviour
 
     public void FinishGame()
     {
+        RecordMetaProgress(stageCleared: false);
         scoreService.SaveCurrentRun();
         textFadeOut.ShowText("Game Over", 3f);
+    }
+
+    private void RecordMetaProgress(bool stageCleared)
+    {
+        if (metaProgress == null)
+        {
+            return;
+        }
+
+        int id = StageId;
+        int score = scoreService != null ? scoreService.CurrentScore : 0;
+        metaProgress.RecordScore(id, score);
+
+        if (stageCleared)
+        {
+            metaProgress.MarkStageCleared(id);
+            metaProgress.AddCrystals(TowerMetaUpgradeRules.CrystalsStageClearBonus);
+        }
     }
 }

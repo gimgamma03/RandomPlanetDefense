@@ -1,9 +1,9 @@
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 
 /// <summary>
-/// Title 씬 패널 전환: Title(Start/Exit) ↔ StageSelect.
-/// Canvas에 SceneDirector와 같이 붙인다.
+/// Title 씬 패널 전환: Title ↔ StageSelect ↔ TowerUpgrade.
 /// </summary>
 public sealed class TitleFlow : MonoBehaviour
 {
@@ -12,16 +12,26 @@ public sealed class TitleFlow : MonoBehaviour
     [SerializeField]
     private GameObject panelStageSelect;
     [SerializeField]
+    private GameObject panelTowerUpgrade;
+    [SerializeField]
     private SceneDirector sceneDirector;
     [SerializeField]
     private StageSelectPanel stageSelectPanel;
     [SerializeField]
+    private TowerUpgradePanel towerUpgradePanel;
+    [SerializeField]
     private Button startButton;
     [SerializeField]
+    private Button upgradeButton;
+    [SerializeField]
     private Button exitButton;
-    [Tooltip("PanelBackGround 아래 타이틀 로고/텍스트. 스테이지 선택 중에는 숨김")]
+    [Tooltip("PanelBackGround 아래 타이틀 로고/텍스트. 서브 패널 중에는 숨김")]
     [SerializeField]
     private GameObject titleBanner;
+    [SerializeField]
+    private TextMeshProUGUI crystalHudText;
+    [SerializeField]
+    private Image crystalHudIcon;
 
     private void Awake()
     {
@@ -35,6 +45,11 @@ public sealed class TitleFlow : MonoBehaviour
             stageSelectPanel = panelStageSelect.GetComponent<StageSelectPanel>();
         }
 
+        if (towerUpgradePanel == null && panelTowerUpgrade != null)
+        {
+            towerUpgradePanel = panelTowerUpgrade.GetComponent<TowerUpgradePanel>();
+        }
+
         if (titleBanner == null)
         {
             Transform found = transform.Find("PanelBackGround/TitleText");
@@ -45,17 +60,22 @@ public sealed class TitleFlow : MonoBehaviour
         }
 
         Wire(startButton, OnClickStart);
+        Wire(upgradeButton, OnClickUpgrade);
         Wire(exitButton, OnClickExit);
         ShowTitle();
+        RefreshCrystalHud();
     }
 
-    /// <summary>타이틀 Start 버튼.</summary>
     public void OnClickStart()
     {
         ShowStageSelect();
     }
 
-    /// <summary>타이틀 Exit 버튼.</summary>
+    public void OnClickUpgrade()
+    {
+        ShowTowerUpgrade();
+    }
+
     public void OnClickExit()
     {
         if (sceneDirector != null)
@@ -68,13 +88,11 @@ public sealed class TitleFlow : MonoBehaviour
         }
     }
 
-    /// <summary>스테이지 선택 패널 Back.</summary>
     public void OnClickBackToTitle()
     {
         ShowTitle();
     }
 
-    /// <summary>스테이지 확정 → GameScene.</summary>
     public void OnStageConfirmed(int stageId)
     {
         GameSession.SelectStage(stageId);
@@ -91,15 +109,44 @@ public sealed class TitleFlow : MonoBehaviour
     {
         SetPanel(panelTitle, true);
         SetPanel(panelStageSelect, false);
+        SetPanel(panelTowerUpgrade, false);
         SetPanel(titleBanner, true);
+        RefreshCrystalHud();
     }
 
     public void ShowStageSelect()
     {
         SetPanel(panelTitle, false);
         SetPanel(panelStageSelect, true);
+        SetPanel(panelTowerUpgrade, false);
         SetPanel(titleBanner, false);
         stageSelectPanel?.Refresh();
+    }
+
+    public void ShowTowerUpgrade()
+    {
+        SetPanel(panelTitle, false);
+        SetPanel(panelStageSelect, false);
+        SetPanel(panelTowerUpgrade, true);
+        SetPanel(titleBanner, false);
+        towerUpgradePanel?.Refresh();
+        RefreshCrystalHud();
+    }
+
+    public void RefreshCrystalHud()
+    {
+        if (crystalHudText == null)
+        {
+            return;
+        }
+
+        int crystals = 0;
+        if (ServiceLocator.TryGet(out IMetaProgressService meta))
+        {
+            crystals = meta.Crystals;
+        }
+
+        crystalHudText.text = crystals.ToString();
     }
 
     private static void Wire(Button button, UnityEngine.Events.UnityAction action)

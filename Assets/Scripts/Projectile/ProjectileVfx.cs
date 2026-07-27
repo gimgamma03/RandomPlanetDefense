@@ -55,12 +55,16 @@ public class ProjectileVfx : MonoBehaviour
     private float impactScale = 0.4f;
 
     private Vector3 baseScale;
+    private Vector3 prefabScale;
     private SpriteRenderer spriteRenderer;
     private bool inFlight;
     private bool baseScaleCaptured;
+    private bool prefabScaleCaptured;
+    private bool defaultTrailEnabled = true;
 
     private void Awake()
     {
+        CapturePrefabScale();
         CaptureBaseScale();
         spriteRenderer = GetComponent<SpriteRenderer>();
         if (trail == null)
@@ -68,6 +72,7 @@ public class ProjectileVfx : MonoBehaviour
             trail = GetComponent<TrailRenderer>();
         }
 
+        defaultTrailEnabled = enableTrail;
         EnsureTrailConfigured();
         StopVisuals(clearTrail: true);
     }
@@ -75,9 +80,11 @@ public class ProjectileVfx : MonoBehaviour
     private void OnDisable()
     {
         StopVisuals(clearTrail: true);
-        if (baseScaleCaptured)
+        if (prefabScaleCaptured)
         {
-            transform.localScale = baseScale;
+            transform.localScale = prefabScale;
+            baseScale = prefabScale;
+            baseScaleCaptured = true;
         }
     }
 
@@ -113,7 +120,7 @@ public class ProjectileVfx : MonoBehaviour
         trail.enabled = true;
     }
 
-    /// <summary>스프라이트/스케일을 런타임에 바꾼 뒤 BeginFlight 전에 호출.</summary>
+    /// <summary>스프라이트/스케일을 런타임에 바꾼 뒤 BeginFlight 전에 호출 (이번 비행만).</summary>
     public void RecaptureScale()
     {
         baseScale = transform.localScale;
@@ -125,6 +132,19 @@ public class ProjectileVfx : MonoBehaviour
         baseScaleCaptured = true;
     }
 
+    /// <summary>풀 재사용 전 — ChargePierce 메테오 스케일/트레일 잔여 제거.</summary>
+    public void ResetToPrefabVisual(Vector3 scale)
+    {
+        prefabScale = scale.sqrMagnitude > 0.0001f ? scale : Vector3.one;
+        prefabScaleCaptured = true;
+        baseScale = prefabScale;
+        baseScaleCaptured = true;
+        transform.localScale = prefabScale;
+        enableTrail = defaultTrailEnabled;
+        inFlight = false;
+        StopVisuals(clearTrail: true);
+    }
+
     public void BeginFlight()
     {
         if (!baseScaleCaptured)
@@ -133,10 +153,10 @@ public class ProjectileVfx : MonoBehaviour
         }
         else
         {
-            // 풀 재사용·런타임 스프라이트 교체 후 현재 스케일 유지
+            // 이번 비행용 스케일 (메테오 등). 프리팹 기본값은 prefabScale에 유지.
             baseScale = transform.localScale.sqrMagnitude > 0.0001f
                 ? transform.localScale
-                : baseScale;
+                : (prefabScaleCaptured ? prefabScale : Vector3.one);
         }
 
         inFlight = true;
@@ -167,6 +187,22 @@ public class ProjectileVfx : MonoBehaviour
         StopVisuals(clearTrail: true);
     }
 
+    private void CapturePrefabScale()
+    {
+        if (prefabScaleCaptured)
+        {
+            return;
+        }
+
+        prefabScale = transform.localScale;
+        if (prefabScale.sqrMagnitude < 0.0001f)
+        {
+            prefabScale = Vector3.one;
+        }
+
+        prefabScaleCaptured = true;
+    }
+
     private void CaptureBaseScale()
     {
         if (baseScaleCaptured)
@@ -174,12 +210,8 @@ public class ProjectileVfx : MonoBehaviour
             return;
         }
 
-        baseScale = transform.localScale;
-        if (baseScale.sqrMagnitude < 0.0001f)
-        {
-            baseScale = Vector3.one;
-        }
-
+        CapturePrefabScale();
+        baseScale = prefabScale;
         baseScaleCaptured = true;
     }
 
