@@ -26,6 +26,9 @@ public class TowerData : ScriptableObject
     [Tooltip("Auto = WeaponType 기본 발사체. None/Homing/Straight…로 덮어쓰기 가능")]
     public ProjectileType projectileType = ProjectileType.Auto;
 
+    [Tooltip("Auto = 계열 기본(캐논/레이저=보스 우선). 그 외는 SO에서 지정")]
+    public TowerTargetPriority targetPriority = TowerTargetPriority.Auto;
+
     public Sprite sprite;
 
     [Tooltip("같은 스프라이트도 색으로 구분")]
@@ -80,6 +83,17 @@ public class TowerData : ScriptableObject
         }
 
         return projectileType;
+    }
+
+    /// <summary>Auto면 계열 기본 타겟 규칙, 아니면 SO 지정.</summary>
+    public TowerTargetPriority GetEffectiveTargetPriority()
+    {
+        if (targetPriority == TowerTargetPriority.Auto)
+        {
+            return TowerTargetPriorityDefaults.FromWeapon(weaponType);
+        }
+
+        return targetPriority;
     }
 
     public void ApplyBalance(

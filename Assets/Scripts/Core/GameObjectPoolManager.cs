@@ -13,6 +13,7 @@ public enum PoolId
     BombProjectile = 3,
     Bomb = 4,
     Enemy = 5,
+    DamagePopup = 6,
 }
 
 [DefaultExecutionOrder(-200)]

@@ -195,19 +195,6 @@ public class BombProjectile : MonoBehaviour
             spriteRenderer.enabled = true;
         }
 
-        PooledObject pooled = GetComponent<PooledObject>();
-        if (pooled != null)
-        {
-            pooled.ReturnToPool();
-            return;
-        }
-
-        if (ServiceLocator.TryGet(out IPoolService pool))
-        {
-            pool.Return(gameObject);
-            return;
-        }
-
-        Destroy(gameObject);
+        ProjectileLifecycle.ReturnToPool(gameObject);
     }
 }

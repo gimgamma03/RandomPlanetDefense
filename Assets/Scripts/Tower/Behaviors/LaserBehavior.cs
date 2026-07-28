@@ -162,7 +162,7 @@ public sealed class LaserBehavior : AttackBehaviorBase
             EnemyHp hp = target.GetComponent<EnemyHp>();
             if (hp != null)
             {
-                hp.TakeDamage(Tower.damage * Time.deltaTime);
+                hp.TakeDamage(Tower.damage * Time.deltaTime, aggregatePopup: true);
             }
 
             break;

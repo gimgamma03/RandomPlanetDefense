@@ -31,10 +31,7 @@ public class ObjectDetector : MonoBehaviour
         if (ServiceLocator.TryGet(out IBuildModeState state))
         {
             buildModeState = state;
-            return;
         }
-
-        buildModeState = BuildModeController.Instance;
     }
 
     private void Update()

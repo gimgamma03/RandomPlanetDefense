@@ -134,20 +134,6 @@ public class Bomb : MonoBehaviour
         CancelInvoke();
         isExplode = false;
         hasDamaged = false;
-
-        PooledObject pooled = GetComponent<PooledObject>();
-        if (pooled != null)
-        {
-            pooled.ReturnToPool();
-            return;
-        }
-
-        if (ServiceLocator.TryGet(out IPoolService pool))
-        {
-            pool.Return(gameObject);
-            return;
-        }
-
-        Destroy(gameObject);
+        ProjectileLifecycle.ReturnToPool(gameObject);
     }
 }

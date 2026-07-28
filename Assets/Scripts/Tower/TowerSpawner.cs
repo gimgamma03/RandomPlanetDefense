@@ -6,9 +6,6 @@ using UnityEngine.Tilemaps;
 public class TowerSpawner : MonoBehaviour
 {
     [SerializeField]
-    private EnemySpawner enemySpawner;
-
-    [SerializeField]
     private Tilemap WallMap;
 
     [Tooltip("있으면 이걸로 CSV 적용. 없으면 Resources/TowerBalance.csv 자동")]
@@ -228,9 +225,9 @@ public class TowerSpawner : MonoBehaviour
             yield break;
         }
 
-        if (enemySpawner == null)
+        if (!ServiceLocator.IsRegistered<IEnemyRegistry>())
         {
-            Debug.LogError("[TowerSpawner] EnemySpawner not assigned.");
+            Debug.LogError("[TowerSpawner] IEnemyRegistry not registered (EnemySpawner missing?).");
             Destroy(spawnTower);
             yield break;
         }
@@ -238,73 +235,30 @@ public class TowerSpawner : MonoBehaviour
         spawnTowerWeapon.BindDefinition(picked);
 
         towerList.Add(spawnTower);
-        spawnTowerWeapon.SetUp(this, enemySpawner);
+        spawnTowerWeapon.SetUp(this);
         spawnTowerScript.SetUp(this, MapDirector.Instance.aStarGrid.GetNodeFromWorld(tileCenterPosition));
         sessionStats?.RecordTowerSpawned(picked.weaponType);
     }
 
     public void CombineTower(GameObject tower)
     {
-        TowerWeapon selectTowerWeapon = tower.GetComponent<TowerWeapon>();
-        if (selectTowerWeapon == null)
-        {
-            return;
-        }
-
-        TowerGrade materialGrade = selectTowerWeapon.towerGrade;
-        if ((int)materialGrade >= Constants.MaxTowerGrade)
-        {
-            Debug.Log($"[TowerSpawner] Already max grade {Constants.MaxTowerGrade}.");
-            return;
-        }
-
-        // 클릭한 타워가 조합 앵커 — 결과도 그 자리에 스폰 (랜덤 TD 관례)
-        List<GameObject> sameTower = new List<GameObject> { tower };
-        for (int i = 0; i < towerList.Count; i++)
-        {
-            GameObject candidate = towerList[i];
-            if (candidate == null || candidate == tower)
-            {
-                continue;
-            }
-
-            TowerWeapon other = candidate.GetComponent<TowerWeapon>();
-            if (other == null)
-            {
-                continue;
-            }
-
-            if (other.weaponType != selectTowerWeapon.weaponType)
-            {
-                continue;
-            }
-
-            if (other.towerGrade != materialGrade)
-            {
-                continue;
-            }
-
-            sameTower.Add(candidate);
-            if (sameTower.Count >= Constants.towerCombineCount)
-            {
-                break;
-            }
-        }
-
-        if (sameTower.Count < Constants.towerCombineCount)
+        if (!TowerCombineRules.TryCollectMaterials(
+                tower,
+                towerList,
+                out List<GameObject> materials,
+                out TowerGrade nextGrade,
+                out WeaponType mergedType))
         {
             return;
         }
 
         Vector3 spawnPos = tower.transform.position;
-        WeaponType mergedType = selectTowerWeapon.weaponType;
 
-        for (int i = 0; i < Constants.towerCombineCount; i++)
+        for (int i = 0; i < materials.Count; i++)
         {
-            sameTower[i].GetComponent<Tower>().DestoryThisTower();
+            materials[i].GetComponent<Tower>().DestoryThisTower();
         }
 
-        TowerGrade nextGrade = materialGrade + 1;
         EnsureCatalog();
         if (catalog == null || !catalog.HasAny(nextGrade))
         {
@@ -326,17 +280,12 @@ public class TowerSpawner : MonoBehaviour
             return;
         }
 
-        int cellGold = Constants.spawnRandomTowerGold;
-        for (int i = 1; i < (int)cellTowerWeapon.towerGrade; i++)
-        {
-            cellGold *= Constants.towerCombineCount;
-        }
-
-        cellGold += cellTowerWeapon.useGoldToUpGrade;
-        cellGold = (int)(cellGold * Constants.cellTowerReturnGoldMulti);
+        int refund = TowerSellPricing.CalculateRefund(
+            cellTowerWeapon.towerGrade,
+            cellTowerWeapon.useGoldToUpGrade);
 
         sessionStats?.RecordTowerSold(cellTowerWeapon.weaponType);
-        playerService.AddGold(cellGold);
+        playerService.AddGold(refund);
         towerScript.DestoryThisTower();
     }
 

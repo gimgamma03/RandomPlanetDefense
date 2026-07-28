@@ -206,111 +206,107 @@ public class TowerWeapon : MonoBehaviour
 
     public Transform AttackTarget { get; set; }
 
-    private EnemySpawner enemySpawner;
+    private IEnemyRegistry enemyRegistry;
+
+    /// <summary>CollectClosestAttackTargets 스크래치 (GC 방지). 거리는 sqrMagnitude.</summary>
+    private float[] collectDistSq;
+    private float[] collectHps;
+    private bool[] collectBosses;
 
     public Transform FindClosestAttackTarget()
     {
-        if (enemySpawner == null)
+        if (enemyRegistry == null)
         {
             AttackTarget = null;
             return null;
         }
 
-        float closestDistSqr = Mathf.Infinity;
-        Transform closest = null;
+        TowerTargetPriority priority = EffectiveTargetPriority;
+        Enemy bestEnemy = null;
+        float bestDistSq = float.PositiveInfinity;
+        float bestHp = float.PositiveInfinity;
+        float rangeSq = range * range;
+        Vector3 origin = transform.position;
 
-        for (int i = 0; i < enemySpawner.enemyList.Count; ++i)
+        for (int i = 0; i < enemyRegistry.Count; ++i)
         {
-            Enemy enemy = enemySpawner.enemyList[i];
+            Enemy enemy = enemyRegistry.GetEnemy(i);
             if (!IsValidEnemyTarget(enemy))
             {
                 continue;
             }
 
-            float distance = Vector3.Distance(enemy.transform.position, transform.position);
-            if (distance <= range && distance <= closestDistSqr)
+            float distSq = (enemy.transform.position - origin).sqrMagnitude;
+            if (distSq > rangeSq)
             {
-                closestDistSqr = distance;
-                closest = enemy.transform;
+                continue;
+            }
+
+            if (IsBetterTarget(enemy, distSq, bestEnemy, bestDistSq, bestHp, priority))
+            {
+                bestEnemy = enemy;
+                bestDistSq = distSq;
+                bestHp = GetEnemyCurrentHp(enemy);
             }
         }
 
-        AttackTarget = closest;
+        AttackTarget = bestEnemy != null ? bestEnemy.transform : null;
         return AttackTarget;
     }
 
     /// <summary>
-    /// 사거리 안 적을 가까운 순으로 최대 buffer.Length개 담는다.
-    /// AttackTarget은 1순위(가장 가까운)로 맞춘다.
+    /// 사거리 안 적을 우선순위·거리 순으로 최대 buffer.Length개 담는다.
+    /// AttackTarget은 1순위로 맞춘다.
     /// </summary>
     public int CollectClosestAttackTargets(Transform[] buffer)
     {
-        if (buffer == null || buffer.Length == 0 || enemySpawner == null)
+        if (buffer == null || buffer.Length == 0 || enemyRegistry == null)
         {
             AttackTarget = null;
             return 0;
         }
 
+        EnsureCollectScratch(buffer.Length);
+
         for (int i = 0; i < buffer.Length; i++)
         {
             buffer[i] = null;
+            collectDistSq[i] = float.PositiveInfinity;
+            collectHps[i] = float.PositiveInfinity;
+            collectBosses[i] = false;
         }
 
-        // 거리 병행 버퍼(고정 크기 — 레이저 빔 수와 맞춤)
-        float d0 = float.PositiveInfinity;
-        float d1 = float.PositiveInfinity;
-        float d2 = float.PositiveInfinity;
+        TowerTargetPriority priority = EffectiveTargetPriority;
+        float rangeSq = range * range;
+        Vector3 origin = transform.position;
 
-        for (int i = 0; i < enemySpawner.enemyList.Count; ++i)
+        for (int i = 0; i < enemyRegistry.Count; ++i)
         {
-            Enemy enemy = enemySpawner.enemyList[i];
+            Enemy enemy = enemyRegistry.GetEnemy(i);
             if (!IsValidEnemyTarget(enemy))
             {
                 continue;
             }
 
-            float distance = Vector3.Distance(enemy.transform.position, transform.position);
-            if (distance > range)
+            float distSq = (enemy.transform.position - origin).sqrMagnitude;
+            if (distSq > rangeSq)
             {
                 continue;
             }
 
-            Transform t = enemy.transform;
-            if (buffer.Length >= 1 && (buffer[0] == null || distance < d0))
-            {
-                if (buffer.Length >= 3)
-                {
-                    buffer[2] = buffer[1];
-                    d2 = d1;
-                }
-
-                if (buffer.Length >= 2)
-                {
-                    buffer[1] = buffer[0];
-                    d1 = d0;
-                }
-
-                buffer[0] = t;
-                d0 = distance;
-            }
-            else if (buffer.Length >= 2 && (buffer[1] == null || distance < d1))
-            {
-                if (buffer.Length >= 3)
-                {
-                    buffer[2] = buffer[1];
-                    d2 = d1;
-                }
-
-                buffer[1] = t;
-                d1 = distance;
-            }
-            else if (buffer.Length >= 3 && (buffer[2] == null || distance < d2))
-            {
-                buffer[2] = t;
-                d2 = distance;
-            }
+            TryInsertTarget(
+                buffer,
+                collectDistSq,
+                collectHps,
+                collectBosses,
+                enemy.transform,
+                distSq,
+                GetEnemyCurrentHp(enemy),
+                IsBossEnemy(enemy),
+                priority);
         }
 
+        AttackTarget = buffer[0];
         int count = 0;
         for (int i = 0; i < buffer.Length; i++)
         {
@@ -320,8 +316,158 @@ public class TowerWeapon : MonoBehaviour
             }
         }
 
-        AttackTarget = buffer[0];
         return count;
+    }
+
+    private void EnsureCollectScratch(int length)
+    {
+        if (collectDistSq != null && collectDistSq.Length >= length)
+        {
+            return;
+        }
+
+        collectDistSq = new float[length];
+        collectHps = new float[length];
+        collectBosses = new bool[length];
+    }
+
+    private TowerTargetPriority EffectiveTargetPriority =>
+        towerData != null
+            ? towerData.GetEffectiveTargetPriority()
+            : TowerTargetPriorityDefaults.FromWeapon(weaponType);
+
+    private static bool IsBossEnemy(Enemy enemy)
+    {
+        return enemy != null && enemy.enemyData != null && enemy.enemyData.isBoss;
+    }
+
+    private static float GetEnemyCurrentHp(Enemy enemy)
+    {
+        if (enemy == null)
+        {
+            return float.PositiveInfinity;
+        }
+
+        EnemyHp hp = enemy.CachedHp;
+        return hp != null ? hp.currentHp : float.PositiveInfinity;
+    }
+
+    /// <param name="candidateDistSq">제곱 거리. 비교만 하므로 sqrt 불필요.</param>
+    private static bool IsBetterTarget(
+        Enemy candidate,
+        float candidateDistSq,
+        Enemy current,
+        float currentDistSq,
+        float currentHp,
+        TowerTargetPriority priority)
+    {
+        if (current == null)
+        {
+            return true;
+        }
+
+        switch (priority)
+        {
+            case TowerTargetPriority.BossFirst:
+            {
+                bool candidateBoss = IsBossEnemy(candidate);
+                bool currentBoss = IsBossEnemy(current);
+                if (candidateBoss != currentBoss)
+                {
+                    return candidateBoss;
+                }
+
+                return candidateDistSq < currentDistSq;
+            }
+            case TowerTargetPriority.LowestHp:
+            {
+                float candidateHp = GetEnemyCurrentHp(candidate);
+                if (!Mathf.Approximately(candidateHp, currentHp))
+                {
+                    return candidateHp < currentHp;
+                }
+
+                return candidateDistSq < currentDistSq;
+            }
+            default:
+                return candidateDistSq < currentDistSq;
+        }
+    }
+
+    private static void TryInsertTarget(
+        Transform[] buffer,
+        float[] distSq,
+        float[] hps,
+        bool[] bosses,
+        Transform candidate,
+        float distanceSq,
+        float hp,
+        bool boss,
+        TowerTargetPriority priority)
+    {
+        int insertAt = -1;
+        for (int i = 0; i < buffer.Length; i++)
+        {
+            if (buffer[i] == null)
+            {
+                insertAt = i;
+                break;
+            }
+
+            if (ShouldRankHigher(distanceSq, hp, boss, distSq[i], hps[i], bosses[i], priority))
+            {
+                insertAt = i;
+                break;
+            }
+        }
+
+        if (insertAt < 0)
+        {
+            return;
+        }
+
+        for (int i = buffer.Length - 1; i > insertAt; i--)
+        {
+            buffer[i] = buffer[i - 1];
+            distSq[i] = distSq[i - 1];
+            hps[i] = hps[i - 1];
+            bosses[i] = bosses[i - 1];
+        }
+
+        buffer[insertAt] = candidate;
+        distSq[insertAt] = distanceSq;
+        hps[insertAt] = hp;
+        bosses[insertAt] = boss;
+    }
+
+    private static bool ShouldRankHigher(
+        float distanceSq,
+        float hp,
+        bool boss,
+        float otherDistanceSq,
+        float otherHp,
+        bool otherBoss,
+        TowerTargetPriority priority)
+    {
+        switch (priority)
+        {
+            case TowerTargetPriority.BossFirst:
+                if (boss != otherBoss)
+                {
+                    return boss;
+                }
+
+                return distanceSq < otherDistanceSq;
+            case TowerTargetPriority.LowestHp:
+                if (!Mathf.Approximately(hp, otherHp))
+                {
+                    return hp < otherHp;
+                }
+
+                return distanceSq < otherDistanceSq;
+            default:
+                return distanceSq < otherDistanceSq;
+        }
     }
 
     /// <summary>
@@ -377,8 +523,8 @@ public class TowerWeapon : MonoBehaviour
             return false;
         }
 
-        float distance = Vector3.Distance(AttackTarget.position, transform.position);
-        if (distance > range)
+        float distSq = (AttackTarget.position - transform.position).sqrMagnitude;
+        if (distSq > range * range)
         {
             AttackTarget = null;
             return false;
@@ -394,7 +540,7 @@ public class TowerWeapon : MonoBehaviour
             return false;
         }
 
-        EnemyHp hp = enemy.GetComponent<EnemyHp>();
+        EnemyHp hp = enemy.CachedHp;
         if (hp != null && hp.IsDead)
         {
             return false;
@@ -416,8 +562,8 @@ public class TowerWeapon : MonoBehaviour
             return false;
         }
 
-        // 웨이브 목록에 없으면 이미 DestroyEnemy 처리된 것
-        if (enemySpawner == null || !enemySpawner.enemyList.Contains(enemy))
+        // 레지스트리에 없으면 이미 DestroyEnemy 처리된 것
+        if (enemyRegistry == null || !enemyRegistry.Contains(enemy))
         {
             return false;
         }
@@ -475,11 +621,11 @@ public class TowerWeapon : MonoBehaviour
         ResolveProjectilePrefabs();
     }
 
-    public void SetUp(TowerSpawner _, EnemySpawner enemySpawner)
+    public void SetUp(TowerSpawner _)
     {
         // TowerSpawner는 Tower MB가 보관. 여기선 타겟·풀·Behavior만.
         spriteRenderer = GetComponent<SpriteRenderer>();
-        this.enemySpawner = enemySpawner;
+        ServiceLocator.TryGet(out enemyRegistry);
         poolService = ServiceLocator.Get<IPoolService>();
 
         EnsureStatsFromData();

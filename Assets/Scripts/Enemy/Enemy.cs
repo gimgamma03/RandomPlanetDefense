@@ -10,6 +10,21 @@ public class Enemy : MonoBehaviour
 
     private EnemySpawner enemySpawner;
     private SpriteRenderer spriteRenderer;
+    private EnemyHp cachedHp;
+
+    /// <summary>타겟 탐색 핫패스용. GetComponent 반복 회피.</summary>
+    public EnemyHp CachedHp
+    {
+        get
+        {
+            if (cachedHp == null)
+            {
+                cachedHp = GetComponent<EnemyHp>();
+            }
+
+            return cachedHp;
+        }
+    }
 
     private int gold;
     private int scorePoint;
@@ -27,9 +42,6 @@ public class Enemy : MonoBehaviour
     private float nodeArriveDistance = 0.1f;
 
     public bool obstructed = false;
-
-    /// <summary>보스 스킬 캐스트 중 이동 정지.</summary>
-    private bool movementPaused;
 
     public EnemyRole Role =>
         enemyData != null ? enemyData.enemyRole : EnemyRole.Swarm;
@@ -147,7 +159,6 @@ public class Enemy : MonoBehaviour
         nextNodeMoveTime = 1.0f * (1f / Mathf.Max(0.01f, moveSpeed));
         baseNextNodeMoveTime = nextNodeMoveTime;
         obstructed = false;
-        movementPaused = false;
 
         ApplyVisualFromData();
         SetPath();
@@ -177,7 +188,6 @@ public class Enemy : MonoBehaviour
 
     public void PauseMovementForSkill()
     {
-        movementPaused = true;
         StopCoroutine("Move");
     }
 
@@ -188,14 +198,12 @@ public class Enemy : MonoBehaviour
             return;
         }
 
-        movementPaused = false;
         SetPath();
     }
 
     public void ClearForPool()
     {
         StopAllCoroutines();
-        movementPaused = false;
 
         EnemyBossSummonSkill skill = GetComponent<EnemyBossSummonSkill>();
         if (skill != null)

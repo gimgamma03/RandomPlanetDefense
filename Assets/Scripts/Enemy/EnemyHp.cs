@@ -3,6 +3,9 @@ using UnityEngine;
 
 public class EnemyHp : MonoBehaviour
 {
+    /// <summary>레이저 등 틱 피해 플로팅 숫자 합산 창.</summary>
+    public const float DamagePopupAggregateSeconds = 0.5f;
+
     public float maxHp;
     public float currentHp;
     private float currentShield;
@@ -19,6 +22,12 @@ public class EnemyHp : MonoBehaviour
     private EnemyShieldVisual shieldVisual;
     private Color baseSpriteColor = Color.white;
 
+    private float pendingPopupBody;
+    private float pendingPopupShield;
+    private Coroutine aggregatePopupRoutine;
+    private static readonly WaitForSeconds AggregateWait =
+        new WaitForSeconds(DamagePopupAggregateSeconds);
+
     public void SetUp(EnemyHpViewer enemyHpViewer)
     {
         this.enemyHpViewer = enemyHpViewer;
@@ -27,6 +36,10 @@ public class EnemyHp : MonoBehaviour
     public void PrepareForSpawn(EnemyHpViewer viewer)
     {
         StopAllCoroutines();
+        aggregatePopupRoutine = null;
+        pendingPopupBody = 0f;
+        pendingPopupShield = 0f;
+
         enemy = GetComponent<Enemy>();
         spriteRenderer = GetComponent<SpriteRenderer>();
         maxHp = enemy != null && enemy.enemyData != null ? enemy.enemyData.maxHp : maxHp;
@@ -78,6 +91,9 @@ public class EnemyHp : MonoBehaviour
     public void ClearForPool()
     {
         StopAllCoroutines();
+        aggregatePopupRoutine = null;
+        pendingPopupBody = 0f;
+        pendingPopupShield = 0f;
         isDie = true;
         currentShield = 0f;
         if (shieldVisual != null)
@@ -88,7 +104,11 @@ public class EnemyHp : MonoBehaviour
         enemyHpViewer = null;
     }
 
-    public void TakeDamage(float damage)
+    /// <param name="aggregatePopup">
+    /// true면 플로팅 숫자를 바로 띄우지 않고 <see cref="DamagePopupAggregateSeconds"/> 동안 합산.
+    /// 레이저처럼 매 프레임 들어가는 피해용.
+    /// </param>
+    public void TakeDamage(float damage, bool aggregatePopup = false)
     {
         if (isDie || !isActiveAndEnabled || !gameObject.activeInHierarchy)
         {
@@ -96,6 +116,8 @@ public class EnemyHp : MonoBehaviour
         }
 
         float remaining = damage;
+        float shieldHit = 0f;
+        float bodyHit = 0f;
         bool hadShield = currentShield > 0f;
 
         if (currentShield > 0f)
@@ -103,6 +125,7 @@ public class EnemyHp : MonoBehaviour
             float absorbed = Mathf.Min(currentShield, remaining);
             currentShield -= absorbed;
             remaining -= absorbed;
+            shieldHit = absorbed;
 
             if (currentShield <= 0f)
             {
@@ -114,7 +137,10 @@ public class EnemyHp : MonoBehaviour
         if (remaining > 0f)
         {
             currentHp -= remaining;
+            bodyHit = remaining;
         }
+
+        ReportDamagePopup(shieldHit, bodyHit, aggregatePopup);
 
         if (gameObject.activeInHierarchy)
         {
@@ -130,6 +156,7 @@ public class EnemyHp : MonoBehaviour
         if (currentHp <= 0f)
         {
             isDie = true;
+            FlushPendingDamagePopups();
             if (shieldVisual != null)
             {
                 shieldVisual.Clear();
@@ -143,6 +170,69 @@ public class EnemyHp : MonoBehaviour
         else if (hadShield && !HasActiveShield)
         {
             RefreshShieldVisual();
+        }
+    }
+
+    private void ReportDamagePopup(float shieldHit, float bodyHit, bool aggregatePopup)
+    {
+        if (shieldHit < 0.05f && bodyHit < 0.05f)
+        {
+            return;
+        }
+
+        if (!aggregatePopup)
+        {
+            Vector3 pos = transform.position;
+            if (shieldHit >= 0.05f)
+            {
+                DamagePopupSpawner.ShowShield(pos, shieldHit);
+            }
+
+            if (bodyHit >= 0.05f)
+            {
+                DamagePopupSpawner.ShowBody(pos + Vector3.up * 0.15f, bodyHit);
+            }
+
+            return;
+        }
+
+        pendingPopupShield += shieldHit;
+        pendingPopupBody += bodyHit;
+        if (aggregatePopupRoutine == null && isActiveAndEnabled)
+        {
+            aggregatePopupRoutine = StartCoroutine(AggregateDamagePopupRoutine());
+        }
+    }
+
+    private IEnumerator AggregateDamagePopupRoutine()
+    {
+        yield return AggregateWait;
+        aggregatePopupRoutine = null;
+        FlushPendingDamagePopups();
+    }
+
+    private void FlushPendingDamagePopups()
+    {
+        if (aggregatePopupRoutine != null)
+        {
+            StopCoroutine(aggregatePopupRoutine);
+            aggregatePopupRoutine = null;
+        }
+
+        float shield = pendingPopupShield;
+        float body = pendingPopupBody;
+        pendingPopupShield = 0f;
+        pendingPopupBody = 0f;
+
+        Vector3 pos = transform.position;
+        if (shield >= 0.05f)
+        {
+            DamagePopupSpawner.ShowShield(pos, shield);
+        }
+
+        if (body >= 0.05f)
+        {
+            DamagePopupSpawner.ShowBody(pos + Vector3.up * 0.15f, body);
         }
     }
 

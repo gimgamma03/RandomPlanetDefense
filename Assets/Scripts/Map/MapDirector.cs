@@ -45,6 +45,7 @@ public class MapDirector : MonoBehaviour
         StartToEndPath = new List<AStarNode>();
         RebuildSharedPath();
         GridHoverOverlay.EnsureExists();
+        DamagePopupSpawner.EnsureExists();
     }
 
     private void Update()
@@ -55,12 +56,21 @@ public class MapDirector : MonoBehaviour
         }
     }
 
+    /// <summary>웨이브 진행 중이면 벽 설치·모드 진입 불가.</summary>
+    public bool IsWallPlacementLocked =>
+        enemySpawner != null && enemySpawner.IsWaveInProgress;
+
     /// <summary>
     /// 마우스 월드 좌표에 벽 설치. 골드·경로 검사 포함.
     /// 입력은 BuildModeController(빌드 모드)가 담당한다.
     /// </summary>
     public bool TryPlaceWallAt(Vector3 worldPos)
     {
+        if (IsWallPlacementLocked)
+        {
+            return false;
+        }
+
         if (playerService == null)
         {
             playerService = ServiceLocator.Get<IPlayerService>();
@@ -88,7 +98,7 @@ public class MapDirector : MonoBehaviour
         AStarNode wallNode = aStarGrid.GetNodeFromWorld(worldPos);
         Vector3Int cellPosition = WalkableMap.WorldToCell(worldPos);
 
-        if (wallNode == null || !CheckPath(wallNode))
+        if (wallNode == null || !TryValidateWallPath(wallNode, out List<AStarNode> validatedPath))
         {
             Debug.Log("Wall blocks the path.");
             if (wallNode != null)
@@ -103,7 +113,8 @@ public class MapDirector : MonoBehaviour
         WallMap.SetTile(cellPosition, WallTile);
         WalkableMap.SetTile(cellPosition, null);
 
-        RebuildSharedPath();
+        // CheckPath에서 이미 A* 1회 — 같은 결과로 공유 경로 갱신 (이중 탐색 방지)
+        ApplySharedPath(validatedPath);
         enemySpawner.CheckPathForAllEnemy();
         showPath.ShowPath();
         return true;
@@ -164,10 +175,18 @@ public class MapDirector : MonoBehaviour
 
     public bool CheckPath(AStarNode wallNode)
     {
+        return TryValidateWallPath(wallNode, out _);
+    }
+
+    /// <summary>임시로 벽을 막고 스폰→골 경로가 있는지 검사. 성공 시 찾은 경로를 반환(재사용).</summary>
+    public bool TryValidateWallPath(AStarNode wallNode, out List<AStarNode> path)
+    {
+        path = null;
         wallNode.isWalkable = false;
         AStarNode startNode = aStarGrid.GetNodeFromWorld(enemySpawner.SpawnWorldPosition);
         AStarNode endNode = aStarGrid.GetNodeFromWorld(goal.transform.position);
-        return aStarGrid.pathfinder.CreatePath(startNode, endNode) != null;
+        path = aStarGrid.pathfinder.CreatePath(startNode, endNode);
+        return path != null;
     }
 
     public bool CheckPath(Vector3Int cellPosition)
@@ -189,7 +208,12 @@ public class MapDirector : MonoBehaviour
         AStarNode startNode = aStarGrid.GetNodeFromWorld(enemySpawner.SpawnWorldPosition);
         AStarNode endNode = aStarGrid.GetNodeFromWorld(goal.transform.position);
         List<AStarNode> path = aStarGrid.pathfinder.CreatePath(startNode, endNode);
+        return ApplySharedPath(path);
+    }
 
+    /// <summary>이미 계산된 스폰→골 경로로 공유 웨이포인트를 채운다.</summary>
+    public bool ApplySharedPath(List<AStarNode> path)
+    {
         sharedNodes.Clear();
         sharedWaypoints.Clear();
 

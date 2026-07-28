@@ -9,6 +9,7 @@ using UnityEngine.ResourceManagement.AsyncOperations;
 /// 계열 Base 프리팹 로드.
 /// useAddressables=false → Library 직접 참조 (지금과 동일).
 /// useAddressables=true → address로 LoadAssetAsync, 결과는 캐시.
+/// 씬 이탈 시 Release로 핸들 수명을 닫는다.
 /// </summary>
 public class TowerBasePrefabLoader : MonoBehaviour
 {
@@ -17,6 +18,10 @@ public class TowerBasePrefabLoader : MonoBehaviour
 
     [SerializeField]
     private TowerBaseLibrary library;
+
+    [Tooltip("게임 시작 시 등록된 계열 Base를 미리 로드 (Addressables ON일 때)")]
+    [SerializeField]
+    private bool preloadAllBasesOnStart;
 
     private readonly Dictionary<WeaponType, GameObject> cache = new Dictionary<WeaponType, GameObject>();
     private readonly Dictionary<WeaponType, AsyncOperationHandle<GameObject>> handles =
@@ -38,6 +43,14 @@ public class TowerBasePrefabLoader : MonoBehaviour
         if (library == null)
         {
             library = TowerBaseLibrary.Load();
+        }
+    }
+
+    private void Start()
+    {
+        if (preloadAllBasesOnStart && useAddressables)
+        {
+            StartCoroutine(PreloadAllBases());
         }
     }
 
@@ -90,6 +103,11 @@ public class TowerBasePrefabLoader : MonoBehaviour
         if (handle.Status != AsyncOperationStatus.Succeeded || handle.Result == null)
         {
             Debug.LogError($"[TowerBasePrefabLoader] Addressables load failed: {entry.address}. Fallback to direct ref.");
+            if (handle.IsValid())
+            {
+                Addressables.Release(handle);
+            }
+
             cache[weaponType] = entry.basePrefab;
             onLoaded?.Invoke(entry.basePrefab);
             yield break;
@@ -101,7 +119,23 @@ public class TowerBasePrefabLoader : MonoBehaviour
         onLoaded?.Invoke(handle.Result);
     }
 
-    private void OnDestroy()
+    /// <summary>Library에 등록된 계열을 미리 로드해 첫 스폰 히치를 줄인다.</summary>
+    public IEnumerator PreloadAllBases()
+    {
+        EnsureLibrary();
+        if (library == null || library.Entries == null)
+        {
+            yield break;
+        }
+
+        foreach (TowerBaseLibrary.Entry entry in library.Entries)
+        {
+            yield return LoadBasePrefab(entry.weaponType, null);
+        }
+    }
+
+    /// <summary>Addressables 핸들 전부 해제. 타이틀 복귀·씬 파괴 시 호출.</summary>
+    public void ReleaseAll()
     {
         foreach (var pair in handles)
         {
@@ -113,5 +147,10 @@ public class TowerBasePrefabLoader : MonoBehaviour
 
         handles.Clear();
         cache.Clear();
+    }
+
+    private void OnDestroy()
+    {
+        ReleaseAll();
     }
 }

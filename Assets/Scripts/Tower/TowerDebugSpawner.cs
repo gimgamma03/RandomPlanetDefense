@@ -75,9 +75,9 @@ public sealed class TowerDebugSpawner : MonoBehaviour
             return;
         }
 
-        if (BuildModeController.Instance != null)
+        if (ServiceLocator.TryGet(out IBuildModeState buildMode))
         {
-            BuildModeController.Instance.CancelMode();
+            buildMode.CancelMode();
         }
 
         towerSpawner.SpawnTower(worldPosition, selected);
@@ -87,7 +87,6 @@ public sealed class TowerDebugSpawner : MonoBehaviour
     {
         if (!visible)
         {
-            GUI.Label(new Rect(12f, 12f, 280f, 24f), "Tower Debug: F8");
             return;
         }
 
@@ -142,9 +141,9 @@ public sealed class TowerDebugSpawner : MonoBehaviour
             if (GUILayout.Button(label))
             {
                 selected = data;
-                if (BuildModeController.Instance != null)
+                if (ServiceLocator.TryGet(out IBuildModeState buildMode))
                 {
-                    BuildModeController.Instance.CancelMode();
+                    buildMode.CancelMode();
                 }
             }
 

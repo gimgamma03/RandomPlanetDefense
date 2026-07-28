@@ -17,6 +17,7 @@ public sealed class TowerDataEditor : Editor
     private SerializedProperty grade;
     private SerializedProperty weaponType;
     private SerializedProperty projectileType;
+    private SerializedProperty targetPriority;
     private SerializedProperty sprite;
     private SerializedProperty spriteColor;
     private SerializedProperty spawnWeight;
@@ -37,6 +38,7 @@ public sealed class TowerDataEditor : Editor
         grade = serializedObject.FindProperty("grade");
         weaponType = serializedObject.FindProperty("weaponType");
         projectileType = serializedObject.FindProperty("projectileType");
+        targetPriority = serializedObject.FindProperty("targetPriority");
         sprite = serializedObject.FindProperty("sprite");
         spriteColor = serializedObject.FindProperty("spriteColor");
         spawnWeight = serializedObject.FindProperty("spawnWeight");
@@ -122,6 +124,8 @@ public sealed class TowerDataEditor : Editor
 
             EditorGUI.indentLevel--;
         }
+
+        EditorGUILayout.PropertyField(targetPriority, new GUIContent("Target Priority"));
 
         EditorGUILayout.HelpBox(BuildDeliverySummary(type, proj, effective), MessageType.None);
         EditorGUILayout.EndVertical();

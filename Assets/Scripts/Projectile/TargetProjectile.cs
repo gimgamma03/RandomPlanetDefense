@@ -2,10 +2,14 @@ using UnityEngine;
 
 public class TargetProjectile : MonoBehaviour
 {
+    private const float Lifetime = 2f;
+    private const float MaxTravelDistance = 10f;
+
     private Transform target;
     private float damage;
     private float moveSpeed = 8.0f;
     private ProjectileVfx vfx;
+    private Vector3 spawnPosition;
 
     private void Awake()
     {
@@ -18,8 +22,10 @@ public class TargetProjectile : MonoBehaviour
 
     public void Setup(Transform target, float damage)
     {
+        CancelInvoke();
         this.target = target;
         this.damage = damage;
+        spawnPosition = transform.position;
 
         if (target != null)
         {
@@ -30,17 +36,23 @@ public class TargetProjectile : MonoBehaviour
         {
             vfx.BeginFlight();
         }
+
+        Invoke(nameof(ReleaseMiss), Lifetime);
     }
 
     private void Update()
     {
-        if (target != null && target.gameObject.activeInHierarchy)
+        if (target == null || !target.gameObject.activeInHierarchy)
         {
-            Vector3 direction = (target.position - transform.position).normalized;
-            ProjectileFacing.FaceDirection(transform, direction);
-            transform.position += direction * moveSpeed * Time.deltaTime;
+            Release(hit: false);
+            return;
         }
-        else
+
+        Vector3 direction = (target.position - transform.position).normalized;
+        ProjectileFacing.FaceDirection(transform, direction);
+        transform.position += direction * moveSpeed * Time.deltaTime;
+
+        if (Vector3.Distance(spawnPosition, transform.position) >= MaxTravelDistance)
         {
             Release(hit: false);
         }
@@ -67,34 +79,15 @@ public class TargetProjectile : MonoBehaviour
         Release(hit: true);
     }
 
+    private void ReleaseMiss()
+    {
+        Release(hit: false);
+    }
+
     private void Release(bool hit)
     {
-        if (vfx != null)
-        {
-            if (hit)
-            {
-                vfx.NotifyHit(transform.position);
-            }
-            else
-            {
-                vfx.NotifyMiss();
-            }
-        }
-
+        CancelInvoke();
         target = null;
-        PooledObject pooled = GetComponent<PooledObject>();
-        if (pooled != null)
-        {
-            pooled.ReturnToPool();
-            return;
-        }
-
-        if (ServiceLocator.TryGet(out IPoolService pool))
-        {
-            pool.Return(gameObject);
-            return;
-        }
-
-        Destroy(gameObject);
+        ProjectileLifecycle.Release(gameObject, vfx, hit);
     }
 }

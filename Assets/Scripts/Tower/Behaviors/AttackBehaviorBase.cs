@@ -6,6 +6,9 @@ using UnityEngine;
 /// </summary>
 public abstract class AttackBehaviorBase : ITowerBehavior
 {
+    /// <summary>타겟 없을 때 전수 탐색 간격. 타워마다 스태거로 스파이크 완화.</summary>
+    private static readonly WaitForSeconds SearchInterval = new WaitForSeconds(0.05f);
+
     protected TowerWeapon Tower { get; private set; }
 
     private Coroutine searchRoutine;
@@ -36,6 +39,13 @@ public abstract class AttackBehaviorBase : ITowerBehavior
 
     private IEnumerator SearchTarget()
     {
+        // 인스턴스마다 시작 프레임을 어긋내 동시 전수 스캔을 분산
+        int staggerFrames = Tower.GetInstanceID() & 3;
+        for (int i = 0; i < staggerFrames; i++)
+        {
+            yield return null;
+        }
+
         while (true)
         {
             Transform target = Tower.FindClosestAttackTarget();
@@ -50,7 +60,7 @@ public abstract class AttackBehaviorBase : ITowerBehavior
                 yield break;
             }
 
-            yield return null;
+            yield return SearchInterval;
         }
     }
 

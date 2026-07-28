@@ -9,13 +9,24 @@ using UnityEngine.UI;
 /// </summary>
 public class BuildModeController : MonoBehaviour, IBuildModeState
 {
-    public static BuildModeController Instance { get; private set; }
-
     [SerializeField]
     private TowerSpawner towerSpawner;
 
     [SerializeField]
+    private MapDirector mapDirector;
+
+    [SerializeField]
     private GameObject randomTowerSpawnerImage;
+
+    [Header("Mode Buttons (비우면 이름으로 1회 폴백 검색)")]
+    [SerializeField]
+    private Button buttonSpawnTower;
+    [SerializeField]
+    private Button buttonCombineTower;
+    [SerializeField]
+    private Button buttonSellTower;
+    [SerializeField]
+    private Button buttonPlaceWall;
 
     private IPlayerService playerService;
     private BuildMode mode = BuildMode.None;
@@ -39,28 +50,18 @@ public class BuildModeController : MonoBehaviour, IBuildModeState
     public BuildMode CurrentMode => mode;
     public bool HasActiveMode => mode != BuildMode.None;
 
-    private static readonly Dictionary<string, BuildMode> ButtonNameToMode =
-        new Dictionary<string, BuildMode>
-        {
-            { "ButtonSpawnTower", BuildMode.SpawnTower },
-            { "ButtonCombineTower", BuildMode.Combine },
-            { "ButtonSellTower", BuildMode.Sell },
-            { "ButtonPlaceWall", BuildMode.PlaceWall },
-        };
-
     protected virtual void Awake()
     {
-        Instance = this;
         ServiceLocator.Register<IBuildModeState>(this);
+
+        if (mapDirector == null)
+        {
+            mapDirector = MapDirector.Instance;
+        }
     }
 
     protected virtual void OnDestroy()
     {
-        if (Instance == this)
-        {
-            Instance = null;
-        }
-
         for (int i = 0; i < runtimeListeners.Count; i++)
         {
             (Button button, UnityEngine.Events.UnityAction action) = runtimeListeners[i];
@@ -87,43 +88,55 @@ public class BuildModeController : MonoBehaviour, IBuildModeState
 
     private void BindModeButtons()
     {
-        foreach (var pair in ButtonNameToMode)
+        TryBindButton(ref buttonSpawnTower, "ButtonSpawnTower", BuildMode.SpawnTower, bindClick: false);
+        TryBindButton(ref buttonCombineTower, "ButtonCombineTower", BuildMode.Combine, bindClick: false);
+        TryBindButton(ref buttonSellTower, "ButtonSellTower", BuildMode.Sell, bindClick: false);
+        // 벽 버튼은 씬 UnityEvent가 비어 있어서 런타임으로 연결.
+        // 타워 3버튼은 씬 UnityEvent(PanelGameManager 메서드)를 그대로 사용.
+        TryBindButton(ref buttonPlaceWall, "ButtonPlaceWall", BuildMode.PlaceWall, bindClick: true);
+    }
+
+    private void TryBindButton(ref Button button, string fallbackName, BuildMode associatedMode, bool bindClick)
+    {
+        if (button == null)
         {
-            GameObject go = GameObject.Find(pair.Key);
-            if (go == null)
+            GameObject go = GameObject.Find(fallbackName);
+            if (go != null)
             {
-                continue;
+                button = go.GetComponent<Button>();
+                if (button != null)
+                {
+                    Debug.LogWarning(
+                        $"[BuildModeController] '{fallbackName}'을 이름 검색으로 찾음. 인스펙터에 할당하세요.",
+                        this);
+                }
             }
+        }
 
-            Button btn = go.GetComponent<Button>();
-            if (btn == null)
-            {
-                continue;
-            }
+        if (button == null)
+        {
+            return;
+        }
 
-            Image image = btn.targetGraphic as Image;
-            TextMeshProUGUI label = go.GetComponentInChildren<TextMeshProUGUI>(true);
-            ButtonState bs = new ButtonState
-            {
-                button = btn,
-                image = image,
-                label = label,
-                labelBody = ExtractLabelBody(label != null ? label.text : string.Empty),
-                normalColor = image != null ? image.color : Color.white,
-                normalSprite = image != null ? image.sprite : null,
-                normalTransition = btn.transition,
-                associatedMode = pair.Value,
-            };
-            modeButtons.Add(bs);
+        Image image = button.targetGraphic as Image;
+        TextMeshProUGUI label = button.GetComponentInChildren<TextMeshProUGUI>(true);
+        modeButtons.Add(new ButtonState
+        {
+            button = button,
+            image = image,
+            label = label,
+            labelBody = ExtractLabelBody(label != null ? label.text : string.Empty),
+            normalColor = image != null ? image.color : Color.white,
+            normalSprite = image != null ? image.sprite : null,
+            normalTransition = button.transition,
+            associatedMode = associatedMode,
+        });
 
-            // 벽 버튼은 씬 UnityEvent가 비어 있어서 런타임으로 연결.
-            // 타워 3버튼은 씬 UnityEvent(PanelGameManager 메서드)를 그대로 사용.
-            if (pair.Value == BuildMode.PlaceWall)
-            {
-                UnityEngine.Events.UnityAction action = PlaceWallButton;
-                btn.onClick.AddListener(action);
-                runtimeListeners.Add((btn, action));
-            }
+        if (bindClick)
+        {
+            UnityEngine.Events.UnityAction action = PlaceWallButton;
+            button.onClick.AddListener(action);
+            runtimeListeners.Add((button, action));
         }
     }
 
@@ -193,8 +206,8 @@ public class BuildModeController : MonoBehaviour, IBuildModeState
             if (mode == BuildMode.PlaceWall
                 && EventSystem.current != null
                 && !EventSystem.current.IsPointerOverGameObject()
-                && MapDirector.Instance != null
-                && MapDirector.Instance.TryRemoveWallAt(mouseWorld))
+                && mapDirector != null
+                && mapDirector.TryRemoveWallAt(mouseWorld))
             {
                 // 철거 성공 — 벽 모드 유지
             }
@@ -283,12 +296,32 @@ public class BuildModeController : MonoBehaviour, IBuildModeState
 
     private void TryPlaceWall(Vector2 mouseWorld)
     {
-        if (MapDirector.Instance == null)
+        if (!EnsureMapDirector() || mapDirector.IsWallPlacementLocked)
         {
+            if (mode == BuildMode.PlaceWall && mapDirector != null && mapDirector.IsWallPlacementLocked)
+            {
+                CancelMode();
+            }
+
             return;
         }
 
-        MapDirector.Instance.TryPlaceWallAt(mouseWorld);
+        mapDirector.TryPlaceWallAt(mouseWorld);
+    }
+
+    private bool EnsureMapDirector()
+    {
+        if (mapDirector == null)
+        {
+            mapDirector = MapDirector.Instance;
+        }
+
+        return mapDirector != null;
+    }
+
+    private bool CanEnterWallMode()
+    {
+        return EnsureMapDirector() && !mapDirector.IsWallPlacementLocked;
     }
 
     public void CancelMode()
@@ -370,6 +403,16 @@ public class BuildModeController : MonoBehaviour, IBuildModeState
     /// <summary>씬 버튼 / Space — 벽 설치 모드 (좌클릭으로 설치, 연속 가능).</summary>
     public void PlaceWallButton()
     {
+        if (!CanEnterWallMode())
+        {
+            if (mode == BuildMode.PlaceWall)
+            {
+                CancelMode();
+            }
+
+            return;
+        }
+
         ToggleMode(BuildMode.PlaceWall);
     }
 

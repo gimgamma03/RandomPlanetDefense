@@ -3,15 +3,18 @@ using UnityEngine.EventSystems;
 using UnityEngine.Tilemaps;
 
 /// <summary>
-/// 마우스 아래 그리드 셀 테두리.
-/// 기본 흰색 / 벽 주황 / 소환 초록 / 조합 파랑 / 판매 빨강.
+/// 마우스 아래 그리드 셀 미리보기.
+/// 벽 모드: 파란색 반투명 블록(블루프린트).
+/// 그 외: 테두리(기본 흰 / 소환 초록 / 조합 파랑 / 판매 빨강).
 /// </summary>
 public class GridHoverOverlay : MonoBehaviour
 {
     [SerializeField]
     private Color viewColor = Color.white;
     [SerializeField]
-    private Color wallBuildColor = new Color(1f, 0.55f, 0.1f, 1f);
+    private Color wallBlueprintFill = new Color(0.25f, 0.65f, 1f, 0.4f);
+    [SerializeField]
+    private Color wallBlueprintEdge = new Color(0.45f, 0.85f, 1f, 0.9f);
     [SerializeField]
     private Color spawnTowerColor = Color.green;
     [SerializeField]
@@ -24,11 +27,13 @@ public class GridHoverOverlay : MonoBehaviour
     private float inset = 0.04f;
 
     private LineRenderer line;
+    private SpriteRenderer fill;
     private Tilemap walkableMap;
     private Tilemap wallMap;
     private IBuildModeState buildModeState;
     private Vector3Int lastCell = new Vector3Int(int.MinValue, 0, 0);
     private bool visible;
+    private bool wallBlueprintMode;
 
     public static GridHoverOverlay EnsureExists()
     {
@@ -54,8 +59,16 @@ public class GridHoverOverlay : MonoBehaviour
         line.widthMultiplier = 1f;
         line.startWidth = lineWidth;
         line.endWidth = lineWidth;
-        line.sharedMaterial = CreateLineMaterial();
+        line.sharedMaterial = CreateUnlitMaterial();
         line.enabled = false;
+
+        GameObject fillGo = new GameObject("BlueprintFill");
+        fillGo.transform.SetParent(transform, false);
+        fill = fillGo.AddComponent<SpriteRenderer>();
+        fill.sprite = CreateWhiteSprite();
+        fill.sharedMaterial = CreateUnlitMaterial();
+        fill.sortingOrder = 49;
+        fill.enabled = false;
     }
 
     private void Start()
@@ -85,10 +98,7 @@ public class GridHoverOverlay : MonoBehaviour
         if (ServiceLocator.TryGet(out IBuildModeState state))
         {
             buildModeState = state;
-            return;
         }
-
-        buildModeState = BuildModeController.Instance;
     }
 
     private void LateUpdate()
@@ -142,11 +152,16 @@ public class GridHoverOverlay : MonoBehaviour
             return;
         }
 
-        Color color = GetModeColor(mode);
-        if (!visible || cell != lastCell || line.startColor != color)
+        bool useBlueprint = mode == BuildMode.PlaceWall;
+        Color edgeColor = useBlueprint ? wallBlueprintEdge : GetModeColor(mode);
+        if (!visible
+            || cell != lastCell
+            || wallBlueprintMode != useBlueprint
+            || line.startColor != edgeColor)
         {
-            DrawCell(cell, color);
+            DrawCell(cell, edgeColor, useBlueprint);
             lastCell = cell;
+            wallBlueprintMode = useBlueprint;
         }
 
         SetVisible(true);
@@ -156,8 +171,6 @@ public class GridHoverOverlay : MonoBehaviour
     {
         switch (mode)
         {
-            case BuildMode.PlaceWall:
-                return wallBuildColor;
             case BuildMode.SpawnTower:
                 return spawnTowerColor;
             case BuildMode.Combine:
@@ -169,7 +182,7 @@ public class GridHoverOverlay : MonoBehaviour
         }
     }
 
-    private void DrawCell(Vector3Int cell, Color color)
+    private void DrawCell(Vector3Int cell, Color edgeColor, bool blueprint)
     {
         Vector3 center = walkableMap.GetCellCenterWorld(cell);
         center -= walkableMap.cellGap / 2f;
@@ -184,28 +197,43 @@ public class GridHoverOverlay : MonoBehaviour
         line.SetPosition(2, center + new Vector3(halfX, halfY, 0f));
         line.SetPosition(3, center + new Vector3(halfX, -halfY, 0f));
 
-        line.startColor = color;
-        line.endColor = color;
+        line.startColor = edgeColor;
+        line.endColor = edgeColor;
         line.startWidth = lineWidth;
         line.endWidth = lineWidth;
+
+        if (blueprint)
+        {
+            fill.transform.position = center;
+            fill.transform.localScale = new Vector3(
+                Mathf.Max(0.01f, size.x - inset * 2f),
+                Mathf.Max(0.01f, size.y - inset * 2f),
+                1f);
+            fill.color = wallBlueprintFill;
+        }
     }
 
     private void SetVisible(bool on)
     {
-        if (visible == on && line.enabled == on)
+        bool lineOn = on;
+        bool fillOn = on && wallBlueprintMode;
+
+        if (visible == on && line.enabled == lineOn && fill.enabled == fillOn)
         {
             return;
         }
 
         visible = on;
-        line.enabled = on;
+        line.enabled = lineOn;
+        fill.enabled = fillOn;
         if (!on)
         {
             lastCell = new Vector3Int(int.MinValue, 0, 0);
+            wallBlueprintMode = false;
         }
     }
 
-    private static Material CreateLineMaterial()
+    private static Material CreateUnlitMaterial()
     {
         Shader shader = Shader.Find("Sprites/Default");
         if (shader == null)
@@ -216,5 +244,14 @@ public class GridHoverOverlay : MonoBehaviour
         var mat = new Material(shader);
         mat.color = Color.white;
         return mat;
+    }
+
+    private static Sprite CreateWhiteSprite()
+    {
+        var tex = new Texture2D(1, 1, TextureFormat.RGBA32, false);
+        tex.SetPixel(0, 0, Color.white);
+        tex.Apply();
+        tex.filterMode = FilterMode.Point;
+        return Sprite.Create(tex, new Rect(0f, 0f, 1f, 1f), new Vector2(0.5f, 0.5f), 1f);
     }
 }

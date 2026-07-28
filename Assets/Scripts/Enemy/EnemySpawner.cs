@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using static StageData;
 
-public class EnemySpawner : MonoBehaviour
+public class EnemySpawner : MonoBehaviour, IEnemyRegistry
 {
     [Header("Spawn")]
     [Tooltip("적 출현 위치 (블랙홀/게이트). 비우면 이 오브젝트 Transform 사용")]
@@ -30,6 +30,7 @@ public class EnemySpawner : MonoBehaviour
     private IPoolService poolService;
     private IPlayerService playerService;
     private EnemyCatalog enemyCatalog;
+    private readonly EnemyDeathHandler deathHandler = new EnemyDeathHandler();
 
     private Wave currentWave;
     private Coroutine spawnRoutine;
@@ -39,7 +40,9 @@ public class EnemySpawner : MonoBehaviour
     private bool waveActive;
     private bool spawnCompleted;
 
-    public List<Enemy> enemyList;
+    private readonly List<Enemy> enemies = new List<Enemy>();
+
+    public int Count => enemies.Count;
 
     public bool IsWaveInProgress => waveActive;
 
@@ -47,12 +50,27 @@ public class EnemySpawner : MonoBehaviour
     public Vector3 SpawnWorldPosition =>
         spawnPoint != null ? spawnPoint.position : transform.position;
 
+    private void Awake()
+    {
+        ServiceLocator.Register<IEnemyRegistry>(this);
+    }
+
+    public Enemy GetEnemy(int index)
+    {
+        return enemies[index];
+    }
+
+    public bool Contains(Enemy enemy)
+    {
+        return enemy != null && enemies.Contains(enemy);
+    }
+
     void Start()
     {
-        enemyList = new List<Enemy>();
         poolService = ServiceLocator.Get<IPoolService>();
         playerService = ServiceLocator.Get<IPlayerService>();
         enemyCatalog = EnemyCatalog.LoadFromResources();
+        deathHandler.EnsureServices();
 
         if (enemyBasePrefab == null)
         {
@@ -79,8 +97,9 @@ public class EnemySpawner : MonoBehaviour
 
     public void CheckPathForAllEnemy()
     {
-        foreach (Enemy enemy in enemyList)
+        for (int i = 0; i < enemies.Count; i++)
         {
+            Enemy enemy = enemies[i];
             if (enemy != null)
             {
                 enemy.SetPath();
@@ -311,48 +330,30 @@ public class EnemySpawner : MonoBehaviour
 
     public void DestroyEnemy(EnemyDestroyType type, Enemy enemy)
     {
-        if (enemy == null || !enemyList.Contains(enemy))
+        if (enemy == null || !enemies.Contains(enemy))
         {
             return;
         }
 
-        int gold = enemy.GetGold();
-        int scorePoint = enemy.GetScorePoint();
         Vector3 deathPosition = enemy.transform.position;
         bool shouldSplit = type == EnemyDestroyType.Kill && enemy.CanSplitOnKill;
         EnemyData splitParentData = enemy.enemyData;
 
-        if (type == EnemyDestroyType.Arrive)
-        {
-            if (playerService == null)
-            {
-                playerService = ServiceLocator.Get<IPlayerService>();
-            }
+        deathHandler.ApplyOutcome(type, enemy);
 
-            // 보스 골인 = 즉시 게임오버 (목숨 -1이 아님)
-            bool isBoss = enemy.enemyData != null && enemy.enemyData.isBoss;
-            if (isBoss)
-            {
-                playerService.ForceGameOver();
-            }
-            else
-            {
-                playerService.TakeDamage(Constants.enemyGoalInDamage);
-            }
-        }
-        else if (type == EnemyDestroyType.Kill)
-        {
-            if (playerService == null)
-            {
-                playerService = ServiceLocator.Get<IPlayerService>();
-            }
+        enemies.Remove(enemy);
+        ReturnEnemyToPool(enemy);
 
-            playerService.AddGold(gold);
-            waveSystem.AddScore(scorePoint);
+        if (shouldSplit && splitParentData != null)
+        {
+            SpawnSplitChildren(splitParentData, deathPosition);
         }
 
-        enemyList.Remove(enemy);
+        TryFinishWave();
+    }
 
+    private void ReturnEnemyToPool(Enemy enemy)
+    {
         EnemyHp enemyHp = enemy.GetComponent<EnemyHp>();
         if (enemyHp != null)
         {
@@ -368,16 +369,9 @@ public class EnemySpawner : MonoBehaviour
         }
 
         poolService.Return(enemy.gameObject);
-
-        if (shouldSplit && splitParentData != null)
-        {
-            SpawnSplitChildren(splitParentData, deathPosition);
-        }
-
-        TryFinishWave();
     }
 
-    /// <summary>보스 소환 스킬 — 한 마리. 웨이브 카운트와 무관하게 enemyList에 추가.</summary>
+    /// <summary>보스 소환 스킬 — 한 마리. 웨이브 카운트와 무관하게 enemies에 추가.</summary>
     public void SpawnBossMinion(EnemyType minionType, Vector3 position)
     {
         if (enemyCatalog == null)
@@ -412,7 +406,7 @@ public class EnemySpawner : MonoBehaviour
         }
     }
 
-    /// <summary>Splitter 사망 시 잔해 스폰. 웨이브 카운트와 무관하게 enemyList에 추가.</summary>
+    /// <summary>Splitter 사망 시 잔해 스폰. 웨이브 카운트와 무관하게 enemies에 추가.</summary>
     private void SpawnSplitChildren(EnemyData parentData, Vector3 position)
     {
         if (enemyCatalog == null)
@@ -482,7 +476,7 @@ public class EnemySpawner : MonoBehaviour
         enemyHp.PrepareForSpawn(enemyHpViewer);
         enemyHpViewer.hpSliderUpdate();
 
-        enemyList.Add(enemy);
+        enemies.Add(enemy);
     }
 
     /// <summary>스폰이 끝났고 필드 적이 0이면 웨이브 클리어.</summary>
@@ -508,7 +502,7 @@ public class EnemySpawner : MonoBehaviour
             return;
         }
 
-        if (enemyList.Count > 0)
+        if (enemies.Count > 0)
         {
             return;
         }

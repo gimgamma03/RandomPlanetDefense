@@ -36,6 +36,9 @@ public class Projectile : MonoBehaviour
         }
     }
 
+    private const float NormalLifetime = 2f;
+    private const float NormalMaxTravelDistance = 9f;
+
     public void Setup(Vector3 target, float damage)
     {
         RestoreVisualDefaults();
@@ -43,8 +46,9 @@ public class Projectile : MonoBehaviour
         despawnWhenOffScreen = false;
         piercedEnemyIds.Clear();
         spinSpeed = 0f;
-        maxTravelDistance = 0f;
-        ApplySetup(target, damage, 3f, enableTrail: true);
+        spawnPosition = transform.position;
+        maxTravelDistance = NormalMaxTravelDistance;
+        ApplySetup(target, damage, NormalLifetime, enableTrail: true);
     }
 
     /// <summary>직진 관통 — 적마다 1회 피해, 화면 밖으로 나가면 소멸.</summary>
@@ -129,12 +133,7 @@ public class Projectile : MonoBehaviour
 
     private void Update()
     {
-        if (!pierce)
-        {
-            return;
-        }
-
-        if (spinSpeed != 0f)
+        if (pierce && spinSpeed != 0f)
         {
             transform.Rotate(0f, 0f, spinSpeed * Time.deltaTime);
         }
@@ -247,21 +246,9 @@ public class Projectile : MonoBehaviour
         pierce = false;
         despawnWhenOffScreen = false;
         spinSpeed = 0f;
+        maxTravelDistance = 0f;
         piercedEnemyIds.Clear();
 
-        PooledObject pooled = GetComponent<PooledObject>();
-        if (pooled != null)
-        {
-            pooled.ReturnToPool();
-            return;
-        }
-
-        if (ServiceLocator.TryGet(out IPoolService pool))
-        {
-            pool.Return(gameObject);
-            return;
-        }
-
-        Destroy(gameObject);
+        ProjectileLifecycle.ReturnToPool(gameObject);
     }
 }
