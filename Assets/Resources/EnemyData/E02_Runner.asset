@@ -26,5 +26,15 @@ MonoBehaviour:
   shieldHp: 0
   splitCount: 2
   splitChildType: 0
-  sprite: {fileID: 21300000, guid: 583ad1e81cfd9cc498a79e15e1e56c73, type: 3}
+  sprite: {fileID: 21300000, guid: 3eb43e859615aab4697f61ab9ffc783c, type: 3}
   spriteColor: {r: 0.7490196, g: 1, b: 0.9490197, a: 1}
+  isBoss: 0
+  bossCrownSprite: {fileID: 0}
+  enableSummonSkill: 0
+  summonMinionType: 7
+  summonCountMin: 3
+  summonCountMax: 5
+  summonChargeDuration: 7
+  summonCastHoldDuration: 0.3
+  summonInterval: 0.5
+  summonChargeGaugeYOffset: 0.9

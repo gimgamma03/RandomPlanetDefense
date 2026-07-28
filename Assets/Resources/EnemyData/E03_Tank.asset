@@ -26,5 +26,5 @@ MonoBehaviour:
   shieldHp: 0
   splitCount: 2
   splitChildType: 0
-  sprite: {fileID: 21300000, guid: d215ade12833a3843868bede289b8420, type: 3}
+  sprite: {fileID: 21300000, guid: 6f763837356d941419ff78314e11bb0f, type: 3}
   spriteColor: {r: 1, g: 0.9, b: 0.75, a: 1}

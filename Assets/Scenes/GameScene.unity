@@ -2261,7 +2261,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   towerSpawner: {fileID: 1412046312}
+  mapDirector: {fileID: 0}
   randomTowerSpawnerImage: {fileID: 1956315528}
+  buttonSpawnTower: {fileID: 0}
+  buttonCombineTower: {fileID: 0}
+  buttonSellTower: {fileID: 0}
+  buttonPlaceWall: {fileID: 0}
 --- !u!1 &723492870
 GameObject:
   m_ObjectHideFlags: 0
@@ -3108,7 +3113,6 @@ MonoBehaviour:
   enemyHpSliderPrefab: {fileID: 6003947006283470158, guid: bfd6cac2502fb6a4d861fb4c336e937f, type: 3}
   enemyHpPoolInitialSize: 16
   enemyPoolInitialSize: 16
-  enemyList: []
 --- !u!1 &868253405
 GameObject:
   m_ObjectHideFlags: 0
@@ -5029,7 +5033,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5796efed97231894ea85abcdb15e0311, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  enemySpawner: {fileID: 851594189}
   WallMap: {fileID: 281580768}
   balanceSourceBehaviour: {fileID: 0}
   applyBalanceCsv: 0

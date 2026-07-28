@@ -25,8 +25,16 @@ public class EnemyHp : MonoBehaviour
     private float pendingPopupBody;
     private float pendingPopupShield;
     private Coroutine aggregatePopupRoutine;
+    private Coroutine hitFlashRoutine;
+    private float nextHitFlashAllowedTime;
+    private Vector3 baseLocalScale = Vector3.one;
     private static readonly WaitForSeconds AggregateWait =
         new WaitForSeconds(DamagePopupAggregateSeconds);
+
+    /// <summary>피격: 스케일 펀치만 (색/알파는 건드리지 않음).</summary>
+    private const float HitFlashDuration = 0.1f;
+    private const float HitFlashPunchScale = 1.15f;
+    private const float HitFlashCooldown = 0.5f;
 
     public void SetUp(EnemyHpViewer enemyHpViewer)
     {
@@ -37,6 +45,8 @@ public class EnemyHp : MonoBehaviour
     {
         StopAllCoroutines();
         aggregatePopupRoutine = null;
+        hitFlashRoutine = null;
+        nextHitFlashAllowedTime = 0f;
         pendingPopupBody = 0f;
         pendingPopupShield = 0f;
 
@@ -48,6 +58,11 @@ public class EnemyHp : MonoBehaviour
             ? enemy.enemyData.shieldHp
             : 0f;
         isDie = false;
+        baseLocalScale = transform.localScale;
+        if (baseLocalScale.sqrMagnitude < 0.0001f)
+        {
+            baseLocalScale = Vector3.one;
+        }
 
         if (spriteRenderer != null)
         {
@@ -92,10 +107,19 @@ public class EnemyHp : MonoBehaviour
     {
         StopAllCoroutines();
         aggregatePopupRoutine = null;
+        hitFlashRoutine = null;
+        nextHitFlashAllowedTime = 0f;
         pendingPopupBody = 0f;
         pendingPopupShield = 0f;
         isDie = true;
         currentShield = 0f;
+        transform.localScale = baseLocalScale;
+        if (spriteRenderer != null)
+        {
+            Color c = baseSpriteColor;
+            c.a = 1f;
+            spriteRenderer.color = c;
+        }
         if (shieldVisual != null)
         {
             shieldVisual.Clear();
@@ -141,12 +165,7 @@ public class EnemyHp : MonoBehaviour
         }
 
         ReportDamagePopup(shieldHit, bodyHit, aggregatePopup);
-
-        if (gameObject.activeInHierarchy)
-        {
-            StopCoroutine("HitAlphaAnimation");
-            StartCoroutine("HitAlphaAnimation");
-        }
+        TryPlayHitFlash();
 
         if (enemyHpViewer != null)
         {
@@ -157,6 +176,7 @@ public class EnemyHp : MonoBehaviour
         {
             isDie = true;
             FlushPendingDamagePopups();
+            RestoreHitVisual();
             if (shieldVisual != null)
             {
                 shieldVisual.Clear();
@@ -171,6 +191,40 @@ public class EnemyHp : MonoBehaviour
         {
             RefreshShieldVisual();
         }
+    }
+
+    private void TryPlayHitFlash()
+    {
+        if (!isActiveAndEnabled || !gameObject.activeInHierarchy)
+        {
+            return;
+        }
+
+        if (Time.time < nextHitFlashAllowedTime)
+        {
+            return;
+        }
+
+        nextHitFlashAllowedTime = Time.time + HitFlashCooldown;
+
+        if (hitFlashRoutine != null)
+        {
+            StopCoroutine(hitFlashRoutine);
+            hitFlashRoutine = null;
+        }
+
+        hitFlashRoutine = StartCoroutine(HitScalePunch());
+    }
+
+    private void RestoreHitVisual()
+    {
+        if (hitFlashRoutine != null)
+        {
+            StopCoroutine(hitFlashRoutine);
+            hitFlashRoutine = null;
+        }
+
+        transform.localScale = baseLocalScale;
     }
 
     private void ReportDamagePopup(float shieldHit, float bodyHit, bool aggregatePopup)
@@ -250,20 +304,22 @@ public class EnemyHp : MonoBehaviour
         shieldVisual.Refresh(spriteRenderer, HasActiveShield);
     }
 
-    private IEnumerator HitAlphaAnimation()
+    private IEnumerator HitScalePunch()
     {
-        if (spriteRenderer == null)
+        Vector3 punchScale = baseLocalScale * HitFlashPunchScale;
+        transform.localScale = punchScale;
+
+        float elapsed = 0f;
+        while (elapsed < HitFlashDuration)
         {
-            yield break;
+            elapsed += Time.deltaTime;
+            float t = Mathf.Clamp01(elapsed / HitFlashDuration);
+            float ease = t * t;
+            transform.localScale = Vector3.Lerp(punchScale, baseLocalScale, ease);
+            yield return null;
         }
 
-        Color color = baseSpriteColor;
-        color.a = 0.4f;
-        spriteRenderer.color = color;
-
-        yield return new WaitForSeconds(0.05f);
-
-        color.a = 1.0f;
-        spriteRenderer.color = color;
+        transform.localScale = baseLocalScale;
+        hitFlashRoutine = null;
     }
 }

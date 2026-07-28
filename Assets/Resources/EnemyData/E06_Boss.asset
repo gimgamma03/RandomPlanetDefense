@@ -26,7 +26,7 @@ MonoBehaviour:
   shieldHp: 0
   splitCount: 0
   splitChildType: 0
-  sprite: {fileID: 21300000, guid: e77723fc66ee74b42a2a4632e3f6f582, type: 3}
+  sprite: {fileID: 21300000, guid: a857666c8979b2c4ba4e9dddcae5f2f6, type: 3}
   spriteColor: {r: 1, g: 1, b: 1, a: 1}
   isBoss: 1
   bossCrownSprite: {fileID: 21300000, guid: d4be1a9c923d244499221022ecec6bae, type: 3}
