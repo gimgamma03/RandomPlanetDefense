@@ -56,6 +56,7 @@ SpriteAtlas:
     - 583ad1e81cfd9cc498a79e15e1e56c73: 21300000
     - 84d95ae9c08ab12439f82bd3ce43222c: 21300000
     - d4be1a9c923d244499221022ecec6bae: 21300000
+    - b3529cac09c389945b7af3491eeb5f8a: 5186188835157969155
     - 854d4abc7ae7d8641a7f4383809eb588: 21300000
     - e77723fc66ee74b42a2a4632e3f6f582: 21300000
     - 889c4b2d55900244ab269a012d08fe76: 21300000
@@ -68,6 +69,7 @@ SpriteAtlas:
   - {fileID: 21300000, guid: 583ad1e81cfd9cc498a79e15e1e56c73, type: 3}
   - {fileID: 21300000, guid: 84d95ae9c08ab12439f82bd3ce43222c, type: 3}
   - {fileID: 21300000, guid: d4be1a9c923d244499221022ecec6bae, type: 3}
+  - {fileID: 5186188835157969155, guid: b3529cac09c389945b7af3491eeb5f8a, type: 3}
   - {fileID: 21300000, guid: 854d4abc7ae7d8641a7f4383809eb588, type: 3}
   - {fileID: 21300000, guid: e77723fc66ee74b42a2a4632e3f6f582, type: 3}
   - {fileID: 21300000, guid: 889c4b2d55900244ab269a012d08fe76, type: 3}
@@ -79,6 +81,7 @@ SpriteAtlas:
   - BlueSquare
   - PinkStar
   - YellowCrown
+  - PinkStar_opaque_backup_0
   - RedCircle
   - KingCrown
   - BlueCircle

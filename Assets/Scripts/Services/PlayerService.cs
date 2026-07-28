@@ -66,4 +66,17 @@ public class PlayerService : IPlayerService
             OnDied?.Invoke();
         }
     }
+
+    public void ForceGameOver()
+    {
+        if (IsGameOver)
+        {
+            return;
+        }
+
+        CurrentHp = 0;
+        IsGameOver = true;
+        OnDamaged?.Invoke();
+        OnDied?.Invoke();
+    }
 }

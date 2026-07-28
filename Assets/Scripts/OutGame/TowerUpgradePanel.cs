@@ -295,7 +295,7 @@ public sealed class TowerUpgradePanel : MonoBehaviour
         tmp.fontStyle = FontStyles.Normal;
         tmp.color = Color.white;
         tmp.alignment = alignment;
-        tmp.enableWordWrapping = true;
+        tmp.textWrappingMode = TextWrappingModes.Normal;
         tmp.overflowMode = TextOverflowModes.Overflow;
         tmp.raycastTarget = false;
         tmp.richText = false;

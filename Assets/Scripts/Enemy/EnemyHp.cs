@@ -16,8 +16,8 @@ public class EnemyHp : MonoBehaviour
     private Enemy enemy;
     private SpriteRenderer spriteRenderer;
     private EnemyHpViewer enemyHpViewer;
+    private EnemyShieldVisual shieldVisual;
     private Color baseSpriteColor = Color.white;
-    private static readonly Color ShieldTint = new Color(0.55f, 0.85f, 1f, 1f);
 
     public void SetUp(EnemyHpViewer enemyHpViewer)
     {
@@ -42,9 +42,10 @@ public class EnemyHp : MonoBehaviour
                 ? enemy.enemyData.spriteColor
                 : spriteRenderer.color;
             baseSpriteColor.a = 1f;
-            ApplyDisplayColor();
+            spriteRenderer.color = baseSpriteColor;
         }
 
+        RefreshShieldVisual();
         SetUp(viewer);
     }
 
@@ -79,6 +80,11 @@ public class EnemyHp : MonoBehaviour
         StopAllCoroutines();
         isDie = true;
         currentShield = 0f;
+        if (shieldVisual != null)
+        {
+            shieldVisual.Clear();
+        }
+
         enemyHpViewer = null;
     }
 
@@ -90,6 +96,7 @@ public class EnemyHp : MonoBehaviour
         }
 
         float remaining = damage;
+        bool hadShield = currentShield > 0f;
 
         if (currentShield > 0f)
         {
@@ -100,7 +107,7 @@ public class EnemyHp : MonoBehaviour
             if (currentShield <= 0f)
             {
                 currentShield = 0f;
-                ApplyDisplayColor();
+                RefreshShieldVisual();
             }
         }
 
@@ -123,31 +130,44 @@ public class EnemyHp : MonoBehaviour
         if (currentHp <= 0f)
         {
             isDie = true;
+            if (shieldVisual != null)
+            {
+                shieldVisual.Clear();
+            }
+
             if (enemy != null)
             {
                 enemy.OnDie(EnemyDestroyType.Kill);
             }
         }
+        else if (hadShield && !HasActiveShield)
+        {
+            RefreshShieldVisual();
+        }
     }
 
-    private void ApplyDisplayColor()
+    private void RefreshShieldVisual()
     {
-        if (spriteRenderer == null)
+        if (shieldVisual == null)
         {
-            return;
+            shieldVisual = GetComponent<EnemyShieldVisual>();
+            if (shieldVisual == null)
+            {
+                shieldVisual = gameObject.AddComponent<EnemyShieldVisual>();
+            }
         }
 
-        spriteRenderer.color = HasActiveShield
-            ? Color.Lerp(baseSpriteColor, ShieldTint, 0.55f)
-            : baseSpriteColor;
+        shieldVisual.Refresh(spriteRenderer, HasActiveShield);
     }
 
     private IEnumerator HitAlphaAnimation()
     {
-        Color color = HasActiveShield
-            ? Color.Lerp(baseSpriteColor, ShieldTint, 0.55f)
-            : baseSpriteColor;
+        if (spriteRenderer == null)
+        {
+            yield break;
+        }
 
+        Color color = baseSpriteColor;
         color.a = 0.4f;
         spriteRenderer.color = color;
 
@@ -155,6 +175,5 @@ public class EnemyHp : MonoBehaviour
 
         color.a = 1.0f;
         spriteRenderer.color = color;
-        ApplyDisplayColor();
     }
 }

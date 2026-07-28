@@ -10,27 +10,27 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 2b3505e5ce6b5354bb7cad42f50dcbc2, type: 3}
-  m_Name: E06_Boss
+  m_Name: E07_PinkStar
   m_EditorClassIdentifier: 
-  enemyId: Boss
-  enemyType: 6
-  displayName: Boss
-  enemyRole: 1
+  enemyId: PinkStar_T1
+  enemyType: 7
+  displayName: PinkStar
+  enemyRole: 0
   enemyTier: 1
-  gold: 50
-  scorePoint: 200
-  maxHp: 800
-  moveSpeed: 1.4
-  rotateSpeed: 0
-  visualScale: 0.13
+  gold: 3
+  scorePoint: 15
+  maxHp: 40
+  moveSpeed: 3.2
+  rotateSpeed: 0.35
+  visualScale: 0.95
   shieldHp: 0
   splitCount: 0
   splitChildType: 0
-  sprite: {fileID: 21300000, guid: e77723fc66ee74b42a2a4632e3f6f582, type: 3}
+  sprite: {fileID: 21300000, guid: 84d95ae9c08ab12439f82bd3ce43222c, type: 3}
   spriteColor: {r: 1, g: 1, b: 1, a: 1}
-  isBoss: 1
-  bossCrownSprite: {fileID: 21300000, guid: d4be1a9c923d244499221022ecec6bae, type: 3}
-  enableSummonSkill: 1
+  isBoss: 0
+  bossCrownSprite: {fileID: 0}
+  enableSummonSkill: 0
   summonMinionType: 7
   summonCountMin: 3
   summonCountMax: 5

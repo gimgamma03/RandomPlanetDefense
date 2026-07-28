@@ -88,7 +88,7 @@ public class Player : MonoBehaviour
     private void HandleGameOver()
     {
         waveSystem.FinishGame();
-        Invoke(nameof(GameOverScene), 3f);
+        // 타이틀 복귀는 EndRunOverlay Title 버튼으로만 (자동 전환 없음)
     }
 
     public void GameOverScene()

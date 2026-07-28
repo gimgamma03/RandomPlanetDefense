@@ -27,6 +27,13 @@ public sealed class EnemyDataEditor : Editor
     private SerializedProperty spriteColor;
     private SerializedProperty isBoss;
     private SerializedProperty bossCrownSprite;
+    private SerializedProperty enableSummonSkill;
+    private SerializedProperty summonMinionType;
+    private SerializedProperty summonCountMin;
+    private SerializedProperty summonCountMax;
+    private SerializedProperty summonChargeDuration;
+    private SerializedProperty summonCastHoldDuration;
+    private SerializedProperty summonChargeGaugeYOffset;
 
     private void OnEnable()
     {
@@ -48,6 +55,13 @@ public sealed class EnemyDataEditor : Editor
         spriteColor = serializedObject.FindProperty("spriteColor");
         isBoss = serializedObject.FindProperty("isBoss");
         bossCrownSprite = serializedObject.FindProperty("bossCrownSprite");
+        enableSummonSkill = serializedObject.FindProperty("enableSummonSkill");
+        summonMinionType = serializedObject.FindProperty("summonMinionType");
+        summonCountMin = serializedObject.FindProperty("summonCountMin");
+        summonCountMax = serializedObject.FindProperty("summonCountMax");
+        summonChargeDuration = serializedObject.FindProperty("summonChargeDuration");
+        summonCastHoldDuration = serializedObject.FindProperty("summonCastHoldDuration");
+        summonChargeGaugeYOffset = serializedObject.FindProperty("summonChargeGaugeYOffset");
     }
 
     public override void OnInspectorGUI()
@@ -108,6 +122,36 @@ public sealed class EnemyDataEditor : Editor
             EditorGUILayout.PropertyField(
                 bossCrownSprite,
                 new GUIContent("Orbit Crown", "예: 노란 neon crown"));
+
+            EditorGUILayout.Space(4f);
+            EditorGUILayout.PropertyField(
+                enableSummonSkill,
+                new GUIContent("Summon Skill", "차징 → 정지 소환 → 재이동"));
+            if (enableSummonSkill.boolValue)
+            {
+                EditorGUILayout.PropertyField(summonMinionType, new GUIContent("Minion Type"));
+                EditorGUILayout.PropertyField(summonCountMin, new GUIContent("Count Min"));
+                EditorGUILayout.PropertyField(summonCountMax, new GUIContent("Count Max"));
+                EditorGUILayout.PropertyField(
+                    summonChargeDuration,
+                    new GUIContent("Charge Duration", "게이지 차는 시간(초)"));
+                EditorGUILayout.PropertyField(
+                    summonCastHoldDuration,
+                    new GUIContent("Cast Hold", "소환 끝난 뒤 추가 정지(초)"));
+                SerializedProperty summonInterval = serializedObject.FindProperty("summonInterval");
+                if (summonInterval != null)
+                {
+                    EditorGUILayout.PropertyField(
+                        summonInterval,
+                        new GUIContent("Summon Interval", "한 마리씩 간격(초)"));
+                }
+                EditorGUILayout.PropertyField(
+                    summonChargeGaugeYOffset,
+                    new GUIContent("Gauge Y Offset"));
+                EditorGUILayout.HelpBox(
+                    "차징 중엔 이동 유지. 풀 차면 정지 후 0.5초마다 쫄 툭툭 소환.",
+                    MessageType.None);
+            }
         }
 
         EditorGUILayout.EndVertical();

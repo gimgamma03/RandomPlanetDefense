@@ -108,18 +108,18 @@ public class PanelTowerDataViewer : MonoBehaviour
             towerImage.color = currentTowerWeapon.TowerSpriteColor;
         }
 
-        // 1) 이름
+        // 1) 이름 + 합성 등급 (1~5)
         if (textLevel != null)
         {
-            textLevel.enableWordWrapping = false;
+            textLevel.textWrappingMode = TextWrappingModes.NoWrap;
             textLevel.overflowMode = TextOverflowModes.Ellipsis;
-            textLevel.text = currentTowerWeapon.DisplayName;
+            textLevel.text = currentTowerWeapon.DisplayName + " Lv" + (int)currentTowerWeapon.towerGrade;
         }
 
         // 2) 스탯
         if (textStats != null)
         {
-            textStats.enableWordWrapping = true;
+            textStats.textWrappingMode = TextWrappingModes.Normal;
             textStats.overflowMode = TextOverflowModes.Overflow;
             textStats.text = BuildStatsText();
         }
@@ -127,7 +127,9 @@ public class PanelTowerDataViewer : MonoBehaviour
         // 3) 업그레이드 버튼 라벨
         if (textUpGradeGold != null)
         {
-            textUpGradeGold.text = "UpGrade:" + currentTowerWeapon.upGradeGold + " Gold";
+            textUpGradeGold.text = currentTowerWeapon.CanGoldUpgrade
+                ? "UpGrade:" + currentTowerWeapon.upGradeGold + " Gold"
+                : "MAX";
         }
     }
 
@@ -138,31 +140,13 @@ public class PanelTowerDataViewer : MonoBehaviour
         statsBuilder.Append("Damage:").Append(currentTowerWeapon.damage);
         statsBuilder.Append('\n').Append("Rate:").Append(currentTowerWeapon.rate);
         statsBuilder.Append('\n').Append("Range:").Append(currentTowerWeapon.range.ToString("0.00"));
-
-        string utility = GetUtilityLine();
-        if (!string.IsNullOrEmpty(utility))
-        {
-            statsBuilder.Append('\n').Append(utility);
-        }
+        statsBuilder.Append('\n')
+            .Append("Upgrade ")
+            .Append(currentTowerWeapon.GoldUpgradeCount)
+            .Append('/')
+            .Append(Constants.MaxGoldUpgrades);
 
         return statsBuilder.ToString();
-    }
-
-    private string GetUtilityLine()
-    {
-        switch (currentTowerWeapon.weaponType)
-        {
-            case WeaponType.Slow:
-                return "Slow:" + (currentTowerWeapon.slowValue * 100f).ToString("0") + "%";
-            case WeaponType.MultiWayShooting:
-                return "Shots:" + currentTowerWeapon.MultiShotCount;
-            case WeaponType.GroundBombLine:
-                return "Bombs:" + currentTowerWeapon.GroundBombCount;
-            case WeaponType.OrbitSatellite:
-                return "Satellites:" + currentTowerWeapon.OrbitSatelliteCount;
-            default:
-                return string.Empty;
-        }
     }
 
     private void HideLegacyStatTexts()
@@ -192,10 +176,13 @@ public class PanelTowerDataViewer : MonoBehaviour
             playerService = ServiceLocator.Get<IPlayerService>();
         }
 
-        int cost = currentTowerWeapon.upGradeGold;
-        if (playerService.TrySpendGold(cost))
+        if (currentTowerWeapon.CanGoldUpgrade)
         {
-            currentTowerWeapon.UPGrade();
+            int cost = currentTowerWeapon.upGradeGold;
+            if (playerService.TrySpendGold(cost))
+            {
+                currentTowerWeapon.UPGrade();
+            }
         }
 
         UpdateTowerData();

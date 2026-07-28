@@ -9,6 +9,8 @@ public class TextFadeOut : MonoBehaviour
     [SerializeField]
     private TextMeshProUGUI showText;
 
+    public TextMeshProUGUI ShowTextTarget => showText;
+
     public void ShowText(string text, float duration)
     {
         if (showText == null)
@@ -17,7 +19,6 @@ public class TextFadeOut : MonoBehaviour
             return;
         }
 
-        // 비활성 오브젝트에서는 StartCoroutine 불가
         if (!gameObject.activeSelf)
         {
             gameObject.SetActive(true);
@@ -31,6 +32,27 @@ public class TextFadeOut : MonoBehaviour
 
         StopAllCoroutines();
         StartCoroutine(FadeOutCoroutine());
+    }
+
+    /// <summary>페이드 없이 문구만 고정 표시 (종료 화면용).</summary>
+    public void ShowPersistent(string text)
+    {
+        if (showText == null)
+        {
+            Debug.LogWarning("[TextFadeOut] showText 미할당.", this);
+            return;
+        }
+
+        StopAllCoroutines();
+
+        if (!gameObject.activeSelf)
+        {
+            gameObject.SetActive(true);
+        }
+
+        showText.text = text;
+        Color c = showText.color;
+        showText.color = new Color(c.r, c.g, c.b, 1f);
     }
 
     private IEnumerator FadeOutCoroutine()

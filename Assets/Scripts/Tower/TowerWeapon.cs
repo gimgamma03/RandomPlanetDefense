@@ -491,8 +491,18 @@ public class TowerWeapon : MonoBehaviour
         behavior.Activate();
     }
 
+    /// <summary>골드 업그레이드 완료 횟수 (0 ~ MaxGoldUpgrades).</summary>
+    public int GoldUpgradeCount => Mathf.Max(0, level - 1);
+
+    public bool CanGoldUpgrade => GoldUpgradeCount < Constants.MaxGoldUpgrades;
+
     public bool UPGrade()
     {
+        if (!CanGoldUpgrade)
+        {
+            return false;
+        }
+
         useGoldToUpGrade += upGradeGold;
         upGradeGold += (int)towerGrade;
         damage += towerData.weaponUpGradeValue.damage;

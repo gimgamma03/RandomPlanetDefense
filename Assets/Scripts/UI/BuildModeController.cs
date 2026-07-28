@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -23,6 +24,8 @@ public class BuildModeController : MonoBehaviour, IBuildModeState
     {
         public Button button;
         public Image image;
+        public TextMeshProUGUI label;
+        public string labelBody;
         public Color normalColor;
         public Sprite normalSprite;
         public Selectable.Transition normalTransition;
@@ -99,10 +102,13 @@ public class BuildModeController : MonoBehaviour, IBuildModeState
             }
 
             Image image = btn.targetGraphic as Image;
+            TextMeshProUGUI label = go.GetComponentInChildren<TextMeshProUGUI>(true);
             ButtonState bs = new ButtonState
             {
                 button = btn,
                 image = image,
+                label = label,
+                labelBody = ExtractLabelBody(label != null ? label.text : string.Empty),
                 normalColor = image != null ? image.color : Color.white,
                 normalSprite = image != null ? image.sprite : null,
                 normalTransition = btn.transition,
@@ -119,6 +125,53 @@ public class BuildModeController : MonoBehaviour, IBuildModeState
                 runtimeListeners.Add((btn, action));
             }
         }
+    }
+
+    /// <summary>마지막 줄 On/Off를 뺀 본문만 보관.</summary>
+    private static string ExtractLabelBody(string text)
+    {
+        if (string.IsNullOrEmpty(text))
+        {
+            return string.Empty;
+        }
+
+        string normalized = text.Replace("\r\n", "\n").TrimEnd();
+        int lastBreak = normalized.LastIndexOf('\n');
+        if (lastBreak < 0)
+        {
+            return IsOnOffToken(normalized) ? string.Empty : normalized;
+        }
+
+        string lastLine = normalized.Substring(lastBreak + 1).Trim();
+        if (IsOnOffToken(lastLine))
+        {
+            return normalized.Substring(0, lastBreak).TrimEnd();
+        }
+
+        return normalized;
+    }
+
+    private static bool IsOnOffToken(string line)
+    {
+        return string.Equals(line, "On", System.StringComparison.OrdinalIgnoreCase)
+            || string.Equals(line, "Off", System.StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static void ApplyOnOffLabel(TextMeshProUGUI label, string body, bool on)
+    {
+        if (label == null)
+        {
+            return;
+        }
+
+        string state = on ? "On" : "Off";
+        if (string.IsNullOrEmpty(body))
+        {
+            label.text = state;
+            return;
+        }
+
+        label.text = body + "\n" + state;
     }
 
     private void Update()
@@ -261,12 +314,19 @@ public class BuildModeController : MonoBehaviour, IBuildModeState
         for (int i = 0; i < modeButtons.Count; i++)
         {
             ButtonState bs = modeButtons[i];
-            if (bs.button == null || bs.image == null)
+            if (bs.button == null)
             {
                 continue;
             }
 
             bool pressed = mode == bs.associatedMode;
+            ApplyOnOffLabel(bs.label, bs.labelBody, pressed);
+
+            if (bs.image == null)
+            {
+                continue;
+            }
+
             if (pressed)
             {
                 // ColorTint / SpriteSwap 둘 다 덮어쓰지 않게 transition 끔

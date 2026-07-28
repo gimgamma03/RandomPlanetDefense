@@ -50,6 +50,33 @@ public class EnemyData : ScriptableObject
     [Tooltip("보스 주위를 도는 보조 왕관 스프라이트 (노란 네온 등)")]
     public Sprite bossCrownSprite;
 
+    [Tooltip("차징 후 그 자리에서 쫄 소환 (이동 정지 = 딜 타이밍)")]
+    public bool enableSummonSkill;
+
+    [Tooltip("소환할 쫄 EnemyType (예: PinkStar)")]
+    public EnemyType summonMinionType = EnemyType.PinkStar;
+
+    [Min(0)]
+    public int summonCountMin = 3;
+
+    [Min(0)]
+    public int summonCountMax = 5;
+
+    [Min(0.5f)]
+    [Tooltip("머리 위 차징 게이지가 차는 시간(초)")]
+    public float summonChargeDuration = 7f;
+
+    [Min(0.1f)]
+    [Tooltip("게이지 풀 후 멈춰 서 있는 시간(초) — 소환 끝난 뒤 추가 홀드")]
+    public float summonCastHoldDuration = 0.3f;
+
+    [Min(0.05f)]
+    [Tooltip("쫄 한 마리씩 소환 간격(초)")]
+    public float summonInterval = 0.5f;
+
+    [Tooltip("차징 게이지 머리 위 오프셋")]
+    public float summonChargeGaugeYOffset = 0.9f;
+
     public string Id => string.IsNullOrEmpty(enemyId) ? name : enemyId;
 
     public string DisplayName =>

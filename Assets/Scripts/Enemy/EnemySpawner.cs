@@ -96,6 +96,11 @@ public class EnemySpawner : MonoBehaviour
     /// <param name="bossStage">최종 웨이브일 때 StageData를 넘기면 보스 1마리 추가</param>
     public void StartWave(Wave wave, StageData bossStage)
     {
+        if (waveSystem != null && waveSystem.IsRunEnded)
+        {
+            return;
+        }
+
         if (waveActive)
         {
             Debug.LogWarning("[EnemySpawner] Wave already in progress.");
@@ -118,6 +123,18 @@ public class EnemySpawner : MonoBehaviour
         }
 
         spawnRoutine = StartCoroutine(SpawnEnemy());
+    }
+
+    /// <summary>게임오버 시 웨이브 클리어 판정·추가 스폰을 막는다.</summary>
+    public void StopWaveForGameOver()
+    {
+        waveActive = false;
+        spawnCompleted = true;
+        if (spawnRoutine != null)
+        {
+            StopCoroutine(spawnRoutine);
+            spawnRoutine = null;
+        }
     }
 
     private IEnumerator SpawnEnemy()
@@ -312,7 +329,16 @@ public class EnemySpawner : MonoBehaviour
                 playerService = ServiceLocator.Get<IPlayerService>();
             }
 
-            playerService.TakeDamage(Constants.enemyGoalInDamage);
+            // 보스 골인 = 즉시 게임오버 (목숨 -1이 아님)
+            bool isBoss = enemy.enemyData != null && enemy.enemyData.isBoss;
+            if (isBoss)
+            {
+                playerService.ForceGameOver();
+            }
+            else
+            {
+                playerService.TakeDamage(Constants.enemyGoalInDamage);
+            }
         }
         else if (type == EnemyDestroyType.Kill)
         {
@@ -351,6 +377,41 @@ public class EnemySpawner : MonoBehaviour
         TryFinishWave();
     }
 
+    /// <summary>보스 소환 스킬 — 한 마리. 웨이브 카운트와 무관하게 enemyList에 추가.</summary>
+    public void SpawnBossMinion(EnemyType minionType, Vector3 position)
+    {
+        if (enemyCatalog == null)
+        {
+            enemyCatalog = EnemyCatalog.LoadFromResources();
+        }
+
+        if (!enemyCatalog.TryGet(minionType, EnemyTier.Tier1, out EnemyData childData)
+            || childData == null)
+        {
+            Debug.LogWarning($"[EnemySpawner] Boss minion missing: {minionType}");
+            return;
+        }
+
+        SpawnEnemyInstance(childData, position, splitGeneration: 1);
+    }
+
+    /// <summary>보스 소환 — 원형 배치로 여러 마리 한 번에 (레거시/일괄용).</summary>
+    public void SpawnBossMinions(EnemyType minionType, Vector3 center, int count)
+    {
+        if (count <= 0)
+        {
+            return;
+        }
+
+        int n = Mathf.Max(1, count);
+        for (int i = 0; i < n; i++)
+        {
+            float angle = (Mathf.PI * 2f / n) * i;
+            Vector3 offset = new Vector3(Mathf.Cos(angle), Mathf.Sin(angle), 0f) * 0.35f;
+            SpawnBossMinion(minionType, center + offset);
+        }
+    }
+
     /// <summary>Splitter 사망 시 잔해 스폰. 웨이브 카운트와 무관하게 enemyList에 추가.</summary>
     private void SpawnSplitChildren(EnemyData parentData, Vector3 position)
     {
@@ -378,6 +439,11 @@ public class EnemySpawner : MonoBehaviour
     private void SpawnEnemyInstance(EnemyData data, Vector3 position, int splitGeneration)
     {
         if (enemyBasePrefab == null || data == null)
+        {
+            return;
+        }
+
+        if (waveSystem != null && waveSystem.IsRunEnded)
         {
             return;
         }
@@ -422,6 +488,21 @@ public class EnemySpawner : MonoBehaviour
     /// <summary>스폰이 끝났고 필드 적이 0이면 웨이브 클리어.</summary>
     private void TryFinishWave()
     {
+        if (waveSystem != null && waveSystem.IsRunEnded)
+        {
+            return;
+        }
+
+        if (playerService == null)
+        {
+            ServiceLocator.TryGet(out playerService);
+        }
+
+        if (playerService != null && playerService.IsGameOver)
+        {
+            return;
+        }
+
         if (!waveActive || !spawnCompleted)
         {
             return;

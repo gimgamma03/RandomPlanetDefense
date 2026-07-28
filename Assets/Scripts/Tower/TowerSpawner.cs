@@ -33,6 +33,7 @@ public class TowerSpawner : MonoBehaviour
     private List<GameObject> towerList;
     private IPlayerService playerService;
     private ITowerBalanceSource balanceSource;
+    private IPlaySessionStatsService sessionStats;
 
     void Awake()
     {
@@ -48,12 +49,21 @@ public class TowerSpawner : MonoBehaviour
 #endif
     }
 
-    void Start()
+    private void Start()
     {
         playerService = ServiceLocator.Get<IPlayerService>();
+        ServiceLocator.TryGet(out sessionStats);
         EnsureCatalog();
         EnsureBaseLoader();
         TryApplyBalance();
+    }
+
+    private void EnsurePlayerService()
+    {
+        if (playerService == null)
+        {
+            playerService = ServiceLocator.Get<IPlayerService>();
+        }
     }
 
     private void EnsureCatalog()
@@ -230,6 +240,7 @@ public class TowerSpawner : MonoBehaviour
         towerList.Add(spawnTower);
         spawnTowerWeapon.SetUp(this, enemySpawner);
         spawnTowerScript.SetUp(this, MapDirector.Instance.aStarGrid.GetNodeFromWorld(tileCenterPosition));
+        sessionStats?.RecordTowerSpawned(picked.weaponType);
     }
 
     public void CombineTower(GameObject tower)
@@ -247,10 +258,17 @@ public class TowerSpawner : MonoBehaviour
             return;
         }
 
-        List<GameObject> sameTower = new List<GameObject>();
+        // 클릭한 타워가 조합 앵커 — 결과도 그 자리에 스폰 (랜덤 TD 관례)
+        List<GameObject> sameTower = new List<GameObject> { tower };
         for (int i = 0; i < towerList.Count; i++)
         {
-            TowerWeapon other = towerList[i].GetComponent<TowerWeapon>();
+            GameObject candidate = towerList[i];
+            if (candidate == null || candidate == tower)
+            {
+                continue;
+            }
+
+            TowerWeapon other = candidate.GetComponent<TowerWeapon>();
             if (other == null)
             {
                 continue;
@@ -266,36 +284,47 @@ public class TowerSpawner : MonoBehaviour
                 continue;
             }
 
-            sameTower.Add(towerList[i]);
-            if (sameTower.Count != Constants.towerCombineCount)
+            sameTower.Add(candidate);
+            if (sameTower.Count >= Constants.towerCombineCount)
             {
-                continue;
+                break;
             }
-
-            Vector3 spawnPos = sameTower[Random.Range(0, Constants.towerCombineCount)].transform.position;
-
-            foreach (GameObject materialTower in sameTower)
-            {
-                materialTower.GetComponent<Tower>().DestoryThisTower();
-            }
-
-            TowerGrade nextGrade = materialGrade + 1;
-            EnsureCatalog();
-            if (catalog == null || !catalog.HasAny(nextGrade))
-            {
-                Debug.LogError($"[TowerSpawner] No towers for grade {(int)nextGrade}.");
-                return;
-            }
-
-            SpawnTower(spawnPos, nextGrade);
-            break;
         }
+
+        if (sameTower.Count < Constants.towerCombineCount)
+        {
+            return;
+        }
+
+        Vector3 spawnPos = tower.transform.position;
+        WeaponType mergedType = selectTowerWeapon.weaponType;
+
+        for (int i = 0; i < Constants.towerCombineCount; i++)
+        {
+            sameTower[i].GetComponent<Tower>().DestoryThisTower();
+        }
+
+        TowerGrade nextGrade = materialGrade + 1;
+        EnsureCatalog();
+        if (catalog == null || !catalog.HasAny(nextGrade))
+        {
+            Debug.LogError($"[TowerSpawner] No towers for grade {(int)nextGrade}.");
+            return;
+        }
+
+        sessionStats?.RecordTowerMerged(mergedType);
+        SpawnTower(spawnPos, nextGrade);
     }
 
     public void CellTower(GameObject cellTower)
     {
+        EnsurePlayerService();
         Tower towerScript = cellTower.GetComponent<Tower>();
         TowerWeapon cellTowerWeapon = cellTower.GetComponent<TowerWeapon>();
+        if (towerScript == null || cellTowerWeapon == null)
+        {
+            return;
+        }
 
         int cellGold = Constants.spawnRandomTowerGold;
         for (int i = 1; i < (int)cellTowerWeapon.towerGrade; i++)
@@ -306,6 +335,7 @@ public class TowerSpawner : MonoBehaviour
         cellGold += cellTowerWeapon.useGoldToUpGrade;
         cellGold = (int)(cellGold * Constants.cellTowerReturnGoldMulti);
 
+        sessionStats?.RecordTowerSold(cellTowerWeapon.weaponType);
         playerService.AddGold(cellGold);
         towerScript.DestoryThisTower();
     }

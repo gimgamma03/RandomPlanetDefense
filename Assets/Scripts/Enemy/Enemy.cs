@@ -28,6 +28,9 @@ public class Enemy : MonoBehaviour
 
     public bool obstructed = false;
 
+    /// <summary>보스 스킬 캐스트 중 이동 정지.</summary>
+    private bool movementPaused;
+
     public EnemyRole Role =>
         enemyData != null ? enemyData.enemyRole : EnemyRole.Swarm;
 
@@ -144,14 +147,64 @@ public class Enemy : MonoBehaviour
         nextNodeMoveTime = 1.0f * (1f / Mathf.Max(0.01f, moveSpeed));
         baseNextNodeMoveTime = nextNodeMoveTime;
         obstructed = false;
+        movementPaused = false;
 
         ApplyVisualFromData();
+        SetPath();
+        BeginBossSummonSkill();
+    }
+
+    private void BeginBossSummonSkill()
+    {
+        EnemyBossSummonSkill skill = GetComponent<EnemyBossSummonSkill>();
+        if (enemyData == null || !enemyData.isBoss || !enemyData.enableSummonSkill)
+        {
+            if (skill != null)
+            {
+                skill.StopSkill();
+            }
+
+            return;
+        }
+
+        if (skill == null)
+        {
+            skill = gameObject.AddComponent<EnemyBossSummonSkill>();
+        }
+
+        skill.Begin(this, enemySpawner);
+    }
+
+    public void PauseMovementForSkill()
+    {
+        movementPaused = true;
+        StopCoroutine("Move");
+    }
+
+    public void ResumeMovementAfterSkill()
+    {
+        if (!isActiveAndEnabled)
+        {
+            return;
+        }
+
+        movementPaused = false;
         SetPath();
     }
 
     public void ClearForPool()
     {
         StopAllCoroutines();
+        movementPaused = false;
+
+        EnemyBossSummonSkill skill = GetComponent<EnemyBossSummonSkill>();
+        if (skill != null)
+        {
+            skill.StopSkill();
+        }
+
+        TowerChargeGaugeView.Hide(gameObject);
+
         if (enemyPath != null)
         {
             enemyPath.Clear();

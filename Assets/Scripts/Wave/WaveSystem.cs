@@ -18,6 +18,8 @@ public class WaveSystem : MonoBehaviour
     [SerializeField]
     private TextFadeOut textFadeOut;
     [SerializeField]
+    private EndRunOverlay endRunOverlay;
+    [SerializeField]
     private TextMeshProUGUI textWaveCount;
     [SerializeField]
     private TextMeshProUGUI textCurrentScore;
@@ -26,14 +28,18 @@ public class WaveSystem : MonoBehaviour
 
     private StageData stageData;
     private int currentWaveIndex = 0;
+    private RunPhase runPhase = RunPhase.Playing;
 
     /// <summary>ServiceLocator에서 가져온 점수 서비스</summary>
     private IScoreService scoreService;
     private IMetaProgressService metaProgress;
+    private IPlaySessionStatsService sessionStats;
 
     public int StageId => stageData != null ? stageData.stageId : stageId;
     public int MaxWave => stageData != null && stageData.waves != null ? stageData.waves.Length : 0;
     public StageData CurrentStage => stageData;
+    public RunPhase Phase => runPhase;
+    public bool IsRunEnded => runPhase != RunPhase.Playing;
 
     [SerializeField]
     private Image startGameButton;
@@ -49,6 +55,22 @@ public class WaveSystem : MonoBehaviour
     [SerializeField]
     private Sprite stopGameBlackButton;
 
+    [Header("Wave Start Button")]
+    [Tooltip("비우면 씬에서 WaveStart 버튼을 찾음")]
+    [SerializeField]
+    private Button waveStartButton;
+    [SerializeField]
+    private Color waveStartIdleColor = Color.white;
+    [SerializeField]
+    private Color waveStartBusyColor = new Color(0.35f, 0.85f, 0.95f, 1f);
+    [SerializeField]
+    private Vector3 waveStartBusyScale = new Vector3(0.92f, 0.88f, 1f);
+
+    private Sprite waveStartIdleSprite;
+    private Sprite waveStartBusySprite;
+    private Vector3 waveStartIdleScale = Vector3.one;
+    private bool waveStartBusy;
+
     private void Awake()
     {
         // 아웃게임에서 고른 스테이지 반영 (인스펙터 기본값은 폴백)
@@ -58,12 +80,16 @@ public class WaveSystem : MonoBehaviour
         }
 
         EnsureStageLoaded();
+        ResolveWaveStartButton();
+        EnsureEndRunOverlay();
     }
 
     private void Start()
     {
         scoreService = ServiceLocator.Get<IScoreService>();
         metaProgress = ServiceLocator.Get<IMetaProgressService>();
+        ServiceLocator.TryGet(out sessionStats);
+        runPhase = RunPhase.Playing;
         scoreService.ResetRun();
         scoreService.BindHud(textCurrentScore, textBestScore);
 
@@ -74,6 +100,189 @@ public class WaveSystem : MonoBehaviour
         }
 
         textWaveCount.text = "Wave : " + 1;
+        BeginSessionStats();
+        SetWaveStartBusy(false);
+    }
+
+    private void EnsureEndRunOverlay()
+    {
+        if (endRunOverlay != null)
+        {
+            endRunOverlay.EnsureBuilt();
+            return;
+        }
+
+        if (textFadeOut != null)
+        {
+            endRunOverlay = textFadeOut.GetComponent<EndRunOverlay>();
+            if (endRunOverlay == null)
+            {
+                endRunOverlay = textFadeOut.gameObject.AddComponent<EndRunOverlay>();
+            }
+        }
+        else
+        {
+            endRunOverlay = GetComponentInChildren<EndRunOverlay>(true);
+        }
+
+        endRunOverlay?.EnsureBuilt();
+    }
+
+    private void ShowEndRun(string message)
+    {
+        EnsureEndRunOverlay();
+
+        if (textFadeOut != null)
+        {
+            textFadeOut.ShowPersistent(message);
+        }
+
+        if (endRunOverlay != null)
+        {
+            endRunOverlay.Show(message);
+        }
+        else if (textFadeOut == null)
+        {
+            Debug.LogWarning("[WaveSystem] EndRunOverlay / TextFadeOut 없음: " + message);
+        }
+    }
+
+    private void ResolveWaveStartButton()
+    {
+        if (waveStartButton == null)
+        {
+            Transform found = transform.Find("WaveStart");
+            if (found == null)
+            {
+                found = FindDeep(transform, "WaveStart");
+            }
+
+            if (found != null)
+            {
+                waveStartButton = found.GetComponent<Button>();
+            }
+        }
+
+        if (waveStartButton == null)
+        {
+            return;
+        }
+
+        waveStartIdleScale = waveStartButton.transform.localScale;
+        Image image = waveStartButton.targetGraphic as Image;
+        if (image == null)
+        {
+            image = waveStartButton.GetComponent<Image>();
+        }
+
+        if (image != null)
+        {
+            waveStartIdleSprite = image.sprite;
+        }
+
+        Sprite pressed = waveStartButton.spriteState.pressedSprite;
+        waveStartBusySprite = pressed != null ? pressed : waveStartIdleSprite;
+    }
+
+    private static Transform FindDeep(Transform root, string name)
+    {
+        if (root.name == name)
+        {
+            return root;
+        }
+
+        for (int i = 0; i < root.childCount; i++)
+        {
+            Transform found = FindDeep(root.GetChild(i), name);
+            if (found != null)
+            {
+                return found;
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>웨이브 진행 중 = 눌린 채 + 비활성. 끝나면 다시 누를 수 있게.</summary>
+    private void SetWaveStartBusy(bool busy)
+    {
+        waveStartBusy = busy;
+        if (waveStartButton == null)
+        {
+            return;
+        }
+
+        waveStartButton.interactable = !busy;
+
+        Image image = waveStartButton.targetGraphic as Image;
+        if (image == null)
+        {
+            image = waveStartButton.GetComponent<Image>();
+        }
+
+        if (image != null)
+        {
+            if (busy)
+            {
+                if (waveStartBusySprite != null)
+                {
+                    image.sprite = waveStartBusySprite;
+                }
+
+                image.color = waveStartBusyColor;
+            }
+            else
+            {
+                if (waveStartIdleSprite != null)
+                {
+                    image.sprite = waveStartIdleSprite;
+                }
+
+                image.color = waveStartIdleColor;
+            }
+        }
+
+        waveStartButton.transform.localScale = busy
+            ? Vector3.Scale(waveStartIdleScale, waveStartBusyScale)
+            : waveStartIdleScale;
+    }
+
+    private void OnApplicationQuit()
+    {
+        EndSessionStats(SessionEndReason.Quit);
+    }
+
+    private void OnDestroy()
+    {
+        // 씬 이탈 시 미종료 세션이 있으면 quit로 마감
+        if (sessionStats != null && sessionStats.IsRunActive)
+        {
+            EndSessionStats(SessionEndReason.Quit);
+        }
+    }
+
+    private void BeginSessionStats()
+    {
+        if (sessionStats == null)
+        {
+            return;
+        }
+
+        EnsureStageLoaded();
+        string stageName = stageData != null ? stageData.DisplayName : $"Stage {stageId}";
+        string playerId = metaProgress != null ? metaProgress.PlayerId : string.Empty;
+        sessionStats.BeginRun(StageId, stageName, MaxWave, playerId);
+    }
+
+    private void EndSessionStats(string endReason)
+    {
+        if (sessionStats == null || !sessionStats.IsRunActive)
+        {
+            return;
+        }
+
+        int score = scoreService != null ? scoreService.CurrentScore : 0;
+        sessionStats.EndRun(endReason, score);
     }
 
     /// <summary>아웃게임 → 인게임 진입 시 호출할 예정. 지금은 인스펙터 stageId.</summary>
@@ -83,6 +292,7 @@ public class WaveSystem : MonoBehaviour
         stageOverride = null;
         stageData = null;
         currentWaveIndex = 0;
+        runPhase = RunPhase.Playing;
         EnsureStageLoaded();
         textWaveCount.text = "Wave : " + 1;
     }
@@ -117,6 +327,11 @@ public class WaveSystem : MonoBehaviour
     {
         EnsureStageLoaded();
 
+        if (IsRunEnded)
+        {
+            return;
+        }
+
         if (enemySpawner != null && enemySpawner.IsWaveInProgress)
         {
             return;
@@ -124,7 +339,7 @@ public class WaveSystem : MonoBehaviour
 
         if (stageData == null || stageData.waves == null || currentWaveIndex >= stageData.waves.Length)
         {
-            textFadeOut.ShowText("All Waves Clear", 2f);
+            EndRun(RunPhase.Cleared, "All Waves Clear");
             return;
         }
 
@@ -133,16 +348,29 @@ public class WaveSystem : MonoBehaviour
         bool isFinalWave = currentWaveIndex >= stageData.waves.Length - 1;
         StageData bossStage = isFinalWave ? stageData : null;
 
+        SetWaveStartBusy(true);
+        sessionStats?.RecordWaveStarted(currentWave);
         enemySpawner.StartWave(stageData.waves[currentWaveIndex], bossStage);
         textWaveCount.text = "Wave : " + currentWave;
     }
 
     public void FinishWave()
     {
-        startGameButton.sprite = startGameWhiteButton;
+        if (IsRunEnded)
+        {
+            return;
+        }
+
+        if (startGameButton != null && startGameWhiteButton != null)
+        {
+            startGameButton.sprite = startGameWhiteButton;
+        }
+
+        int clearedWave = currentWaveIndex + 1;
         currentWaveIndex++;
 
-        // 웨이브마다 크리스탈
+        sessionStats?.RecordWaveCleared(clearedWave);
+
         if (metaProgress != null)
         {
             metaProgress.AddCrystals(TowerMetaUpgradeRules.CrystalsPerWave);
@@ -150,41 +378,85 @@ public class WaveSystem : MonoBehaviour
 
         if (stageData == null || stageData.waves == null || currentWaveIndex >= stageData.waves.Length)
         {
-            if (stageData != null && stageData.clearBonusGold > 0)
+            if (stageData != null && stageData.clearBonusGold > 0
+                && ServiceLocator.TryGet(out IPlayerService player))
             {
-                IPlayerService player = ServiceLocator.Get<IPlayerService>();
                 player.AddGold(stageData.clearBonusGold);
             }
 
-            RecordMetaProgress(stageCleared: true);
-            if (scoreService != null)
-            {
-                scoreService.SaveCurrentRun();
-            }
-
-            textFadeOut.ShowText("All Waves Clear", 2f);
+            EndRun(RunPhase.Cleared, "All Waves Clear");
+            return;
         }
+
+        SetWaveStartBusy(false);
     }
 
     public void StartGame()
     {
-        startGameButton.sprite = startGameBlackButton;
-        stopGameButton.sprite = stopGameWhiteButton;
+        if (startGameButton != null && startGameBlackButton != null)
+        {
+            startGameButton.sprite = startGameBlackButton;
+        }
+
+        if (stopGameButton != null && stopGameWhiteButton != null)
+        {
+            stopGameButton.sprite = stopGameWhiteButton;
+        }
+
         Time.timeScale = 1.0f;
     }
 
     public void StopGame()
     {
-        startGameButton.sprite = startGameWhiteButton;
-        stopGameButton.sprite = stopGameBlackButton;
+        if (startGameButton != null && startGameWhiteButton != null)
+        {
+            startGameButton.sprite = startGameWhiteButton;
+        }
+
+        if (stopGameButton != null && stopGameBlackButton != null)
+        {
+            stopGameButton.sprite = stopGameBlackButton;
+        }
+
         Time.timeScale = 0;
     }
 
     public void FinishGame()
     {
-        RecordMetaProgress(stageCleared: false);
-        scoreService.SaveCurrentRun();
-        textFadeOut.ShowText("Game Over", 3f);
+        EndRun(RunPhase.GameOver, "Game Over");
+    }
+
+    /// <summary>클리어/오버 공통 종료. 한 번만 실행된다.</summary>
+    private void EndRun(RunPhase phase, string message)
+    {
+        if (phase == RunPhase.Playing || IsRunEnded)
+        {
+            return;
+        }
+
+        runPhase = phase;
+
+        if (enemySpawner != null)
+        {
+            enemySpawner.StopWaveForGameOver();
+        }
+
+        bool cleared = phase == RunPhase.Cleared;
+        RecordMetaProgress(stageCleared: cleared);
+        if (scoreService != null)
+        {
+            scoreService.SaveCurrentRun();
+        }
+
+        EndSessionStats(cleared ? SessionEndReason.Cleared : SessionEndReason.GameOver);
+
+        SetWaveStartBusy(true);
+        if (waveStartButton != null)
+        {
+            waveStartButton.interactable = false;
+        }
+
+        ShowEndRun(message);
     }
 
     private void RecordMetaProgress(bool stageCleared)

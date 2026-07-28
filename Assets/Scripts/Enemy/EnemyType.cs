@@ -12,4 +12,5 @@ public enum EnemyType
     Splitter = 4,    // 구 Enemy05
     RunnerElite = 5, // 레거시. 웨이브에 남아 있으면 Runner T2로 해석
     Boss = 6,        // 스테이지 최종 웨이브 보스
+    PinkStar = 7,    // 보스 소환 쫄따구 (러너급)
 }

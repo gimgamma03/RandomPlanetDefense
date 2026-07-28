@@ -18,6 +18,9 @@ public interface IPlayerService : IService
 
     void TakeDamage(int damage);
 
+    /// <summary>HP와 무관하게 즉시 게임오버 (보스 골 도달 등).</summary>
+    void ForceGameOver();
+
     event Action OnDamaged;
     event Action OnDied;
 }

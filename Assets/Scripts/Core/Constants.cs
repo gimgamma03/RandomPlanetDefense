@@ -5,6 +5,9 @@
 
     public const int upGradeGoldMulti = 3;
 
+    /// <summary>인게임 골드 업그레이드 최대 횟수 (타워당)</summary>
+    public const int MaxGoldUpgrades = 5;
+
     public const int towerCombineCount = 3;
 
     /// <summary>합성으로 올라갈 수 있는 최대 등급 (시트 grade 1~5)</summary>
