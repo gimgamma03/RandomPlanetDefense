@@ -33,14 +33,28 @@ public class EnemySpawner : MonoBehaviour, IEnemyRegistry
     private readonly EnemyDeathHandler deathHandler = new EnemyDeathHandler();
 
     private Wave currentWave;
-    private Coroutine spawnRoutine;
+    private Coroutine waveStartRoutine;
+    private Coroutine spawnMainRoutine;
+    private Coroutine spawnSubRoutine;
     private StageData pendingBossStage;
+    private BossIntroFx bossIntroFx;
 
     /// <summary>스폰 코루틴이 아직 돌고 있거나, 필드에 적이 남아 웨이브 진행 중</summary>
     private bool waveActive;
     private bool spawnCompleted;
 
+    private LaneQuota mainQuota;
+    private LaneQuota subQuota;
+
     private readonly List<Enemy> enemies = new List<Enemy>();
+
+    private sealed class LaneQuota
+    {
+        public WaveEnemy[] entries;
+        public int[] remainingCounts;
+        public int remainingTotal;
+        public EnemyType lastType = (EnemyType)(-1);
+    }
 
     public int Count => enemies.Count;
 
@@ -135,13 +149,71 @@ public class EnemySpawner : MonoBehaviour, IEnemyRegistry
         pendingBossStage = bossStage;
         waveActive = true;
         spawnCompleted = false;
+        mainQuota = BuildLaneQuota(wave.mainEnemies);
+        subQuota = BuildLaneQuota(wave.subEnemies);
 
-        if (spawnRoutine != null)
+        StopSpawnRoutines();
+        waveStartRoutine = StartCoroutine(StartWaveRoutine());
+    }
+
+    private IEnumerator StartWaveRoutine()
+    {
+        StageData bossStage = pendingBossStage;
+        pendingBossStage = null;
+
+        // 최종 웨이브: 데코가 블랙홀로 모인 뒤 보스 등장, 그다음 레인 스폰
+        if (bossStage != null && bossStage.spawnBossOnFinalWave)
         {
-            StopCoroutine(spawnRoutine);
+            if (waveSystem != null)
+            {
+                // 이펙트 ~2.5초와 맞춤
+                waveSystem.ShowCenterBanner("보스 등장", 0.25f, 1.8f, 0.45f);
+            }
+
+            EnsureBossIntroFx();
+            if (bossIntroFx != null)
+            {
+                yield return bossIntroFx.Play(SpawnWorldPosition);
+            }
+
+            if (!waveActive)
+            {
+                waveStartRoutine = null;
+                yield break;
+            }
+
+            TrySpawnStageBoss(bossStage);
         }
 
-        spawnRoutine = StartCoroutine(SpawnEnemy());
+        if (!waveActive)
+        {
+            waveStartRoutine = null;
+            yield break;
+        }
+
+        spawnMainRoutine = StartCoroutine(SpawnLane(isMain: true));
+        spawnSubRoutine = StartCoroutine(SpawnLane(isMain: false));
+        waveStartRoutine = null;
+    }
+
+    private void EnsureBossIntroFx()
+    {
+        if (bossIntroFx != null)
+        {
+            return;
+        }
+
+        bossIntroFx = GetComponent<BossIntroFx>();
+        if (bossIntroFx == null)
+        {
+            bossIntroFx = gameObject.AddComponent<BossIntroFx>();
+        }
+    }
+
+    public BossIntroFx GetBossIntroFx()
+    {
+        EnsureBossIntroFx();
+        return bossIntroFx;
     }
 
     /// <summary>게임오버 시 웨이브 클리어 판정·추가 스폰을 막는다.</summary>
@@ -149,56 +221,148 @@ public class EnemySpawner : MonoBehaviour, IEnemyRegistry
     {
         waveActive = false;
         spawnCompleted = true;
-        if (spawnRoutine != null)
+        StopSpawnRoutines();
+        if (bossIntroFx != null)
         {
-            StopCoroutine(spawnRoutine);
-            spawnRoutine = null;
+            bossIntroFx.Cancel();
         }
     }
 
-    private IEnumerator SpawnEnemy()
+    private void StopSpawnRoutines()
     {
+        if (waveStartRoutine != null)
+        {
+            StopCoroutine(waveStartRoutine);
+            waveStartRoutine = null;
+        }
+
+        if (spawnMainRoutine != null)
+        {
+            StopCoroutine(spawnMainRoutine);
+            spawnMainRoutine = null;
+        }
+
+        if (spawnSubRoutine != null)
+        {
+            StopCoroutine(spawnSubRoutine);
+            spawnSubRoutine = null;
+        }
+    }
+
+    private static LaneQuota BuildLaneQuota(WaveEnemy[] entries)
+    {
+        LaneQuota lane = new LaneQuota();
+        int entryCount = entries != null ? entries.Length : 0;
+        lane.entries = entries;
+        lane.remainingCounts = new int[entryCount];
+        int sum = 0;
+
+        for (int i = 0; i < entryCount; i++)
+        {
+            int c = Mathf.Max(0, entries[i].count);
+            lane.remainingCounts[i] = c;
+            sum += c;
+        }
+
+        lane.remainingTotal = sum;
+        return lane;
+    }
+
+    private IEnumerator SpawnLane(bool isMain)
+    {
+        LaneQuota lane = isMain ? mainQuota : subQuota;
+
         if (enemyBasePrefab == null)
         {
-            Debug.LogError("[EnemySpawner] No EnemyBase prefab assigned.");
-            spawnRoutine = null;
-            spawnCompleted = true;
-            TryFinishWave();
+            if (isMain)
+            {
+                Debug.LogError("[EnemySpawner] No EnemyBase prefab assigned.");
+            }
+
+            MarkLaneFinished(isMain);
             yield break;
         }
 
-        // 최종 웨이브: 보스 먼저 1마리
-        if (pendingBossStage != null && pendingBossStage.spawnBossOnFinalWave)
+        if (lane == null || lane.remainingTotal <= 0)
         {
-            TrySpawnStageBoss(pendingBossStage);
+            MarkLaneFinished(isMain);
+            yield break;
         }
 
-        pendingBossStage = null;
-
-        int spawnEnemyCount = 0;
         float delay = Mathf.Max(0f, currentWave.spawnDelay);
-
-        while (spawnEnemyCount < currentWave.maxEnemyCount)
+        if (!isMain)
         {
-            EnemyData data = PickEnemyData();
+            // Sub: 메인과 엇박 (delay의 절반만큼 늦게 시작)
+            if (delay > 0f)
+            {
+                yield return new WaitForSeconds(delay * 0.5f);
+            }
+        }
+
+        while (waveActive)
+        {
+            if (!TryTakeNextSpawn(lane, out EnemyData data))
+            {
+                break;
+            }
+
             if (data == null)
             {
-                Debug.LogError("[EnemySpawner] No valid EnemyType in wave. Aborting spawn.");
+                Debug.LogError("[EnemySpawner] No valid EnemyType in lane. Aborting.");
                 break;
             }
 
             SpawnEnemyInstance(data, SpawnWorldPosition, splitGeneration: 0);
-            spawnEnemyCount++;
 
             if (delay > 0f)
             {
                 yield return new WaitForSeconds(delay);
             }
+            else
+            {
+                yield return null;
+            }
         }
 
-        spawnRoutine = null;
-        spawnCompleted = true;
-        TryFinishWave();
+        MarkLaneFinished(isMain);
+    }
+
+    private void MarkLaneFinished(bool isMain)
+    {
+        if (isMain)
+        {
+            spawnMainRoutine = null;
+        }
+        else
+        {
+            spawnSubRoutine = null;
+        }
+
+        if (spawnMainRoutine == null && spawnSubRoutine == null)
+        {
+            spawnCompleted = true;
+            TryFinishWave();
+        }
+    }
+
+    /// <summary>해당 레인 쿼터에서 한 마리 픽. earlyBias + 직전과 다른 종류 우선.</summary>
+    private bool TryTakeNextSpawn(LaneQuota lane, out EnemyData data)
+    {
+        data = null;
+        if (!waveActive || lane == null || lane.remainingTotal <= 0)
+        {
+            return false;
+        }
+
+        data = PickFromLane(lane);
+        if (data == null)
+        {
+            return false;
+        }
+
+        lane.remainingTotal--;
+        lane.lastType = data.enemyType;
+        return true;
     }
 
     private void TrySpawnStageBoss(StageData stage)
@@ -219,23 +383,44 @@ public class EnemySpawner : MonoBehaviour, IEnemyRegistry
         SpawnEnemyInstance(boss, SpawnWorldPosition, splitGeneration: 0);
     }
 
-    /// <summary>
-    /// spawnWeight 상대 비중으로 고른다. 합이 1이 아니어도 된다.
-    /// </summary>
-    private EnemyData PickEnemyData()
+    private EnemyData PickFromLane(LaneQuota lane)
     {
-        WaveEnemy[] entries = currentWave.enemies;
+        WaveEnemy[] entries = lane.entries;
         if (entries == null || entries.Length == 0 || enemyCatalog == null)
         {
             return null;
         }
 
+        int index = WeightedPickIndex(lane, preferAvoid: true);
+        if (index < 0)
+        {
+            index = WeightedPickIndex(lane, preferAvoid: false);
+        }
+
+        if (index < 0)
+        {
+            return null;
+        }
+
+        if (!enemyCatalog.TryGet(entries[index].enemyType, ResolveTier(entries[index]), out EnemyData data))
+        {
+            return null;
+        }
+
+        lane.remainingCounts[index]--;
+        return data;
+    }
+
+    private int WeightedPickIndex(LaneQuota lane, bool preferAvoid)
+    {
+        WaveEnemy[] entries = lane.entries;
         float totalWeight = 0f;
-        EnemyData lastValid = null;
+        int lastValid = -1;
+        bool avoidValid = (int)lane.lastType >= 0;
 
         for (int i = 0; i < entries.Length; i++)
         {
-            if (entries[i].spawnWeight <= 0f)
+            if (lane.remainingCounts[i] <= 0)
             {
                 continue;
             }
@@ -245,13 +430,24 @@ public class EnemySpawner : MonoBehaviour, IEnemyRegistry
                 continue;
             }
 
-            lastValid = data;
-            totalWeight += entries[i].spawnWeight;
+            if (preferAvoid && avoidValid && data.enemyType == lane.lastType)
+            {
+                continue;
+            }
+
+            float w = entries[i].earlyBias;
+            if (w <= 0f)
+            {
+                w = 1f;
+            }
+
+            lastValid = i;
+            totalWeight += w;
         }
 
-        if (lastValid == null)
+        if (lastValid < 0)
         {
-            return null;
+            return -1;
         }
 
         if (totalWeight <= 0f)
@@ -264,7 +460,7 @@ public class EnemySpawner : MonoBehaviour, IEnemyRegistry
 
         for (int i = 0; i < entries.Length; i++)
         {
-            if (entries[i].spawnWeight <= 0f)
+            if (lane.remainingCounts[i] <= 0)
             {
                 continue;
             }
@@ -274,10 +470,21 @@ public class EnemySpawner : MonoBehaviour, IEnemyRegistry
                 continue;
             }
 
-            cumulative += entries[i].spawnWeight;
+            if (preferAvoid && avoidValid && data.enemyType == lane.lastType)
+            {
+                continue;
+            }
+
+            float w = entries[i].earlyBias;
+            if (w <= 0f)
+            {
+                w = 1f;
+            }
+
+            cumulative += w;
             if (roll <= cumulative)
             {
-                return data;
+                return i;
             }
         }
 
@@ -323,7 +530,6 @@ public class EnemySpawner : MonoBehaviour, IEnemyRegistry
         sliderClone.transform.localScale = Vector3.one;
 
         sliderClone.GetComponent<SliderPositionAutoSetter>().Setup(enemy.transform);
-        sliderClone.GetComponent<EnemyHpViewer>().Setup(enemy.GetComponent<EnemyHp>());
 
         return sliderClone;
     }
@@ -474,6 +680,7 @@ public class EnemySpawner : MonoBehaviour, IEnemyRegistry
         enemy.BindDefinition(data);
         enemy.PrepareForSpawn(this, splitGeneration);
         enemyHp.PrepareForSpawn(enemyHpViewer);
+        enemyHpViewer.Setup(enemyHp);
         enemyHpViewer.hpSliderUpdate();
 
         enemies.Add(enemy);

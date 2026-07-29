@@ -1,3 +1,5 @@
+using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 
 public class Bomb : MonoBehaviour
@@ -8,11 +10,18 @@ public class Bomb : MonoBehaviour
     [SerializeField]
     private ParticleSystem explodeParticle;
 
+    [SerializeField]
+    [Min(1)]
+    private int aoeDamagePerFrame = AoEDamageBatch.DefaultPerFrame;
+
+    private readonly List<EnemyHp> aoeTargets = new List<EnemyHp>(32);
+
     private float currentTime;
     private float damage;
     private bool isExplode;
     private bool hasDamaged;
     private CircleCollider2D circleCollider;
+    private Coroutine damageRoutine;
 
     private void Awake()
     {
@@ -22,11 +31,15 @@ public class Bomb : MonoBehaviour
     public void SetUp(float damage)
     {
         CancelInvoke();
+        StopAllCoroutines();
+        damageRoutine = null;
+
         this.damage = damage;
         currentTime = Time.time;
         isExplode = false;
         hasDamaged = false;
         transform.localScale = Vector3.zero;
+        aoeTargets.Clear();
 
         SpriteRenderer spriteRenderer = GetComponent<SpriteRenderer>();
         if (spriteRenderer != null)
@@ -71,11 +84,11 @@ public class Bomb : MonoBehaviour
             explodeParticle.Play();
         }
 
-        ApplyAoEDamage();
-        Invoke(nameof(Release), 0.45f);
+        BeginAoEDamage();
+        StartCoroutine(ReleaseAfterVfx());
     }
 
-    private void ApplyAoEDamage()
+    private void BeginAoEDamage()
     {
         if (hasDamaged)
         {
@@ -92,26 +105,26 @@ public class Bomb : MonoBehaviour
             radius = circleCollider.radius * scaleMax;
         }
 
-        Collider2D[] hits = Physics2D.OverlapCircleAll(transform.position, radius);
-        for (int i = 0; i < hits.Length; i++)
-        {
-            Collider2D hit = hits[i];
-            if (hit == null || !hit.CompareTag("Enemy"))
-            {
-                continue;
-            }
+        AoEDamageBatch.CollectEnemyTargets(transform.position, radius, aoeTargets);
+        damageRoutine = StartCoroutine(
+            AoEDamageBatch.ApplyOverFrames(aoeTargets, damage, aoeDamagePerFrame));
+    }
 
-            EnemyHp enemyHp = hit.GetComponent<EnemyHp>();
-            if (enemyHp != null)
-            {
-                enemyHp.TakeDamage(damage);
-            }
+    private IEnumerator ReleaseAfterVfx()
+    {
+        yield return new WaitForSeconds(0.45f);
+        if (damageRoutine != null)
+        {
+            yield return damageRoutine;
+            damageRoutine = null;
         }
+
+        Release();
     }
 
     private void OnTriggerEnter2D(Collider2D collision)
     {
-        // 폭발 직후 범위 안으로 들어오는 적 (이미 맞춘 폭발은 hasDamaged로 중복 방지)
+        // 폭발 직후 범위 안으로 들어오는 적 — 스냅샷 분산 적용이 시작된 뒤에는 중복 방지
         if (!isExplode || hasDamaged)
         {
             return;
@@ -132,8 +145,11 @@ public class Bomb : MonoBehaviour
     private void Release()
     {
         CancelInvoke();
+        StopAllCoroutines();
+        damageRoutine = null;
         isExplode = false;
         hasDamaged = false;
+        aoeTargets.Clear();
         ProjectileLifecycle.ReturnToPool(gameObject);
     }
 }

@@ -13,9 +13,9 @@ MonoBehaviour:
   m_Name: G1_Bomb
   m_EditorClassIdentifier: 
   towerId: G1_Bomb
-  displayName: 폭탄타워
+  displayName: "\uD3ED\uD0C4\uD0C0\uC6CC"
   weapon:
-    damage: 4
+    damage: 5
     rate: 1.6
     range: 3
     sell: 0
@@ -29,6 +29,7 @@ MonoBehaviour:
   grade: 1
   weaponType: 5
   projectileType: 0
+  targetPriority: 0
   sprite: {fileID: 21300000, guid: 4a868e28be12a6349a2742aa1909ed42, type: 3}
   spriteColor: {r: 1, g: 1, b: 1, a: 1}
   spawnWeight: 1
@@ -38,3 +39,4 @@ MonoBehaviour:
   groundBombLineLength: 5
   groundBombSpawnInterval: 0
   laserWidth: 0
+  orbitSatelliteCount: 2

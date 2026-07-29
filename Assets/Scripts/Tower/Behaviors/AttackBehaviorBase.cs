@@ -7,7 +7,7 @@ using UnityEngine;
 public abstract class AttackBehaviorBase : ITowerBehavior
 {
     /// <summary>타겟 없을 때 전수 탐색 간격. 타워마다 스태거로 스파이크 완화.</summary>
-    private static readonly WaitForSeconds SearchInterval = new WaitForSeconds(0.05f);
+    private static readonly WaitForSeconds SearchInterval = new WaitForSeconds(0.08f);
 
     protected TowerWeapon Tower { get; private set; }
 

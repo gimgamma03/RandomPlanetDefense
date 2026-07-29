@@ -3,14 +3,19 @@
 public class SliderPositionAutoSetter : MonoBehaviour
 {
     [SerializeField]
-    private Vector3         distance = Vector3.down * 20.0f;
-    private Transform       targetTransform;
-    private RectTransform   rectTransform;
-    
+    private Vector3 distance = Vector3.down * 20.0f;
+    private Transform targetTransform;
+    private RectTransform rectTransform;
+
     public void Setup(Transform target)
     {
         targetTransform = target;
         rectTransform = GetComponent<RectTransform>();
+    }
+
+    public void SetDistance(Vector3 offset)
+    {
+        distance = offset;
     }
 
     private void LateUpdate()

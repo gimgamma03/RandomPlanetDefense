@@ -14,6 +14,8 @@ public class PanelPlayerTMP : MonoBehaviour
 
     private IPlayerService playerService;
     private IMetaProgressService metaProgress;
+    private int lastGoldShown = int.MinValue;
+    private int lastHpShown = int.MinValue;
     private int lastCrystalShown = int.MinValue;
 
     private void Start()
@@ -26,25 +28,68 @@ public class PanelPlayerTMP : MonoBehaviour
             currentScoreText.text = "0";
         }
 
+        RefreshGold(force: true);
+        RefreshHp(force: true);
         RefreshCrystal(force: true);
     }
 
     private void Update()
     {
-        if (playerService != null)
-        {
-            if (playerGold != null)
-            {
-                playerGold.text = playerService.Gold.ToString();
-            }
+        RefreshGold(force: false);
+        RefreshHp(force: false);
+        RefreshCrystal(force: false);
+    }
 
-            if (playerHp != null)
+    private void RefreshGold(bool force)
+    {
+        if (playerGold == null)
+        {
+            return;
+        }
+
+        if (playerService == null)
+        {
+            ServiceLocator.TryGet(out playerService);
+            if (playerService == null)
             {
-                playerHp.text = playerService.CurrentHp.ToString();
+                return;
             }
         }
 
-        RefreshCrystal(force: false);
+        int gold = playerService.Gold;
+        if (!force && gold == lastGoldShown)
+        {
+            return;
+        }
+
+        lastGoldShown = gold;
+        playerGold.text = gold.ToString();
+    }
+
+    private void RefreshHp(bool force)
+    {
+        if (playerHp == null)
+        {
+            return;
+        }
+
+        if (playerService == null)
+        {
+            ServiceLocator.TryGet(out playerService);
+            if (playerService == null)
+            {
+                return;
+            }
+        }
+
+        int hp = playerService.CurrentHp;
+        if (!force && hp == lastHpShown)
+        {
+            return;
+        }
+
+        lastHpShown = hp;
+        playerHp.text = hp.ToString();
     }
 
     private void RefreshCrystal(bool force)

@@ -15,10 +15,15 @@ public sealed class EnemyBossVisual : MonoBehaviour
     private const float OrbitRadiusVsBody = 0.72f;
     private const float OrbitCrownHeightVsBody = 0.38f;
 
+    /// <summary>일반 적(1) / 타워(2) / 탄(3)보다 위. UI·오버레이(49+)보다는 아래.</summary>
+    public const int BossBodySortingOrder = 25;
+    public const int DefaultBodySortingOrder = 1;
+
     private static readonly Color Cyan = new Color(0.35f, 0.85f, 1f, 0.85f);
     private static readonly Color Magenta = new Color(0.95f, 0.25f, 1f, 0.9f);
 
     private Transform visualRoot;
+    private SpriteRenderer boundBody;
 
     public void Apply(SpriteRenderer body, Sprite orbitCrownSprite)
     {
@@ -27,6 +32,9 @@ public sealed class EnemyBossVisual : MonoBehaviour
         {
             return;
         }
+
+        boundBody = body;
+        body.sortingOrder = BossBodySortingOrder;
 
         GameObject root = new GameObject(RootName);
         visualRoot = root.transform;
@@ -46,6 +54,12 @@ public sealed class EnemyBossVisual : MonoBehaviour
 
     public void Clear()
     {
+        if (boundBody != null)
+        {
+            boundBody.sortingOrder = DefaultBodySortingOrder;
+            boundBody = null;
+        }
+
         if (visualRoot != null)
         {
             Destroy(visualRoot.gameObject);
@@ -117,9 +131,8 @@ public sealed class EnemyBossVisual : MonoBehaviour
             sr.sprite = crownSprite;
             sr.color = Color.white;
             sr.sortingLayerID = body.sortingLayerID;
-            sr.sortingOrder = body.sortingOrder + 3;
+            sr.sortingOrder = body.sortingOrder + 10;
 
-            // 피벗이 돌아도 왕관은 월드 기준으로 세워 둠
             crown.AddComponent<BossOrbitCrownUpright>();
         }
     }

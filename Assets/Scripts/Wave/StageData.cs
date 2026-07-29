@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Serialization;
 
 /// <summary>
 /// 아웃게임에서 고르는 1개 스테이지 = 웨이브 묶음.
@@ -35,15 +36,15 @@ public class StageData : ScriptableObject
     public struct Wave
     {
         [Min(0f)]
-        [Tooltip("적 한 마리 스폰 간격(초)")]
+        [Tooltip("레인 공통 스폰 간격(초). Sub는 spawnDelay*0.5 후 시작")]
         public float spawnDelay;
 
-        [Min(1)]
-        [Tooltip("이 웨이브에서 스폰할 적 수")]
-        public int maxEnemyCount;
+        [FormerlySerializedAs("enemies")]
+        [Tooltip("메인 레인. count 합 = 이 레인 총 마릿수")]
+        public WaveEnemy[] mainEnemies;
 
-        [Tooltip("출현 풀. spawnWeight 상대 비중 (합이 1일 필요 없음)")]
-        public WaveEnemy[] enemies;
+        [Tooltip("서브 레인(엇박). 비우면 메인만 스폰")]
+        public WaveEnemy[] subEnemies;
     }
 
     [System.Serializable]
@@ -55,8 +56,13 @@ public class StageData : ScriptableObject
         [Tooltip("강도 티어. Type+Tier로 EnemyData를 고른다")]
         public EnemyTier enemyTier;
 
+        [Min(0)]
+        [Tooltip("이 레인에서 스폰할 확정 마릿수")]
+        public int count;
+
+        [FormerlySerializedAs("spawnWeight")]
         [Min(0f)]
-        [Tooltip("상대 가중치. 예: 2와 1이면 약 66% / 33%. 0이면 스폰 안 함")]
-        public float spawnWeight;
+        [Tooltip("남은 종류 중 다음에 빨리 나올 상대 비중. 0이면 1로 취급")]
+        public float earlyBias;
     }
 }

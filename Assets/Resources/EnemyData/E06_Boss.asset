@@ -20,7 +20,7 @@ MonoBehaviour:
   gold: 50
   scorePoint: 200
   maxHp: 800
-  moveSpeed: 1.4
+  moveSpeed: 1.5
   rotateSpeed: 0
   visualScale: 0.13
   shieldHp: 0

@@ -19,8 +19,8 @@ MonoBehaviour:
   enemyTier: 3
   gold: 7
   scorePoint: 34
-  maxHp: 102.4
-  moveSpeed: 4.01
+  maxHp: 80
+  moveSpeed: 5
   rotateSpeed: 0.39
   visualScale: 1.07
   shieldHp: 0

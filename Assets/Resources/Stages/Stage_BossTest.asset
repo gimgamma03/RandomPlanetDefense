@@ -13,24 +13,20 @@ MonoBehaviour:
   m_Name: Stage_BossTest
   m_EditorClassIdentifier: 
   stageId: 90
-  displayName: "[Test] Boss"
+  displayName: '[Test] Boss'
   clearBonusGold: 100
   spawnBossOnFinalWave: 1
   bossEnemyType: 6
   bossEnemyTier: 1
   waves:
-  - spawnDelay: 0.8
-    maxEnemyCount: 4
-    enemies:
-    - enemyType: 0
-      enemyTier: 1
-      spawnWeight: 100
   - spawnDelay: 0.7
-    maxEnemyCount: 6
-    enemies:
+    mainEnemies:
     - enemyType: 1
       enemyTier: 1
-      spawnWeight: 70
+      count: 4
+      earlyBias: 70
     - enemyType: 0
       enemyTier: 1
-      spawnWeight: 30
+      count: 2
+      earlyBias: 30
+    subEnemies: []

@@ -130,6 +130,26 @@ public sealed class EndRunOverlay : MonoBehaviour
         }
     }
 
+    /// <summary>웨이브 배너 등: 루트만 켜고 Title/딤머는 끈다.</summary>
+    public void PrepareTransientBanner()
+    {
+        EnsureBuilt();
+        if (root != null)
+        {
+            root.SetActive(true);
+        }
+
+        if (dimmer != null)
+        {
+            dimmer.gameObject.SetActive(false);
+        }
+
+        if (titleButton != null)
+        {
+            titleButton.gameObject.SetActive(false);
+        }
+    }
+
     private void Awake()
     {
         sceneDirector = FindFirstObjectByType<SceneDirector>();

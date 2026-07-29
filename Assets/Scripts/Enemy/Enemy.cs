@@ -106,6 +106,10 @@ public class Enemy : MonoBehaviour
             {
                 bossVisual.Clear();
             }
+            else if (spriteRenderer != null)
+            {
+                spriteRenderer.sortingOrder = EnemyBossVisual.DefaultBodySortingOrder;
+            }
 
             return;
         }

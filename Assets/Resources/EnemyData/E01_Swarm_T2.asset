@@ -19,7 +19,7 @@ MonoBehaviour:
   enemyTier: 2
   gold: 2
   scorePoint: 15
-  maxHp: 16.0
+  maxHp: 25
   moveSpeed: 2.16
   rotateSpeed: 0
   visualScale: 0.9
@@ -28,3 +28,13 @@ MonoBehaviour:
   splitChildType: 0
   sprite: {fileID: 21300000, guid: de1af1ae602f8be48bc1144fbe0bc920, type: 3}
   spriteColor: {r: 1, g: 1, b: 1, a: 1}
+  isBoss: 0
+  bossCrownSprite: {fileID: 0}
+  enableSummonSkill: 0
+  summonMinionType: 7
+  summonCountMin: 3
+  summonCountMax: 5
+  summonChargeDuration: 7
+  summonCastHoldDuration: 0.3
+  summonInterval: 0.5
+  summonChargeGaugeYOffset: 0.9

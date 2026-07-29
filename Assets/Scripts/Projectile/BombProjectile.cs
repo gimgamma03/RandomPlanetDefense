@@ -1,8 +1,10 @@
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
 /// 타겟을 추적해 날아가다 적에 닿으면 범위 폭발.
+/// AoE TakeDamage는 프레임 분산(코루틴) — 폭발 판정은 즉시.
 /// </summary>
 public class BombProjectile : MonoBehaviour
 {
@@ -22,7 +24,13 @@ public class BombProjectile : MonoBehaviour
     private float maxFlightTime = 4f;
 
     [SerializeField]
+    [Min(1)]
+    private int aoeDamagePerFrame = AoEDamageBatch.DefaultPerFrame;
+
+    [SerializeField]
     private ParticleSystem bombParticle;
+
+    private readonly List<EnemyHp> aoeTargets = new List<EnemyHp>(32);
 
     private Transform target;
     private Vector3 lastTargetPosition;
@@ -32,6 +40,7 @@ public class BombProjectile : MonoBehaviour
     private bool hasDamaged;
     private SpriteRenderer spriteRenderer;
     private Rigidbody2D rigidbody2d;
+    private Coroutine damageRoutine;
 
     private void Awake()
     {
@@ -48,6 +57,7 @@ public class BombProjectile : MonoBehaviour
     {
         StopAllCoroutines();
         CancelInvoke();
+        damageRoutine = null;
 
         this.damage = damage;
         target = attackTarget;
@@ -55,6 +65,7 @@ public class BombProjectile : MonoBehaviour
         isExploding = false;
         hasDamaged = false;
         flightStartTime = Time.time;
+        aoeTargets.Clear();
 
         if (spriteRenderer != null)
         {
@@ -147,11 +158,11 @@ public class BombProjectile : MonoBehaviour
             bombParticle.Play();
         }
 
-        ApplyAoEDamage();
+        BeginAoEDamage();
         StartCoroutine(ReleaseAfterVfx());
     }
 
-    private void ApplyAoEDamage()
+    private void BeginAoEDamage()
     {
         if (hasDamaged)
         {
@@ -159,36 +170,31 @@ public class BombProjectile : MonoBehaviour
         }
 
         hasDamaged = true;
-
-        Collider2D[] colliders = Physics2D.OverlapCircleAll(transform.position, bombRadius);
-        for (int i = 0; i < colliders.Length; i++)
-        {
-            Collider2D collider = colliders[i];
-            if (collider == null || !collider.CompareTag("Enemy"))
-            {
-                continue;
-            }
-
-            EnemyHp enemyHp = collider.GetComponent<EnemyHp>();
-            if (enemyHp != null)
-            {
-                enemyHp.TakeDamage(damage);
-            }
-        }
+        AoEDamageBatch.CollectEnemyTargets(transform.position, bombRadius, aoeTargets);
+        damageRoutine = StartCoroutine(
+            AoEDamageBatch.ApplyOverFrames(aoeTargets, damage, aoeDamagePerFrame));
     }
 
     private IEnumerator ReleaseAfterVfx()
     {
         yield return new WaitForSeconds(explodeVfxLife);
+        if (damageRoutine != null)
+        {
+            yield return damageRoutine;
+            damageRoutine = null;
+        }
+
         Release();
     }
 
     private void Release()
     {
         StopAllCoroutines();
+        damageRoutine = null;
         isExploding = false;
         hasDamaged = false;
         target = null;
+        aoeTargets.Clear();
 
         if (spriteRenderer != null)
         {

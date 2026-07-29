@@ -269,6 +269,17 @@ public class WaveSystem : MonoBehaviour
         pauseView?.Play();
     }
 
+    /// <summary>웨이브 클리어와 같은 중앙 문구 UI에 페이드 인/아웃 배너.</summary>
+    public void ShowCenterBanner(string message, float fadeIn, float hold, float fadeOut)
+    {
+        if (textFadeOut == null)
+        {
+            return;
+        }
+
+        textFadeOut.ShowTextFadeInOut(message, fadeIn, hold, fadeOut);
+    }
+
     public void StopGame()
     {
         pauseView?.Pause();

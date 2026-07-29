@@ -3,11 +3,13 @@ using UnityEngine;
 
 /// <summary>
 /// 보스 스킬: 머리 위 차징 → 그 자리 정지 → 쫄을 간격마다 한 마리씩 소환 → 재이동. 반복.
+/// 소환 중 TowerDeco 조각이 킹에게 슈슈슈 빨려 들어간다.
 /// </summary>
 public sealed class EnemyBossSummonSkill : MonoBehaviour
 {
     private Enemy enemy;
     private EnemySpawner spawner;
+    private BossIntroFx introFx;
     private Coroutine loop;
 
     public void Begin(Enemy host, EnemySpawner enemySpawner)
@@ -27,6 +29,7 @@ public sealed class EnemyBossSummonSkill : MonoBehaviour
             return;
         }
 
+        introFx = spawner.GetBossIntroFx();
         loop = StartCoroutine(SkillLoop());
     }
 
@@ -36,6 +39,11 @@ public sealed class EnemyBossSummonSkill : MonoBehaviour
         {
             StopCoroutine(loop);
             loop = null;
+        }
+
+        if (introFx != null)
+        {
+            introFx.StopGather();
         }
 
         TowerChargeGaugeView.Hide(gameObject);
@@ -74,18 +82,29 @@ public sealed class EnemyBossSummonSkill : MonoBehaviour
             int max = Mathf.Max(min, data.summonCountMax);
             int count = max > min ? Random.Range(min, max + 1) : min;
 
-            // 같은 자리에서 같은 간격으로 소환 → 동일 속도면 경로 위 간격이 일정해짐
-            // (원형 오프셋은 시작 칸이 달라져 간격이 들쭉날쭉해 보였음)
             Vector3 spawnPos = transform.position;
             WaitForSeconds spawnWait = new WaitForSeconds(interval);
+
+            // 소환과 동시에 킹으로 데코 집결 (등장보다 약하게)
+            if (introFx != null && count > 0)
+            {
+                float gatherHint = (count - 1) * interval + 0.7f;
+                introFx.StartSummonGather(transform, gatherHint);
+            }
 
             for (int i = 0; i < count; i++)
             {
                 if (!isActiveAndEnabled || enemy == null || spawner == null)
                 {
+                    if (introFx != null)
+                    {
+                        introFx.StopGather();
+                    }
+
                     yield break;
                 }
 
+                spawnPos = transform.position;
                 spawner.SpawnBossMinion(data.summonMinionType, spawnPos);
 
                 if (i < count - 1)
@@ -93,6 +112,11 @@ public sealed class EnemyBossSummonSkill : MonoBehaviour
                     yield return spawnWait;
                     if (!isActiveAndEnabled || enemy == null)
                     {
+                        if (introFx != null)
+                        {
+                            introFx.StopGather();
+                        }
+
                         yield break;
                     }
                 }

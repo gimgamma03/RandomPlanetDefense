@@ -236,7 +236,16 @@ public class TowerWeapon : MonoBehaviour
                 continue;
             }
 
-            float distSq = (enemy.transform.position - origin).sqrMagnitude;
+            Vector3 enemyPos = enemy.transform.position;
+            // AABB(축 정렬 박스) 조기 기각 — 사거리 원 밖을 먼저 싼 비용으로 컷 (D3D 충돌/컬링과 같은 개념)
+            float dx = enemyPos.x - origin.x;
+            float dy = enemyPos.y - origin.y;
+            if (dx > range || dx < -range || dy > range || dy < -range)
+            {
+                continue;
+            }
+
+            float distSq = dx * dx + dy * dy;
             if (distSq > rangeSq)
             {
                 continue;
@@ -288,7 +297,15 @@ public class TowerWeapon : MonoBehaviour
                 continue;
             }
 
-            float distSq = (enemy.transform.position - origin).sqrMagnitude;
+            Vector3 enemyPos = enemy.transform.position;
+            float dx = enemyPos.x - origin.x;
+            float dy = enemyPos.y - origin.y;
+            if (dx > range || dx < -range || dy > range || dy < -range)
+            {
+                continue;
+            }
+
+            float distSq = dx * dx + dy * dy;
             if (distSq > rangeSq)
             {
                 continue;

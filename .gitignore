@@ -17,6 +17,13 @@
 # Recordings can get excessive in size
 /[Rr]ecordings/
 
+# Unity Profiler / Profile Analyzer raw dumps (hundreds of MB)
+# Keep small exports (CSV / highlights / png) if needed; ignore binary captures.
+/[Pp]rofile[Aa]nalyzer/**/*.pdata
+/[Pp]rofile[Aa]nalyzer/**/*.data
+/[Pp]rofiler[Cc]aptures/**/*.pdata
+/[Pp]rofiler[Cc]aptures/**/*.data
+
 # Uncomment this line if you wish to ignore the asset store tools plugin
 # /[Aa]ssets/AssetStoreTools*
 
