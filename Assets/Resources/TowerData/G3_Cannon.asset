@@ -16,19 +16,20 @@ MonoBehaviour:
   displayName: "\uCE90\uB17C\uD0C0\uC6CC"
   weapon:
     damage: 11.25
-    rate: 1.62
+    rate: 1.2
     range: 3.5
     sell: 0
     doubleShot: 0
     slowValue: 0
   weaponUpGradeValue:
     damage: 2.73
-    rate: 0.0
+    rate: 0
     range: 0
     slowValue: 0
   grade: 3
   weaponType: 0
   projectileType: 0
+  targetPriority: 0
   sprite: {fileID: 21300000, guid: 8ff5851d96e353540b1e6d34f6dafe7b, type: 3}
   spriteColor: {r: 1, g: 1, b: 1, a: 1}
   spawnWeight: 1

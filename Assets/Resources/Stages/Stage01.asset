@@ -27,7 +27,7 @@ MonoBehaviour:
       earlyBias: 50
     - enemyType: 1
       enemyTier: 1
-      count: 4
+      count: 2
       earlyBias: 50
     subEnemies:
     - enemyType: 2
