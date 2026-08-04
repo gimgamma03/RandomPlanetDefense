@@ -29,6 +29,8 @@ public class WaveSystem : MonoBehaviour
     private TextMeshProUGUI textCurrentScore;
     [SerializeField]
     private TextMeshProUGUI textBestScore;
+    [SerializeField]
+    private WaveDataUI waveDataUI;
 
     private StageData stageData;
     private int currentWaveIndex = 0;
@@ -45,6 +47,8 @@ public class WaveSystem : MonoBehaviour
 
     public int StageId => stageData != null ? stageData.stageId : stageId;
     public int MaxWave => stageData != null && stageData.waves != null ? stageData.waves.Length : 0;
+    /// <summary>다음에 시작할 / 진행 중인 웨이브 번호 (1-based).</summary>
+    public int CurrentWaveNumber => currentWaveIndex + 1;
     public StageData CurrentStage => stageData;
     public RunPhase Phase => runPhase;
     public bool IsRunEnded => runPhase != RunPhase.Playing;
@@ -121,6 +125,14 @@ public class WaveSystem : MonoBehaviour
         textWaveCount.text = "Wave : " + 1;
         BeginSessionStats();
         waveStartView.SetBusy(false);
+
+        if (waveDataUI == null)
+        {
+            waveDataUI = GetComponentInChildren<WaveDataUI>(true);
+        }
+
+        enemySpawner?.BindWaveDataUI(waveDataUI);
+        PreviewUpcomingWaveUi();
     }
 
     private void OnApplicationQuit()
@@ -170,6 +182,7 @@ public class WaveSystem : MonoBehaviour
         runPhase = RunPhase.Playing;
         EnsureStageLoaded();
         textWaveCount.text = "Wave : " + 1;
+        PreviewUpcomingWaveUi();
     }
 
     private void EnsureStageLoaded()
@@ -222,6 +235,7 @@ public class WaveSystem : MonoBehaviour
 
         waveStartView.SetBusy(true);
         sessionStats?.RecordWaveStarted(currentWave);
+        waveDataUI?.SetWave(currentWave);
         enemySpawner.StartWave(stageData.waves[currentWaveIndex], bossStage);
         textWaveCount.text = "Wave : " + currentWave;
     }
@@ -262,6 +276,29 @@ public class WaveSystem : MonoBehaviour
         }
 
         waveStartView.SetBusy(false);
+        PreviewUpcomingWaveUi();
+    }
+
+    /// <summary>대기 중일 때 다음 웨이브 번호 + 예정 총원을 미리 표시.</summary>
+    private void PreviewUpcomingWaveUi()
+    {
+        if (waveDataUI == null)
+        {
+            return;
+        }
+
+        EnsureStageLoaded();
+        if (stageData == null || stageData.waves == null
+            || currentWaveIndex < 0 || currentWaveIndex >= stageData.waves.Length)
+        {
+            waveDataUI.PreviewWave(Mathf.Max(1, CurrentWaveNumber), 0);
+            return;
+        }
+
+        bool includeBoss = currentWaveIndex >= stageData.waves.Length - 1
+            && stageData.spawnBossOnFinalWave;
+        int total = EnemySpawner.CountPlannedSpawns(stageData.waves[currentWaveIndex], includeBoss);
+        waveDataUI.PreviewWave(CurrentWaveNumber, total);
     }
 
     public void StartGame()

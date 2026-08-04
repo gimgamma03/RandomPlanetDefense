@@ -46,6 +46,12 @@ public class EnemySpawner : MonoBehaviour, IEnemyRegistry
     private LaneQuota mainQuota;
     private LaneQuota subQuota;
 
+    /// <summary>이번 웨이브 계획 소환 수 (메인+서브+보스). 분열체는 제외.</summary>
+    private int waveSpawnTotal;
+    private int waveSpawnedCount;
+
+    private WaveDataUI waveDataUI;
+
     private readonly List<Enemy> enemies = new List<Enemy>();
 
     private sealed class LaneQuota
@@ -59,6 +65,9 @@ public class EnemySpawner : MonoBehaviour, IEnemyRegistry
     public int Count => enemies.Count;
 
     public bool IsWaveInProgress => waveActive;
+
+    public int WaveSpawnTotal => waveSpawnTotal;
+    public int WaveSpawnedCount => waveSpawnedCount;
 
     /// <summary>경로 시작점·스폰에 쓰는 월드 좌표</summary>
     public Vector3 SpawnWorldPosition =>
@@ -109,6 +118,40 @@ public class EnemySpawner : MonoBehaviour, IEnemyRegistry
         }
     }
 
+    public void BindWaveDataUI(WaveDataUI ui)
+    {
+        waveDataUI = ui;
+        NotifySpawnProgress();
+    }
+
+    /// <summary>웨이브 계획 소환 수 (메인+서브[+보스]). 분열체 제외.</summary>
+    public static int CountPlannedSpawns(Wave wave, bool includeBoss)
+    {
+        int sum = CountLaneEntries(wave.mainEnemies) + CountLaneEntries(wave.subEnemies);
+        if (includeBoss)
+        {
+            sum++;
+        }
+
+        return sum;
+    }
+
+    private static int CountLaneEntries(WaveEnemy[] entries)
+    {
+        if (entries == null)
+        {
+            return 0;
+        }
+
+        int sum = 0;
+        for (int i = 0; i < entries.Length; i++)
+        {
+            sum += Mathf.Max(0, entries[i].count);
+        }
+
+        return sum;
+    }
+
     public void CheckPathForAllEnemy()
     {
         for (int i = 0; i < enemies.Count; i++)
@@ -151,6 +194,14 @@ public class EnemySpawner : MonoBehaviour, IEnemyRegistry
         spawnCompleted = false;
         mainQuota = BuildLaneQuota(wave.mainEnemies);
         subQuota = BuildLaneQuota(wave.subEnemies);
+
+        bool includeBoss = bossStage != null && bossStage.spawnBossOnFinalWave;
+        waveSpawnTotal =
+            (mainQuota != null ? mainQuota.remainingTotal : 0)
+            + (subQuota != null ? subQuota.remainingTotal : 0)
+            + (includeBoss ? 1 : 0);
+        waveSpawnedCount = 0;
+        NotifySpawnProgress();
 
         StopSpawnRoutines();
         waveStartRoutine = StartCoroutine(StartWaveRoutine());
@@ -684,6 +735,18 @@ public class EnemySpawner : MonoBehaviour, IEnemyRegistry
         enemyHpViewer.hpSliderUpdate();
 
         enemies.Add(enemy);
+
+        // 웨이브 계획 소환만 카운트 (분열체 제외)
+        if (waveActive && splitGeneration == 0)
+        {
+            waveSpawnedCount++;
+            NotifySpawnProgress();
+        }
+    }
+
+    private void NotifySpawnProgress()
+    {
+        waveDataUI?.SetSpawnProgress(waveSpawnedCount, waveSpawnTotal);
     }
 
     /// <summary>스폰이 끝났고 필드 적이 0이면 웨이브 클리어.</summary>

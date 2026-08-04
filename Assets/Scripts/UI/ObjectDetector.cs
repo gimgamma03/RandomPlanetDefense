@@ -9,9 +9,11 @@ public class ObjectDetector : MonoBehaviour
 {
     [SerializeField]
     private PanelTowerDataViewer towerDataViewer;
-    [SerializeField]
-    private TowerAttackRange towerAttackRange;
 
+    [SerializeField]
+    private TowerAttackRange towerAttackRangePrefab;
+
+    private TowerAttackRange towerAttackRange;
     private Camera mainCamera;
     private IBuildModeState buildModeState;
 
@@ -19,6 +21,25 @@ public class ObjectDetector : MonoBehaviour
     {
         mainCamera = Camera.main;
         ResolveBuildModeState();
+        EnsureAttackRange();
+    }
+
+    private void EnsureAttackRange()
+    {
+        if (towerAttackRange != null)
+        {
+            return;
+        }
+
+        if (towerAttackRangePrefab == null)
+        {
+            Debug.LogWarning("[ObjectDetector] towerAttackRangePrefab 미할당.");
+            return;
+        }
+
+        towerAttackRange = Instantiate(towerAttackRangePrefab);
+        towerAttackRange.name = "TowerAttackRange";
+        towerAttackRange.gameObject.SetActive(false);
     }
 
     private void ResolveBuildModeState()
