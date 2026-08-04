@@ -73,7 +73,7 @@ public sealed class EndRunOverlay : MonoBehaviour
         if (messageText != null)
         {
             RectTransform messageRt = messageText.rectTransform;
-            // ShowWave GO에 TMP가 붙어 있으면 그 Rect를 문구 위치로 씀
+            // EndRunBanner GO에 TMP가 붙어 있으면 그 Rect를 문구 위치로 씀
             if (messageRt.gameObject == gameObject || root == messageText.gameObject)
             {
                 messageRt.anchoredPosition = messageAnchoredPosition;
@@ -192,7 +192,7 @@ public sealed class EndRunOverlay : MonoBehaviour
         UnityEngine.SceneManagement.SceneManager.LoadScene(SceneDirector.TitleSceneName);
     }
 
-    /// <summary>씬에 없으면 ShowWave TMP를 활용해 런타임 구성.</summary>
+    /// <summary>씬에 없으면 EndRunBanner TMP를 활용해 런타임 구성.</summary>
     public void EnsureBuilt()
     {
         if (messageText == null)

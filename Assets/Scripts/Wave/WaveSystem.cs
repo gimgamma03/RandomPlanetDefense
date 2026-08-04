@@ -128,7 +128,7 @@ public class WaveSystem : MonoBehaviour
 
         if (waveDataUI == null)
         {
-            waveDataUI = GetComponentInChildren<WaveDataUI>(true);
+            waveDataUI = FindFirstObjectByType<WaveDataUI>();
         }
 
         enemySpawner?.BindWaveDataUI(waveDataUI);

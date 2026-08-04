@@ -170,8 +170,9 @@ public sealed class PlaySessionStatsService : IPlaySessionStatsService
             Debug.LogWarning($"[PlaySessionStats] Save failed (ignored): {e.Message}");
         }
 
-        // API POST (PlaySessionApiClient가 있을 때만). 실패해도 무시.
-        if (PlaySessionApiClient.Instance != null)
+        // API POST — 중도 종료(quit)는 서버에 올리지 않음
+        if (PlaySessionApiClient.Instance != null
+            && !string.Equals(finished.endReason, SessionEndReason.Quit, StringComparison.Ordinal))
         {
             PlaySessionApiClient.Instance.PostSession(finished);
         }
