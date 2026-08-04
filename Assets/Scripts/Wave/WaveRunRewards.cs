@@ -1,9 +1,12 @@
 /// <summary>
-/// 웨이브/스테이지 클리어 시 크리스탈·골드·메타 기록.
+/// 웨이브/스테이지 클리어 시 크리스탈·골드·점수 보너스·메타 기록.
 /// WaveSystem은 진행 상태만, 보상 규칙은 여기.
 /// </summary>
 public sealed class WaveRunRewards
 {
+    /// <summary>보스(스테이지) 클리어 시 남은 목숨 1당 점수 보너스.</summary>
+    private const int ClearScoreBonusPerLife = 2;
+
     private IMetaProgressService metaProgress;
     private IScoreService scoreService;
 
@@ -25,10 +28,27 @@ public sealed class WaveRunRewards
 
     public void OnAllWavesCleared(StageData stage)
     {
-        if (stage != null && stage.clearBonusGold > 0
-            && ServiceLocator.TryGet(out IPlayerService player))
+        if (!ServiceLocator.TryGet(out IPlayerService player))
+        {
+            return;
+        }
+
+        if (stage != null && stage.clearBonusGold > 0)
         {
             player.AddGold(stage.clearBonusGold);
+        }
+
+        // 클리어 생존 보너스: 남은 목숨 × 2점 (세션 저장·하이스코어 전에 반영)
+        if (scoreService == null)
+        {
+            ServiceLocator.TryGet(out scoreService);
+        }
+
+        int lives = player.CurrentHp > 0 ? player.CurrentHp : 0;
+        int bonus = lives * ClearScoreBonusPerLife;
+        if (bonus > 0 && scoreService != null)
+        {
+            scoreService.AddScore(bonus);
         }
     }
 

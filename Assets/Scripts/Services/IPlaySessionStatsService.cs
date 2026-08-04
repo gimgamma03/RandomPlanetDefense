@@ -1,5 +1,5 @@
 /// <summary>
-/// 한 판 플레이 세션 통계 수집. 종료 시 로컬 저장 + (이후) API 전송.
+/// 한 판 플레이 세션 통계 수집. 종료 시 로컬 저장 + API POST 시도.
 /// 실패해도 플레이에 영향 없음.
 /// </summary>
 public interface IPlaySessionStatsService : IService

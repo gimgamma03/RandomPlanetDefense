@@ -14,33 +14,78 @@ public class PanelPlayerTMP : MonoBehaviour
 
     private IPlayerService playerService;
     private IMetaProgressService metaProgress;
-    private int lastGoldShown = int.MinValue;
-    private int lastHpShown = int.MinValue;
-    private int lastCrystalShown = int.MinValue;
+    private bool playerSubscribed;
+    private bool metaSubscribed;
+
+    private void OnEnable()
+    {
+        TryBind();
+    }
 
     private void Start()
     {
-        ServiceLocator.TryGet(out playerService);
-        ServiceLocator.TryGet(out metaProgress);
+        // Bootstrap / ConfigureRun 타이밍 대비
+        TryBind();
 
         if (currentScoreText != null)
         {
             currentScoreText.text = "0";
         }
-
-        RefreshGold(force: true);
-        RefreshHp(force: true);
-        RefreshCrystal(force: true);
     }
 
-    private void Update()
+    private void OnDisable()
     {
-        RefreshGold(force: false);
-        RefreshHp(force: false);
-        RefreshCrystal(force: false);
+        Unbind();
     }
 
-    private void RefreshGold(bool force)
+    private void TryBind()
+    {
+        if (playerService == null)
+        {
+            ServiceLocator.TryGet(out playerService);
+        }
+
+        if (metaProgress == null)
+        {
+            ServiceLocator.TryGet(out metaProgress);
+        }
+
+        if (playerService != null && !playerSubscribed)
+        {
+            playerService.OnGoldChanged += RefreshGold;
+            playerService.OnHpChanged += RefreshHp;
+            playerSubscribed = true;
+        }
+
+        if (metaProgress != null && !metaSubscribed)
+        {
+            metaProgress.OnCrystalsChanged += RefreshCrystal;
+            metaSubscribed = true;
+        }
+
+        RefreshGold();
+        RefreshHp();
+        RefreshCrystal();
+    }
+
+    private void Unbind()
+    {
+        if (playerSubscribed && playerService != null)
+        {
+            playerService.OnGoldChanged -= RefreshGold;
+            playerService.OnHpChanged -= RefreshHp;
+        }
+
+        if (metaSubscribed && metaProgress != null)
+        {
+            metaProgress.OnCrystalsChanged -= RefreshCrystal;
+        }
+
+        playerSubscribed = false;
+        metaSubscribed = false;
+    }
+
+    private void RefreshGold()
     {
         if (playerGold == null)
         {
@@ -56,17 +101,10 @@ public class PanelPlayerTMP : MonoBehaviour
             }
         }
 
-        int gold = playerService.Gold;
-        if (!force && gold == lastGoldShown)
-        {
-            return;
-        }
-
-        lastGoldShown = gold;
-        playerGold.text = gold.ToString();
+        playerGold.text = playerService.Gold.ToString();
     }
 
-    private void RefreshHp(bool force)
+    private void RefreshHp()
     {
         if (playerHp == null)
         {
@@ -82,17 +120,10 @@ public class PanelPlayerTMP : MonoBehaviour
             }
         }
 
-        int hp = playerService.CurrentHp;
-        if (!force && hp == lastHpShown)
-        {
-            return;
-        }
-
-        lastHpShown = hp;
-        playerHp.text = hp.ToString();
+        playerHp.text = playerService.CurrentHp.ToString();
     }
 
-    private void RefreshCrystal(bool force)
+    private void RefreshCrystal()
     {
         if (playerCrystal == null)
         {
@@ -105,12 +136,6 @@ public class PanelPlayerTMP : MonoBehaviour
         }
 
         int crystals = metaProgress != null ? metaProgress.Crystals : 0;
-        if (!force && crystals == lastCrystalShown)
-        {
-            return;
-        }
-
-        lastCrystalShown = crystals;
         playerCrystal.text = crystals.ToString();
     }
 }

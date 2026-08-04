@@ -68,16 +68,6 @@ public class EnemyHpViewer : MonoBehaviour
         hpSlider.value = enemyHp.currentHp / enemyHp.maxHp;
     }
 
-    private void Update()
-    {
-        if (enemyHp == null)
-        {
-            return;
-        }
-
-        hpSliderUpdate();
-    }
-
     private void CacheParts()
     {
         if (hpSlider == null)

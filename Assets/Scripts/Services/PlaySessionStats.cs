@@ -30,6 +30,9 @@ public class PlaySessionStats
     /// <summary>cleared | game_over | quit</summary>
     public string endReason = string.Empty;
 
+    /// <summary>종료 시점 남은 목숨(HP). 클리어면 1 이상, 게임오버면 0.</summary>
+    public int livesRemaining;
+
     public int towersSpawned;
     public int towersMerged;
     public int towersSold;

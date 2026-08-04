@@ -5,8 +5,8 @@ using Newtonsoft.Json;
 using UnityEngine;
 
 /// <summary>
-/// 세션 통계 수집 + 로컬 큐 저장.
-/// 서버 POST는 이후 연결 — 지금은 파일 적재만 (fire-and-forget 전제).
+/// 세션 통계 수집 + 로컬 큐 저장 + (가능하면) API POST.
+/// 전송 실패해도 플레이에 영향 없음.
 /// </summary>
 public sealed class PlaySessionStatsService : IPlaySessionStatsService
 {
@@ -149,22 +149,33 @@ public sealed class PlaySessionStatsService : IPlaySessionStatsService
         current.finalScore = Mathf.Max(0, finalScore);
         current.endedAtUtc = DateTime.UtcNow.ToString("o");
         current.durationSeconds = Mathf.Max(0f, Time.realtimeSinceStartup - runStartRealtime);
+        current.livesRemaining = 0;
+        if (ServiceLocator.TryGet(out IPlayerService player))
+        {
+            current.livesRemaining = Mathf.Max(0, player.CurrentHp);
+        }
 
+        PlaySessionStats finished = current;
         try
         {
-            SaveToQueue(current);
+            SaveToQueue(finished);
             Debug.Log(
-                $"[PlaySessionStats] End reason={current.endReason} score={current.finalScore} " +
-                $"wave={current.wavesReached}/{current.maxWaves} " +
-                $"spawn={current.towersSpawned} merge={current.towersMerged} sell={current.towersSold} " +
-                $"sec={current.durationSeconds:0.0}");
+                $"[PlaySessionStats] End reason={finished.endReason} score={finished.finalScore} " +
+                $"lives={finished.livesRemaining} wave={finished.wavesReached}/{finished.maxWaves} " +
+                $"spawn={finished.towersSpawned} merge={finished.towersMerged} sell={finished.towersSold} " +
+                $"sec={finished.durationSeconds:0}");
         }
         catch (Exception e)
         {
             Debug.LogWarning($"[PlaySessionStats] Save failed (ignored): {e.Message}");
         }
 
-        // 이후: HTTP POST. 실패해도 플레이 영향 없음.
+        // API POST (PlaySessionApiClient가 있을 때만). 실패해도 무시.
+        if (PlaySessionApiClient.Instance != null)
+        {
+            PlaySessionApiClient.Instance.PostSession(finished);
+        }
+
         current = null;
     }
 

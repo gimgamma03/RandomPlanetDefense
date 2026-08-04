@@ -21,6 +21,12 @@ public interface IPlayerService : IService
     /// <summary>HP와 무관하게 즉시 게임오버 (보스 골 도달 등).</summary>
     void ForceGameOver();
 
+    /// <summary>골드 값이 바뀌었을 때 (UI 갱신용).</summary>
+    event Action OnGoldChanged;
+
+    /// <summary>HP 값이 바뀌었을 때 (UI 갱신용).</summary>
+    event Action OnHpChanged;
+
     event Action OnDamaged;
     event Action OnDied;
 }

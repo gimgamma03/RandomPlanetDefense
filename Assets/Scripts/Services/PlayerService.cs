@@ -12,6 +12,8 @@ public class PlayerService : IPlayerService
     public int MaxHp { get; private set; }
     public bool IsGameOver { get; private set; }
 
+    public event Action OnGoldChanged;
+    public event Action OnHpChanged;
     public event Action OnDamaged;
     public event Action OnDied;
 
@@ -27,6 +29,8 @@ public class PlayerService : IPlayerService
         MaxHp = Mathf.Max(1, maxHp);
         CurrentHp = MaxHp;
         IsGameOver = false;
+        OnGoldChanged?.Invoke();
+        OnHpChanged?.Invoke();
     }
 
     public void AddGold(int amount)
@@ -37,6 +41,7 @@ public class PlayerService : IPlayerService
         }
 
         Gold += amount;
+        OnGoldChanged?.Invoke();
     }
 
     public bool TrySpendGold(int amount)
@@ -47,6 +52,7 @@ public class PlayerService : IPlayerService
         }
 
         Gold -= amount;
+        OnGoldChanged?.Invoke();
         return true;
     }
 
@@ -58,6 +64,7 @@ public class PlayerService : IPlayerService
         }
 
         CurrentHp = Mathf.Max(0, CurrentHp - damage);
+        OnHpChanged?.Invoke();
         OnDamaged?.Invoke();
 
         if (CurrentHp <= 0 && !IsGameOver)
@@ -76,6 +83,7 @@ public class PlayerService : IPlayerService
 
         CurrentHp = 0;
         IsGameOver = true;
+        OnHpChanged?.Invoke();
         OnDamaged?.Invoke();
         OnDied?.Invoke();
     }

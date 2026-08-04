@@ -16,6 +16,8 @@ public sealed class MetaProgressService : IMetaProgressService
     public int Crystals => data.crystals;
     public int BestScore => data.bestScore;
 
+    public event Action OnCrystalsChanged;
+
     public MetaProgressService()
     {
         path = Path.Combine(Application.persistentDataPath, "MetaProgress.json");
@@ -116,6 +118,7 @@ public sealed class MetaProgressService : IMetaProgressService
 
         data.crystals += amount;
         Save();
+        OnCrystalsChanged?.Invoke();
     }
 
     public bool TrySpendCrystals(int amount)
@@ -132,6 +135,7 @@ public sealed class MetaProgressService : IMetaProgressService
 
         data.crystals -= amount;
         Save();
+        OnCrystalsChanged?.Invoke();
         return true;
     }
 
@@ -173,6 +177,7 @@ public sealed class MetaProgressService : IMetaProgressService
         data.crystals -= cost;
         SetWeaponUpgradeLevel(weaponType, level + 1);
         Save();
+        OnCrystalsChanged?.Invoke();
         return true;
     }
 
@@ -181,6 +186,7 @@ public sealed class MetaProgressService : IMetaProgressService
     {
         data.crystals = Mathf.Max(0, value);
         Save();
+        OnCrystalsChanged?.Invoke();
     }
 
     /// <summary>테스트 경제만 초기화. 클리어·베스트·playerId 유지.</summary>
@@ -193,6 +199,7 @@ public sealed class MetaProgressService : IMetaProgressService
         }
 
         Save();
+        OnCrystalsChanged?.Invoke();
     }
 
     private void SetWeaponUpgradeLevel(WeaponType weaponType, int level)

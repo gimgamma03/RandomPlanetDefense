@@ -87,6 +87,20 @@ public class GameBootstrapper : MonoBehaviour
 
         EnsurePureServices();
         EnsurePoolService();
+        EnsurePlaySessionApiClient();
+    }
+
+    private static void EnsurePlaySessionApiClient()
+    {
+        if (PlaySessionApiClient.Instance != null)
+        {
+            return;
+        }
+
+        GameObject go = new GameObject("[PlaySessionApiClient]");
+        DontDestroyOnLoad(go);
+        go.AddComponent<PlaySessionApiClient>();
+        Debug.Log("[GameBootstrapper] PlaySessionApiClient 등록 (POST → RpdSessionApi)");
     }
 
     private void EnsurePoolService()
