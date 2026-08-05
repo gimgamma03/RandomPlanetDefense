@@ -1,0 +1,71 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bbb281ee3bf0b054c82ac2347e9e782c, type: 3}
+  m_Name: TowerBases
+  m_EditorClassIdentifier: Unity.Addressables.Editor::UnityEditor.AddressableAssets.Settings.AddressableAssetGroup
+  m_GroupName: TowerBases
+  m_GUID: 024a679d82fa62243b3e7d3acf19c11a
+  m_SerializeEntries:
+  - m_GUID: 17201d00870e4c9dabd769892fe278b4
+    m_Address: Towers/Bases/CannonBase
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - towers_base
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 1e48b68823154213bc5136fb792e8cdf
+    m_Address: Towers/Bases/LaserBase
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - towers_base
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 339a1327979d4410a150667cd586d6b9
+    m_Address: Towers/Bases/BombBase
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - towers_base
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 80c2775fe27b410792d9355aebdc4173
+    m_Address: Towers/Bases/MultiBombBase
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - towers_base
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 816fcb57eeec47348ec2cec1885aadc0
+    m_Address: Towers/Bases/SlowBase
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - towers_base
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 8c07f379197c4b4381241f23df0d1f67
+    m_Address: Towers/Bases/ChainLightningBase
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - towers_base
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: bdb13194fd30452bab3e2a7d68c982c3
+    m_Address: Towers/Bases/MultiShotBase
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - towers_base
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: bdd85757af9a43f79145821e28438d2c
+    m_Address: Towers/Bases/TowerBase
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - towers_base
+    FlaggedDuringContentUpdateRestriction: 0
+  m_ReadOnly: 0
+  m_Settings: {fileID: 11400000, guid: 32162774c27c9964bb074d7aff466324, type: 2}
+  m_SchemaSet:
+    m_Schemas:
+    - {fileID: 11400000, guid: 4b384f42b7a561d4c9da7f4d941aec15, type: 2}
+    - {fileID: 11400000, guid: 08814641326538247bd5af449435376e, type: 2}

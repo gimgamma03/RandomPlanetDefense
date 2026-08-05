@@ -4,68 +4,152 @@ using UnityEngine;
 
 public class Bomb : MonoBehaviour
 {
-    private float bombTime = 0.5f;
-    private float currentTime;
-    private float damage;
-    bool isExplode = false;
-
+    [SerializeField]
+    private float armTime = 0.22f;
 
     [SerializeField]
     private ParticleSystem explodeParticle;
 
+    [SerializeField]
+    [Min(1)]
+    private int aoeDamagePerFrame = AoEDamageBatch.DefaultPerFrame;
+
+    private readonly List<EnemyHp> aoeTargets = new List<EnemyHp>(32);
+
+    private float currentTime;
+    private float damage;
+    private bool isExplode;
+    private bool hasDamaged;
+    private CircleCollider2D circleCollider;
+    private Coroutine damageRoutine;
+
+    private void Awake()
+    {
+        circleCollider = GetComponent<CircleCollider2D>();
+    }
+
     public void SetUp(float damage)
     {
+        CancelInvoke();
+        StopAllCoroutines();
+        damageRoutine = null;
+
         this.damage = damage;
-    }
-    // Start is called before the first frame update
-    void Start()
-    {
         currentTime = Time.time;
+        isExplode = false;
+        hasDamaged = false;
+        transform.localScale = Vector3.zero;
+        aoeTargets.Clear();
+
+        SpriteRenderer spriteRenderer = GetComponent<SpriteRenderer>();
+        if (spriteRenderer != null)
+        {
+            spriteRenderer.enabled = true;
+        }
+
+        if (explodeParticle != null)
+        {
+            explodeParticle.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+        }
     }
 
-    // Update is called once per frame
-    void Update()
+    private void Update()
     {
-        float u = (Time.time - currentTime) / bombTime;
-
-        transform.localScale = new Vector3(u, u, u) * 1.0f;
-
-        if (u >= 1 && !isExplode)
+        if (isExplode)
         {
-            //ExplodeBomb();
-            isExplode = true;
-            GetComponent<SpriteRenderer>().enabled = false;
-            explodeParticle.Play();
-            Invoke("DestoryThis", 0.5f);
+            return;
         }
+
+        float u = (Time.time - currentTime) / armTime;
+        transform.localScale = Vector3.one * Mathf.Clamp01(u);
+
+        if (u >= 1f)
+        {
+            Explode();
+        }
+    }
+
+    private void Explode()
+    {
+        isExplode = true;
+
+        SpriteRenderer spriteRenderer = GetComponent<SpriteRenderer>();
+        if (spriteRenderer != null)
+        {
+            spriteRenderer.enabled = false;
+        }
+
+        if (explodeParticle != null)
+        {
+            explodeParticle.Play();
+        }
+
+        BeginAoEDamage();
+        StartCoroutine(ReleaseAfterVfx());
+    }
+
+    private void BeginAoEDamage()
+    {
+        if (hasDamaged)
+        {
+            return;
+        }
+
+        hasDamaged = true;
+
+        float radius = 0.5f;
+        if (circleCollider != null)
+        {
+            Vector3 scale = transform.lossyScale;
+            float scaleMax = Mathf.Max(Mathf.Abs(scale.x), Mathf.Abs(scale.y));
+            radius = circleCollider.radius * scaleMax;
+        }
+
+        AoEDamageBatch.CollectEnemyTargets(transform.position, radius, aoeTargets);
+        damageRoutine = StartCoroutine(
+            AoEDamageBatch.ApplyOverFrames(aoeTargets, damage, aoeDamagePerFrame));
+    }
+
+    private IEnumerator ReleaseAfterVfx()
+    {
+        yield return new WaitForSeconds(0.45f);
+        if (damageRoutine != null)
+        {
+            yield return damageRoutine;
+            damageRoutine = null;
+        }
+
+        Release();
     }
 
     private void OnTriggerEnter2D(Collider2D collision)
     {
-        if (!collision.CompareTag("Enemy")) return;
-
-        if (isExplode) 
+        // 폭발 직후 범위 안으로 들어오는 적 — 스냅샷 분산 적용이 시작된 뒤에는 중복 방지
+        if (!isExplode || hasDamaged)
         {
-            collision.GetComponent<EnemyHp>().TakeDamage(damage);
+            return;
+        }
+
+        if (!collision.CompareTag("Enemy"))
+        {
+            return;
+        }
+
+        EnemyHp enemyHp = collision.GetComponent<EnemyHp>();
+        if (enemyHp != null)
+        {
+            enemyHp.TakeDamage(damage);
         }
     }
 
-    private void DestoryThis()
+    private void Release()
     {
-        Destroy(this.gameObject);
+        CancelInvoke();
+        StopAllCoroutines();
+        damageRoutine = null;
+        isExplode = false;
+        hasDamaged = false;
+        aoeTargets.Clear();
+        ProjectileLifecycle.ReturnToPool(gameObject);
     }
-/*    public void ExplodeBomb()
-    {
-        Collider2D[] colliders = Physics2D.OverlapCircleAll(transform.position, 0.5f);
-        foreach (Collider2D col in colliders)
-        {
-            if (col != null && col.CompareTag("Enemy"))
-            {
-                col.GetComponent<EnemyHp>().TakeDamage(damage);
-                bombParticle.Play();
-                yield return new WaitForSeconds(bombTime);
-                Destroy(gameObject);
-            }
-        }
-    }*/
 }

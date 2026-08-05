@@ -1,0 +1,19 @@
+﻿Addressables 파일럿 (타워 Base만) — 걱정 말고 이 순서
+
+0) Unity가 패키지 com.unity.addressables 임포트 끝날 때까지 대기
+1) 메뉴 RPD/Addressables/1. Create Settings (if needed)
+2) 메뉴 RPD/Addressables/2. Register Tower Base Prefabs
+3) Window > Asset Management > Addressables > Groups
+   - Group "TowerBases" 에 CannonBase 등 보이면 OK
+   - Address 예: Towers/Bases/CannonBase
+4) 씬에서 TowerSpawner 선택
+   - Addressables Pilot 섹션의 **Use Addressables For Bases** 체크
+   - Base Prefab Loader 칸은 비워도 됨 (플레이 시 자동 생성)
+5) Play
+   - 콘솔에 Loaded via Addressables: Towers/Bases/... 나오면 성공
+6) 문제 있으면 Use Addressables For Bases 체크 해제 → 예전 직접 참조로 즉시 복귀
+
+아직 안 하는 것
+- TowerData SO Addressables화
+- 원격 카탈로그/CCD
+- 소환마다 Release (파일럿은 Base 캐시 유지)

@@ -1,0 +1,45 @@
+========================================================
+발사체 (ProjectileType + Base Library)
+========================================================
+
+구조
+  Prefabs/Projectiles/Bases/*Base.prefab ← 타입 Base
+    HomingBase (구 TargetProjectile) / StraightBase (구 Projectile)
+    BombShotBase (구 BombProjectile) / GroundBombBase (구 Bomb)
+  Resources/ProjectileBaseLibrary        ← ProjectileType → Base
+  TowerData.projectileType               ← Auto | None | Homing | …
+
+■ 최초 1회
+  메뉴 RPD/Projectiles/1. Create Or Refresh Base Library
+  → 기존 TargetProjectile / Projectile / BombProjectile / Bomb 등록
+
+■ Tower SO에서
+  Projectile Type = Auto  → WeaponType 기본값 사용
+    Cannon → Homing
+    Bomb → BombShot
+    MultiWayShooting → Straight
+    GroundBombLine → GroundBomb
+    Laser/Slow/… → None
+  다른 타입으로 바꾸면 같은 무기라도 다른 탄 사용 가능
+
+■ 새 발사체 계열
+  1) Prefabs/Projectiles/Bases/ 에 새 *Base (가능하면 기존 복제)
+  2) ProjectileType enum 추가
+  3) Library에 type → Base 등록
+  4) (필요 시) Behavior가 해당 Setup API 호출
+
+■ 스폰 흐름
+  BindDefinition → GetEffectiveProjectileType → Library Base
+  → Behavior가 Tower.*Prefab 게터로 풀 스폰
+  Library 없으면 타워 Base에 박힌 레거시 슬롯 폴백
+
+■ 비행 VFX (Homing / Straight)
+  ProjectileVfx — 펄스 + TrailRenderer + 히트 스파크
+  프리팹에 없어도 런타임에 자동 부착 (Impact 없으면 간이 스파크)
+  예쁘게 Impact02 쓰려면: RPD/Projectiles/2. Attach Flight Vfx
+  BombShot / GroundBomb는 기존 폭발 파티클 유지
+
+■ 아직 안 함 (다음)
+  ProjectileData (속도·스프라이트·색·VFX 옵션 SO)
+  Addressables 발사체
+  사운드 / 본체 알파 페이드

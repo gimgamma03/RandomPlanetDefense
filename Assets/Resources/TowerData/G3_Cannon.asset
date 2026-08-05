@@ -1,0 +1,42 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1fc33be49ddaf5d4e90c75ccc924b5ae, type: 3}
+  m_Name: G3_Cannon
+  m_EditorClassIdentifier: 
+  towerId: G3_Cannon
+  displayName: "\uCE90\uB17C\uD0C0\uC6CC"
+  weapon:
+    damage: 11.25
+    rate: 1.2
+    range: 3.5
+    sell: 0
+    doubleShot: 0
+    slowValue: 0
+  weaponUpGradeValue:
+    damage: 2.73
+    rate: 0
+    range: 0
+    slowValue: 0
+  grade: 3
+  weaponType: 0
+  projectileType: 0
+  targetPriority: 0
+  sprite: {fileID: 21300000, guid: 8ff5851d96e353540b1e6d34f6dafe7b, type: 3}
+  spriteColor: {r: 1, g: 1, b: 1, a: 1}
+  spawnWeight: 1
+  multiShotCount: 4
+  multiShotSpreadAngle: 45
+  groundBombCount: 6
+  groundBombLineLength: 5
+  groundBombSpawnInterval: 0
+  laserWidth: 0
+  orbitSatelliteCount: 3

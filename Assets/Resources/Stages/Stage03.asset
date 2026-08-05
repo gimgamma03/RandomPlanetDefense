@@ -1,0 +1,243 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 29eed0c9ae6f48088921aa8e07e9e95c, type: 3}
+  m_Name: Stage03
+  m_EditorClassIdentifier: 
+  stageId: 3
+  displayName: Stage 3
+  clearBonusGold: 0
+  spawnBossOnFinalWave: 1
+  bossEnemyType: 6
+  bossEnemyTier: 1
+  waves:
+  - spawnDelay: 1
+    mainEnemies:
+    - enemyType: 0
+      enemyTier: 3
+      count: 13
+      earlyBias: 50
+    - enemyType: 1
+      enemyTier: 3
+      count: 3
+      earlyBias: 50
+    subEnemies:
+    - enemyType: 2
+      enemyTier: 3
+      count: 2
+      earlyBias: 0
+    - enemyType: 3
+      enemyTier: 3
+      count: 2
+      earlyBias: 0
+  - spawnDelay: 1
+    mainEnemies:
+    - enemyType: 0
+      enemyTier: 3
+      count: 15
+      earlyBias: 50
+    - enemyType: 1
+      enemyTier: 3
+      count: 7
+      earlyBias: 50
+    subEnemies:
+    - enemyType: 2
+      enemyTier: 3
+      count: 2
+      earlyBias: 0
+    - enemyType: 3
+      enemyTier: 3
+      count: 3
+      earlyBias: 0
+  - spawnDelay: 1
+    mainEnemies:
+    - enemyType: 0
+      enemyTier: 3
+      count: 15
+      earlyBias: 50
+    - enemyType: 1
+      enemyTier: 3
+      count: 10
+      earlyBias: 50
+    subEnemies:
+    - enemyType: 2
+      enemyTier: 3
+      count: 2
+      earlyBias: 0
+    - enemyType: 3
+      enemyTier: 3
+      count: 3
+      earlyBias: 0
+    - enemyType: 4
+      enemyTier: 3
+      count: 3
+      earlyBias: 0
+  - spawnDelay: 1
+    mainEnemies:
+    - enemyType: 0
+      enemyTier: 3
+      count: 18
+      earlyBias: 50
+    - enemyType: 1
+      enemyTier: 3
+      count: 13
+      earlyBias: 50
+    subEnemies:
+    - enemyType: 2
+      enemyTier: 3
+      count: 2
+      earlyBias: 0
+    - enemyType: 3
+      enemyTier: 3
+      count: 3
+      earlyBias: 0
+    - enemyType: 4
+      enemyTier: 3
+      count: 3
+      earlyBias: 0
+  - spawnDelay: 1
+    mainEnemies:
+    - enemyType: 0
+      enemyTier: 3
+      count: 18
+      earlyBias: 50
+    - enemyType: 1
+      enemyTier: 3
+      count: 18
+      earlyBias: 50
+    subEnemies:
+    - enemyType: 2
+      enemyTier: 3
+      count: 2
+      earlyBias: 0
+    - enemyType: 3
+      enemyTier: 3
+      count: 3
+      earlyBias: 0
+    - enemyType: 4
+      enemyTier: 3
+      count: 3
+      earlyBias: 0
+  - spawnDelay: 1
+    mainEnemies:
+    - enemyType: 0
+      enemyTier: 3
+      count: 13
+      earlyBias: 50
+    - enemyType: 1
+      enemyTier: 3
+      count: 18
+      earlyBias: 50
+    - enemyType: 4
+      enemyTier: 3
+      count: 7
+      earlyBias: 50
+    subEnemies:
+    - enemyType: 2
+      enemyTier: 3
+      count: 7
+      earlyBias: 0
+    - enemyType: 3
+      enemyTier: 3
+      count: 3
+      earlyBias: 0
+  - spawnDelay: 1
+    mainEnemies:
+    - enemyType: 0
+      enemyTier: 3
+      count: 13
+      earlyBias: 50
+    - enemyType: 1
+      enemyTier: 3
+      count: 18
+      earlyBias: 50
+    - enemyType: 4
+      enemyTier: 3
+      count: 13
+      earlyBias: 50
+    subEnemies:
+    - enemyType: 2
+      enemyTier: 3
+      count: 7
+      earlyBias: 0
+    - enemyType: 3
+      enemyTier: 3
+      count: 3
+      earlyBias: 0
+  - spawnDelay: 1
+    mainEnemies:
+    - enemyType: 0
+      enemyTier: 3
+      count: 13
+      earlyBias: 50
+    - enemyType: 1
+      enemyTier: 3
+      count: 18
+      earlyBias: 50
+    - enemyType: 4
+      enemyTier: 3
+      count: 13
+      earlyBias: 50
+    subEnemies:
+    - enemyType: 2
+      enemyTier: 3
+      count: 10
+      earlyBias: 0
+    - enemyType: 3
+      enemyTier: 3
+      count: 3
+      earlyBias: 0
+  - spawnDelay: 1
+    mainEnemies:
+    - enemyType: 0
+      enemyTier: 3
+      count: 13
+      earlyBias: 50
+    - enemyType: 1
+      enemyTier: 3
+      count: 18
+      earlyBias: 50
+    - enemyType: 4
+      enemyTier: 3
+      count: 7
+      earlyBias: 50
+    subEnemies:
+    - enemyType: 2
+      enemyTier: 3
+      count: 10
+      earlyBias: 0
+    - enemyType: 3
+      enemyTier: 3
+      count: 3
+      earlyBias: 0
+  - spawnDelay: 1
+    mainEnemies:
+    - enemyType: 0
+      enemyTier: 3
+      count: 13
+      earlyBias: 50
+    - enemyType: 1
+      enemyTier: 3
+      count: 18
+      earlyBias: 50
+    - enemyType: 4
+      enemyTier: 3
+      count: 13
+      earlyBias: 50
+    subEnemies:
+    - enemyType: 2
+      enemyTier: 3
+      count: 5
+      earlyBias: 0
+    - enemyType: 3
+      enemyTier: 3
+      count: 5
+      earlyBias: 0
