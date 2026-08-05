@@ -15,7 +15,7 @@ public static class MetaProgressDebugMenu
     [MenuItem("RPD/Debug/Set Crystals To 1,000,000")]
     public static void SetTestCrystals()
     {
-        if (TryApplyInPlayMode(setCrystals: true, resetEconomy: false))
+        if (TryApplyInPlayMode(setCrystals: true, resetEconomy: false, clearStages: false))
         {
             EditorUtility.DisplayDialog(
                 "Meta Debug",
@@ -40,7 +40,7 @@ public static class MetaProgressDebugMenu
     [MenuItem("RPD/Debug/Reset Crystals + Weapon Upgrades Only")]
     public static void ResetEconomyOnly()
     {
-        if (TryApplyInPlayMode(setCrystals: false, resetEconomy: true))
+        if (TryApplyInPlayMode(setCrystals: false, resetEconomy: true, clearStages: false))
         {
             EditorUtility.DisplayDialog(
                 "Meta Debug",
@@ -59,7 +59,32 @@ public static class MetaProgressDebugMenu
             "OK");
     }
 
-    private static bool TryApplyInPlayMode(bool setCrystals, bool resetEconomy)
+    [MenuItem("RPD/Debug/Clear Stage Clears + Best Scores")]
+    public static void ClearStageProgress()
+    {
+        if (TryApplyInPlayMode(setCrystals: false, resetEconomy: false, clearStages: true))
+        {
+            EditorUtility.DisplayDialog(
+                "Meta Debug",
+                "클리어 스테이지·베스트 스코어 초기화.\n" +
+                "스테이지 선택으로 다시 들어가면 2·3이 Locked로 보여야 함.\n" +
+                "크리스탈·강화·playerId는 유지.",
+                "OK");
+            return;
+        }
+
+        MetaProgressData data = LoadOrCreate();
+        data.clearedStageIds = new System.Collections.Generic.List<int>();
+        data.stageBestScores = new System.Collections.Generic.List<StageBestScoreEntry>();
+        data.bestScore = 0;
+        Save(data);
+        EditorUtility.DisplayDialog(
+            "Meta Debug",
+            "JSON에서 클리어·베스트만 초기화 완료.\nPlay 후 스테이지 선택에서 Locked 확인.",
+            "OK");
+    }
+
+    private static bool TryApplyInPlayMode(bool setCrystals, bool resetEconomy, bool clearStages)
     {
         if (!Application.isPlaying)
         {
@@ -86,6 +111,11 @@ public static class MetaProgressDebugMenu
             meta.DebugResetCrystalsAndWeaponUpgrades();
         }
 
+        if (clearStages)
+        {
+            meta.DebugClearStageProgress();
+        }
+
         TitleFlow flow = Object.FindFirstObjectByType<TitleFlow>(FindObjectsInactive.Include);
         flow?.RefreshCrystalHud();
 
@@ -94,6 +124,13 @@ public static class MetaProgressDebugMenu
         if (panel != null && panel.gameObject.activeInHierarchy)
         {
             panel.Refresh();
+        }
+
+        StageSelectPanel stagePanel =
+            Object.FindFirstObjectByType<StageSelectPanel>(FindObjectsInactive.Include);
+        if (stagePanel != null && stagePanel.gameObject.activeInHierarchy)
+        {
+            stagePanel.Refresh();
         }
 
         return true;

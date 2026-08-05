@@ -14,6 +14,9 @@ public class StageData : ScriptableObject
     [Tooltip("스테이지 선택 UI용")]
     public string displayName = "Stage 1";
 
+    [Tooltip("켜면 Unity 에디터 플레이에서만 선택 목록에 표시. 빌드(WebGL/itch 등)에서는 숨김")]
+    public bool editorOnly;
+
     [Tooltip("전 웨이브 클리어 시 인게임 보너스 골드 (아웃게임 보상과 별개)")]
     public int clearBonusGold;
 
@@ -31,6 +34,24 @@ public class StageData : ScriptableObject
 
     public string DisplayName =>
         string.IsNullOrEmpty(displayName) ? $"Stage {stageId}" : displayName;
+
+    /// <summary>선택 UI에 넣을지. editorOnly는 에디터에서만 true.</summary>
+    public bool IsSelectableInCurrentBuild
+    {
+        get
+        {
+            if (!editorOnly)
+            {
+                return true;
+            }
+
+#if UNITY_EDITOR
+            return true;
+#else
+            return false;
+#endif
+        }
+    }
 
     [System.Serializable]
     public struct Wave

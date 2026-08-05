@@ -79,93 +79,17 @@ public sealed class StageSelectPanel : MonoBehaviour
 
         if (contentRoot == null)
         {
-            BuildScrollContentRuntime();
-        }
-        else if (contentRoot.parent == transform)
-        {
-            PromoteContentIntoScroll();
+            Debug.LogError(
+                "[StageSelectPanel] ContentStages / ScrollStages 없음. " +
+                "Title 씬에서 ScrollStages를 배치하세요.");
+            return;
         }
 
         EnsureContentLayoutComponents();
+        WireScrollRectIfNeeded();
     }
 
-    private void PromoteContentIntoScroll()
-    {
-        if (contentRoot == null || contentRoot.parent != transform)
-        {
-            return;
-        }
-
-        if (transform.Find("ScrollStages") != null)
-        {
-            return;
-        }
-
-        Transform oldContent = contentRoot;
-        BuildScrollContentRuntime();
-        if (contentRoot == null || contentRoot == oldContent)
-        {
-            return;
-        }
-
-        // 새 ContentStages로 컴포넌트/참조 유지 — 옛 오브젝트 제거
-        Destroy(oldContent.gameObject);
-    }
-
-    private void BuildScrollContentRuntime()
-    {
-        RectTransform panelRt = transform as RectTransform;
-
-        GameObject scrollGo = new GameObject("ScrollStages", typeof(RectTransform), typeof(Image), typeof(ScrollRect));
-        scrollGo.transform.SetParent(transform, false);
-        RectTransform scrollRt = scrollGo.GetComponent<RectTransform>();
-        scrollRt.anchorMin = Vector2.zero;
-        scrollRt.anchorMax = Vector2.one;
-        scrollRt.offsetMin = new Vector2(48f, 110f);
-        scrollRt.offsetMax = new Vector2(-48f, -120f);
-        Image scrollBg = scrollGo.GetComponent<Image>();
-        scrollBg.color = new Color(0f, 0f, 0f, 0.2f);
-        scrollBg.raycastTarget = true;
-
-        GameObject viewport = new GameObject("Viewport", typeof(RectTransform), typeof(Image), typeof(Mask));
-        viewport.transform.SetParent(scrollGo.transform, false);
-        RectTransform vpRt = viewport.GetComponent<RectTransform>();
-        vpRt.anchorMin = Vector2.zero;
-        vpRt.anchorMax = Vector2.one;
-        vpRt.offsetMin = Vector2.zero;
-        vpRt.offsetMax = Vector2.zero;
-        Image vpImage = viewport.GetComponent<Image>();
-        vpImage.color = new Color(1f, 1f, 1f, 0.01f);
-        viewport.GetComponent<Mask>().showMaskGraphic = false;
-
-        GameObject content = new GameObject(
-            "ContentStages",
-            typeof(RectTransform),
-            typeof(VerticalLayoutGroup),
-            typeof(ContentSizeFitter));
-        content.transform.SetParent(viewport.transform, false);
-        contentRoot = content.transform;
-
-        ScrollRect scroll = scrollGo.GetComponent<ScrollRect>();
-        scroll.content = content.GetComponent<RectTransform>();
-        scroll.viewport = vpRt;
-        scroll.horizontal = false;
-        scroll.vertical = true;
-        scroll.movementType = ScrollRect.MovementType.Clamped;
-
-        // Back 버튼은 맨 앞(아래)에 두기 위해 스크롤을 title 뒤로
-        Transform title = transform.Find("TextStageSelectTitle");
-        if (title != null)
-        {
-            scrollGo.transform.SetSiblingIndex(title.GetSiblingIndex() + 1);
-        }
-
-        if (panelRt != null)
-        {
-            // keep offsets relative to panel size
-        }
-    }
-
+    /// <summary>씬에 둔 ScrollStages 크기를 덮어쓰지 않음. 누락 컴포넌트만 보강.</summary>
     private void EnsureContentLayoutComponents()
     {
         if (contentRoot == null)
@@ -173,55 +97,53 @@ public sealed class StageSelectPanel : MonoBehaviour
             return;
         }
 
+        if (contentRoot.GetComponent<VerticalLayoutGroup>() == null)
+        {
+            VerticalLayoutGroup layout = contentRoot.gameObject.AddComponent<VerticalLayoutGroup>();
+            layout.childAlignment = TextAnchor.UpperCenter;
+            layout.spacing = 16f;
+            layout.padding = new RectOffset(24, 24, 12, 12);
+            layout.childControlHeight = true;
+            layout.childControlWidth = true;
+            layout.childForceExpandHeight = false;
+            layout.childForceExpandWidth = true;
+        }
+
+        if (contentRoot.GetComponent<ContentSizeFitter>() == null)
+        {
+            ContentSizeFitter fitter = contentRoot.gameObject.AddComponent<ContentSizeFitter>();
+            fitter.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
+            fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+        }
+    }
+
+    private void WireScrollRectIfNeeded()
+    {
+        Transform scrollTransform = transform.Find("ScrollStages");
+        if (scrollTransform == null)
+        {
+            return;
+        }
+
+        ScrollRect scroll = scrollTransform.GetComponent<ScrollRect>();
+        if (scroll == null)
+        {
+            return;
+        }
+
         RectTransform contentRt = contentRoot as RectTransform;
-        VerticalLayoutGroup layout = contentRoot.GetComponent<VerticalLayoutGroup>();
-        if (layout == null)
+        if (scroll.content == null && contentRt != null)
         {
-            layout = contentRoot.gameObject.AddComponent<VerticalLayoutGroup>();
+            scroll.content = contentRt;
         }
 
-        layout.childAlignment = TextAnchor.UpperCenter;
-        layout.spacing = 16f;
-        layout.padding = new RectOffset(24, 24, 12, 12);
-        layout.childControlHeight = true;
-        layout.childControlWidth = true;
-        layout.childForceExpandHeight = false;
-        layout.childForceExpandWidth = true;
-
-        ContentSizeFitter fitter = contentRoot.GetComponent<ContentSizeFitter>();
-        if (fitter == null)
+        if (scroll.viewport == null)
         {
-            fitter = contentRoot.gameObject.AddComponent<ContentSizeFitter>();
-        }
-
-        fitter.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
-        fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
-
-        // 구형 ContentStages(높이 40 고정)면 스크롤 영역으로 재배치
-        if (contentRoot.parent == transform)
-        {
-            contentRt.anchorMin = new Vector2(0.5f, 0.5f);
-            contentRt.anchorMax = new Vector2(0.5f, 0.5f);
-            contentRt.pivot = new Vector2(0.5f, 1f);
-
-            RectTransform panelRt = transform as RectTransform;
-            float width = 640f;
-            if (panelRt != null)
+            Transform viewport = scrollTransform.Find("Viewport");
+            if (viewport != null)
             {
-                width = Mathf.Clamp(panelRt.rect.width - 120f, 480f, 1100f);
+                scroll.viewport = viewport as RectTransform;
             }
-
-            contentRt.sizeDelta = new Vector2(width, 0f);
-            contentRt.anchoredPosition = new Vector2(0f, 180f);
-        }
-        else
-        {
-            // Scroll viewport 안: 상단 스트레치
-            contentRt.anchorMin = new Vector2(0f, 1f);
-            contentRt.anchorMax = new Vector2(1f, 1f);
-            contentRt.pivot = new Vector2(0.5f, 1f);
-            contentRt.anchoredPosition = Vector2.zero;
-            contentRt.sizeDelta = new Vector2(0f, 0f);
         }
     }
 
@@ -248,7 +170,7 @@ public sealed class StageSelectPanel : MonoBehaviour
         for (int i = 0; i < catalog.All.Count; i++)
         {
             StageData stage = catalog.All[i];
-            if (stage == null)
+            if (stage == null || !stage.IsSelectableInCurrentBuild)
             {
                 continue;
             }
@@ -302,7 +224,12 @@ public sealed class StageSelectPanel : MonoBehaviour
 
         TextMeshProUGUI label = button.GetComponentInChildren<TextMeshProUGUI>(true);
         string display = stage.DisplayName;
-        if (ServiceLocator.TryGet(out IMetaProgressService meta))
+        bool locked = IsStageLocked(stage);
+        if (locked)
+        {
+            display += " [Locked]";
+        }
+        else if (ServiceLocator.TryGet(out IMetaProgressService meta))
         {
             if (meta.IsStageCleared(stage.stageId))
             {
@@ -338,6 +265,44 @@ public sealed class StageSelectPanel : MonoBehaviour
         int stageId = stage.stageId;
         button.onClick.RemoveAllListeners();
         button.onClick.AddListener(() => OnStageClicked(stageId));
+
+        if (locked)
+        {
+            button.interactable = false;
+
+            Image lockedImage = button.targetGraphic as Image;
+            if (lockedImage != null)
+            {
+                Color dim = lockedImage.color;
+                dim.r *= 0.45f;
+                dim.g *= 0.45f;
+                dim.b *= 0.45f;
+                lockedImage.color = dim;
+            }
+
+            if (label != null)
+            {
+                Color labelDim = label.color;
+                labelDim.a *= 0.6f;
+                label.color = labelDim;
+            }
+        }
+    }
+
+    /// <summary>Stage 1 클리어 전에는 나머지 스테이지 잠금. 테스트(editorOnly) 스테이지는 제외.</summary>
+    private bool IsStageLocked(StageData stage)
+    {
+        if (stage.stageId <= 1 || stage.editorOnly)
+        {
+            return false;
+        }
+
+        if (!ServiceLocator.TryGet(out IMetaProgressService meta))
+        {
+            return false;
+        }
+
+        return !meta.IsStageCleared(1);
     }
 
     private void ApplyButtonSkin(Button button)

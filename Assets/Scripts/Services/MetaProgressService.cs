@@ -202,6 +202,23 @@ public sealed class MetaProgressService : IMetaProgressService
         OnCrystalsChanged?.Invoke();
     }
 
+    /// <summary>테스트용. 클리어 스테이지·스테이지별 베스트만 초기화. playerId·크리스탈·강화 유지.</summary>
+    public void DebugClearStageProgress()
+    {
+        if (data.clearedStageIds != null)
+        {
+            data.clearedStageIds.Clear();
+        }
+
+        if (data.stageBestScores != null)
+        {
+            data.stageBestScores.Clear();
+        }
+
+        data.bestScore = 0;
+        Save();
+    }
+
     private void SetWeaponUpgradeLevel(WeaponType weaponType, int level)
     {
         EnsureUpgradeList();

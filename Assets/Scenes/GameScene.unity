@@ -2262,10 +2262,10 @@ MonoBehaviour:
   towerSpawner: {fileID: 1412046312}
   mapDirector: {fileID: 0}
   randomTowerSpawnerImage: {fileID: 1956315528}
-  buttonSpawnTower: {fileID: 0}
-  buttonCombineTower: {fileID: 0}
-  buttonSellTower: {fileID: 0}
-  buttonPlaceWall: {fileID: 0}
+  buttonSpawnTower: {fileID: 726290939}
+  buttonCombineTower: {fileID: 868253407}
+  buttonSellTower: {fileID: 1466401804}
+  buttonPlaceWall: {fileID: 559421785}
 --- !u!1 &723492870
 GameObject:
   m_ObjectHideFlags: 0
@@ -3868,7 +3868,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: 0000 Wave
+  m_text: 'Wave : 1/10'
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 87e54e9de79313a47912dd45518a0ead, type: 2}
   m_sharedMaterial: {fileID: -3183035972966618509, guid: 87e54e9de79313a47912dd45518a0ead, type: 2}
@@ -4960,6 +4960,7 @@ MonoBehaviour:
   balanceSourceBehaviour: {fileID: 0}
   applyBalanceCsv: 0
   useAddressablesForBases: 1
+  preloadAddressableBasesOnStart: 1
   basePrefabLoader: {fileID: 0}
 --- !u!1 &1425653930
 GameObject:

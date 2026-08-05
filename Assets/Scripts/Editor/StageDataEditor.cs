@@ -11,6 +11,7 @@ public sealed class StageDataEditor : Editor
 {
     private SerializedProperty stageId;
     private SerializedProperty displayName;
+    private SerializedProperty editorOnly;
     private SerializedProperty clearBonusGold;
     private SerializedProperty waves;
 
@@ -22,6 +23,7 @@ public sealed class StageDataEditor : Editor
     {
         stageId = serializedObject.FindProperty("stageId");
         displayName = serializedObject.FindProperty("displayName");
+        editorOnly = serializedObject.FindProperty("editorOnly");
         clearBonusGold = serializedObject.FindProperty("clearBonusGold");
         waves = serializedObject.FindProperty("waves");
 
@@ -36,6 +38,7 @@ public sealed class StageDataEditor : Editor
         EditorGUILayout.LabelField("Stage", EditorStyles.boldLabel);
         EditorGUILayout.PropertyField(stageId);
         EditorGUILayout.PropertyField(displayName);
+        EditorGUILayout.PropertyField(editorOnly);
         EditorGUILayout.PropertyField(clearBonusGold);
 
         EditorGUILayout.Space(8f);

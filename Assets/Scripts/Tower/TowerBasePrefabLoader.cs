@@ -38,6 +38,11 @@ public class TowerBasePrefabLoader : MonoBehaviour
         useAddressables = enabled;
     }
 
+    public void SetPreloadAllBasesOnStart(bool enabled)
+    {
+        preloadAllBasesOnStart = enabled;
+    }
+
     private void Awake()
     {
         if (library == null)
@@ -48,6 +53,7 @@ public class TowerBasePrefabLoader : MonoBehaviour
 
     private void Start()
     {
+        // TowerSpawner.EnsureBaseLoader가 Awake에서 플래그를 세팅한 뒤 이 Start가 돈다.
         if (preloadAllBasesOnStart && useAddressables)
         {
             StartCoroutine(PreloadAllBases());

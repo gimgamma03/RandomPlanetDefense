@@ -21,6 +21,10 @@ public class TowerSpawner : MonoBehaviour
     [SerializeField]
     private bool useAddressablesForBases;
 
+    [Tooltip("Addressables ON일 때 시작 직후 계열 Base를 미리 로드 (첫 소환 히치 방지)")]
+    [SerializeField]
+    private bool preloadAddressableBasesOnStart = true;
+
     [Tooltip("비우면 같은 오브젝트에 TowerBasePrefabLoader를 자동 추가")]
     [SerializeField]
     private TowerBasePrefabLoader basePrefabLoader;
@@ -93,6 +97,8 @@ public class TowerSpawner : MonoBehaviour
         }
 
         basePrefabLoader.SetUseAddressables(useAddressablesForBases);
+        basePrefabLoader.SetPreloadAllBasesOnStart(
+            useAddressablesForBases && preloadAddressableBasesOnStart);
         basePrefabLoader.EnsureLibrary();
     }
 

@@ -101,13 +101,65 @@ public static class TitleFlowSetup
         titleTmp.color = Color.white;
         ApplyOrbitFont(titleTmp, orbitFont);
 
-        GameObject content = FindOrCreateChild(panelStage.transform, "ContentStages", stretch: false);
+        // ScrollStages: 씬에서 Left/Right/Top/Bottom(Size Delta)으로 영역 조절
+        GameObject scrollGo = FindOrCreateChild(panelStage.transform, "ScrollStages", stretch: false);
+        RectTransform scrollRectTransform = scrollGo.GetComponent<RectTransform>();
+        scrollRectTransform.anchorMin = Vector2.zero;
+        scrollRectTransform.anchorMax = Vector2.one;
+        scrollRectTransform.anchoredPosition = new Vector2(0f, -10f);
+        scrollRectTransform.sizeDelta = new Vector2(-96f, -230f);
+
+        ScrollRect scroll = scrollGo.GetComponent<ScrollRect>();
+        if (scroll == null)
+        {
+            scroll = scrollGo.AddComponent<ScrollRect>();
+        }
+
+        Image scrollBg = scrollGo.GetComponent<Image>();
+        if (scrollBg == null)
+        {
+            scrollBg = scrollGo.AddComponent<Image>();
+        }
+
+        scrollBg.color = new Color(0f, 0f, 0f, 0.2f);
+        scrollBg.raycastTarget = true;
+
+        GameObject viewport = FindOrCreateChild(scrollGo.transform, "Viewport", stretch: true);
+        Image viewportImage = viewport.GetComponent<Image>();
+        if (viewportImage == null)
+        {
+            viewportImage = viewport.AddComponent<Image>();
+        }
+
+        viewportImage.color = new Color(1f, 1f, 1f, 0.01f);
+        viewportImage.raycastTarget = true;
+        Mask viewportMask = viewport.GetComponent<Mask>();
+        if (viewportMask == null)
+        {
+            viewportMask = viewport.AddComponent<Mask>();
+        }
+
+        viewportMask.showMaskGraphic = false;
+
+        // 예전 패널 직속 ContentStages가 있으면 Viewport 아래로 옮김
+        Transform legacyContent = panelStage.transform.Find("ContentStages");
+        GameObject content;
+        if (legacyContent != null && legacyContent.parent == panelStage.transform)
+        {
+            legacyContent.SetParent(viewport.transform, false);
+            content = legacyContent.gameObject;
+        }
+        else
+        {
+            content = FindOrCreateChild(viewport.transform, "ContentStages", stretch: false);
+        }
+
         RectTransform contentRect = content.GetComponent<RectTransform>();
-        contentRect.anchorMin = new Vector2(0.5f, 0.5f);
-        contentRect.anchorMax = new Vector2(0.5f, 0.5f);
-        contentRect.pivot = new Vector2(0.5f, 0.5f);
-        contentRect.anchoredPosition = new Vector2(0f, 20f);
-        contentRect.sizeDelta = new Vector2(400f, 280f);
+        contentRect.anchorMin = new Vector2(0f, 1f);
+        contentRect.anchorMax = new Vector2(1f, 1f);
+        contentRect.pivot = new Vector2(0.5f, 1f);
+        contentRect.anchoredPosition = Vector2.zero;
+        contentRect.sizeDelta = new Vector2(0f, 0f);
 
         VerticalLayoutGroup layout = content.GetComponent<VerticalLayoutGroup>();
         if (layout == null)
@@ -129,7 +181,15 @@ public static class TitleFlowSetup
             fitter = content.AddComponent<ContentSizeFitter>();
         }
 
+        fitter.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
         fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+        scroll.content = contentRect;
+        scroll.viewport = viewport.GetComponent<RectTransform>();
+        scroll.horizontal = false;
+        scroll.vertical = true;
+        scroll.movementType = ScrollRect.MovementType.Clamped;
+        scroll.scrollSensitivity = 30f;
 
         GameObject backObject = FindOrCreateChild(panelStage.transform, "ButtonBack", stretch: false);
         RectTransform backRect = backObject.GetComponent<RectTransform>();

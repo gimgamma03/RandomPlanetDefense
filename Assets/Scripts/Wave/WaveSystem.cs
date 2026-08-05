@@ -122,7 +122,8 @@ public class WaveSystem : MonoBehaviour
             textBestScore.text = "Best Score : " + metaProgress.BestScore;
         }
 
-        textWaveCount.text = "Wave : " + 1;
+        EnsureStageLoaded();
+        RefreshWaveCountText(1);
         BeginSessionStats();
         waveStartView.SetBusy(false);
 
@@ -181,7 +182,7 @@ public class WaveSystem : MonoBehaviour
         currentWaveIndex = 0;
         runPhase = RunPhase.Playing;
         EnsureStageLoaded();
-        textWaveCount.text = "Wave : " + 1;
+        RefreshWaveCountText(1);
         PreviewUpcomingWaveUi();
     }
 
@@ -203,6 +204,24 @@ public class WaveSystem : MonoBehaviour
         if (stageData == null)
         {
             Debug.LogError($"[WaveSystem] StageId {stageId} 로드 실패.");
+        }
+    }
+
+    private void RefreshWaveCountText(int waveNumber)
+    {
+        if (textWaveCount == null)
+        {
+            return;
+        }
+
+        int max = MaxWave;
+        if (max > 0)
+        {
+            textWaveCount.text = $"Wave : {waveNumber}/{max}";
+        }
+        else
+        {
+            textWaveCount.text = $"Wave : {waveNumber}";
         }
     }
 
@@ -237,7 +256,7 @@ public class WaveSystem : MonoBehaviour
         sessionStats?.RecordWaveStarted(currentWave);
         waveDataUI?.SetWave(currentWave);
         enemySpawner.StartWave(stageData.waves[currentWaveIndex], bossStage);
-        textWaveCount.text = "Wave : " + currentWave;
+        RefreshWaveCountText(currentWave);
     }
 
     private static void CancelWallBuildModeIfActive()

@@ -84,6 +84,9 @@ public class TowerWeapon : MonoBehaviour
     public int level = 1;
     public int upGradeGold;
 
+    /// <summary>골드 업그레이드 횟수. level은 옛 프리팹에 0으로 저장돼 있어 별도 카운터를 쓴다.</summary>
+    private int goldUpgradeCount;
+
     /// <summary>판매 환불에 쓰는 누적 업그레이드 골드</summary>
     public int useGoldToUpGrade;
 
@@ -633,6 +636,8 @@ public class TowerWeapon : MonoBehaviour
         towerGrade = data.grade;
         weaponType = data.weaponType;
         statsReady = false;
+        level = 1;
+        goldUpgradeCount = 0;
         EnsureStatsFromData();
         ApplyVisualFromData();
         ResolveProjectilePrefabs();
@@ -655,7 +660,7 @@ public class TowerWeapon : MonoBehaviour
     }
 
     /// <summary>골드 업그레이드 완료 횟수 (0 ~ MaxGoldUpgrades).</summary>
-    public int GoldUpgradeCount => Mathf.Max(0, level - 1);
+    public int GoldUpgradeCount => goldUpgradeCount;
 
     public bool CanGoldUpgrade => GoldUpgradeCount < Constants.MaxGoldUpgrades;
 
@@ -678,6 +683,7 @@ public class TowerWeapon : MonoBehaviour
         }
 
         level++;
+        goldUpgradeCount++;
         behavior?.OnUpgraded();
         return true;
     }

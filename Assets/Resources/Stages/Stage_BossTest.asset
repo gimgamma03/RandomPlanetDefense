@@ -14,6 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   stageId: 90
   displayName: '[Test] Boss'
+  editorOnly: 1
   clearBonusGold: 100
   spawnBossOnFinalWave: 1
   bossEnemyType: 6
