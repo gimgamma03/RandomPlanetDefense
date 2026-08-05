@@ -10797,7 +10797,7 @@ MonoBehaviour:
     label: "2) \uAC19\uC740 \uD0C0\uC6CC 3\uAC1C \uD569\uCE58\uAE30"
     labelOffset: {x: 0, y: 0}
   - target: {fileID: 559421784}
-    label: "3) \uBCBD\uC73C\uB85C \uC801 \uACBD\uB85C \uB3CC\uB9AC\uAE30"
+    label: "3) \uBCBD\uC73C\uB85C \uC801 \uACBD\uB85C \uC124\uC815"
     labelOffset: {x: 0, y: 0}
   - target: {fileID: 760141477}
     label: "4) \uC900\uBE44\uB418\uBA74 \uC6E8\uC774\uBE0C \uC2DC\uC791"

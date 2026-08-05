@@ -22,7 +22,7 @@ public static class StartHintOverlaySetup
     {
         ("ButtonSpawnTower", "1) 타워 뽑기 (3골드)"),
         ("ButtonCombineTower", "2) 같은 타워 3개 합치기"),
-        ("ButtonPlaceWall", "3) 벽으로 적 경로 돌리기"),
+        ("ButtonPlaceWall", "3) 벽으로 적 경로 설정"),
         ("WaveStart", "4) 준비되면 웨이브 시작"),
         ("ButtonSellTower", "타워 되팔기"),
     };
