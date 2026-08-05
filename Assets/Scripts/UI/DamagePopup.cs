@@ -44,7 +44,7 @@ public sealed class DamagePopup : MonoBehaviour
 
         text.alignment = TextAlignmentOptions.Center;
         text.fontSize = 3.2f;
-        text.enableWordWrapping = false;
+        text.textWrappingMode = TextWrappingModes.NoWrap;
         text.raycastTarget = false;
         text.sortingOrder = 220;
         if (font != null)

@@ -28,7 +28,7 @@ public static class DamagePopupSetup
         TextMeshPro tmp = root.AddComponent<TextMeshPro>();
         tmp.alignment = TextAlignmentOptions.Center;
         tmp.fontSize = 3.2f;
-        tmp.enableWordWrapping = false;
+        tmp.textWrappingMode = TextWrappingModes.NoWrap;
         tmp.raycastTarget = false;
         tmp.sortingOrder = 220;
         tmp.text = "0";

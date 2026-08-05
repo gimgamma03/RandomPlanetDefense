@@ -225,7 +225,7 @@ public class EnemyHpViewer : MonoBehaviour
         bossLabel.alignment = TextAlignmentOptions.Center;
         bossLabel.color = BossLabelColor;
         bossLabel.raycastTarget = false;
-        bossLabel.enableWordWrapping = false;
+        bossLabel.textWrappingMode = TextWrappingModes.NoWrap;
         bossLabel.overflowMode = TextOverflowModes.Overflow;
 
         TMP_FontAsset font = ResolveOrbitFont();

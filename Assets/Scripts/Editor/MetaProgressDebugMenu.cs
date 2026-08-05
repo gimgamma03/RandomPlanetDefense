@@ -12,6 +12,17 @@ public static class MetaProgressDebugMenu
 {
     private const int TestCrystalAmount = 1_000_000;
 
+    [MenuItem("RPD/Debug/Reset Start Hint First-View Flag")]
+    public static void ResetStartHint()
+    {
+        PlayerPrefs.DeleteKey(StartHintOverlay.DefaultSeenKey);
+        PlayerPrefs.Save();
+        EditorUtility.DisplayDialog(
+            "Start Hint Debug",
+            "최초 조작 안내 기록을 초기화했습니다.\n다음 GameScene 진입 시 자동으로 표시됩니다.",
+            "OK");
+    }
+
     [MenuItem("RPD/Debug/Set Crystals To 1,000,000")]
     public static void SetTestCrystals()
     {
