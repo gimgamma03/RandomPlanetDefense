@@ -64,8 +64,23 @@ public sealed class TitleFlow : MonoBehaviour
         Wire(startButton, OnClickStart);
         Wire(upgradeButton, OnClickUpgrade);
         Wire(exitButton, OnClickExit);
+        HideExitButtonOnWebGL();
         ShowTitle();
         RefreshCrystalHud();
+    }
+
+    /// <summary>WebGL에서는 Application.Quit이 동작하지 않아 Exit 버튼을 숨긴다.</summary>
+    private void HideExitButtonOnWebGL()
+    {
+        if (exitButton == null)
+        {
+            return;
+        }
+
+        if (Application.platform == RuntimePlatform.WebGLPlayer)
+        {
+            exitButton.gameObject.SetActive(false);
+        }
     }
 
     private void ResolveButtons()
