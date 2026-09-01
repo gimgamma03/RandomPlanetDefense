@@ -100,6 +100,22 @@ public class GridHoverOverlay : MonoBehaviour
         }
     }
 
+    private static bool IsPointerActive()
+    {
+        if (Application.isEditor)
+        {
+            return true;
+        }
+
+        if (Input.touchCount <= 0)
+        {
+            return false;
+        }
+
+        TouchPhase phase = Input.GetTouch(0).phase;
+        return phase != TouchPhase.Ended && phase != TouchPhase.Canceled;
+    }
+
     private void LateUpdate()
     {
         if (walkableMap == null)
@@ -118,7 +134,7 @@ public class GridHoverOverlay : MonoBehaviour
             return;
         }
 
-        if (!Application.isEditor && Input.touchCount == 0)
+        if (!IsPointerActive())
         {
             SetVisible(false);
             return;

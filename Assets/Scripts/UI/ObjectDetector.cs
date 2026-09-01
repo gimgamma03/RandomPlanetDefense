@@ -88,6 +88,7 @@ public class ObjectDetector : MonoBehaviour
             Transform tower = FindTowerAt(rayPoint);
             if (tower == null)
             {
+                HideAttackRange();
                 return;
             }
 
@@ -120,7 +121,7 @@ public class ObjectDetector : MonoBehaviour
 
         if (towerDataViewer != null)
         {
-            towerDataViewer.OffPanel();
+            towerDataViewer.HideRangeVisuals();
         }
     }
 

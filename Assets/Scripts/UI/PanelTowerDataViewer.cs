@@ -65,6 +65,11 @@ public class PanelTowerDataViewer : MonoBehaviour
         ShowSlowRangeIfNeeded();
     }
 
+    public void HideRangeVisuals()
+    {
+        HideSlowRangeVisual();
+    }
+
     public void OffPanel()
     {
         HideSlowRangeVisual();
