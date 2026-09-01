@@ -1,5 +1,4 @@
 using UnityEngine;
-using UnityEngine.EventSystems;
 using UnityEngine.Tilemaps;
 
 /// <summary>
@@ -119,13 +118,19 @@ public class GridHoverOverlay : MonoBehaviour
             return;
         }
 
-        if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject())
+        if (!Application.isEditor && Input.touchCount == 0)
         {
             SetVisible(false);
             return;
         }
 
-        Vector3 mouseWorld = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+        if (PointerInput.IsOverUI())
+        {
+            SetVisible(false);
+            return;
+        }
+
+        Vector3 mouseWorld = Camera.main.ScreenToWorldPoint(PointerInput.ScreenPosition());
         mouseWorld.z = 0f;
         Vector3Int cell = walkableMap.WorldToCell(mouseWorld);
         ResolveBuildModeState();

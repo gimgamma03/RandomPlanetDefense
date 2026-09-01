@@ -1,7 +1,6 @@
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
 using System;
 using UnityEngine;
-using UnityEngine.EventSystems;
 
 /// <summary>
 /// 개발용 지정 타워 스폰 패널.
@@ -55,7 +54,7 @@ public sealed class TowerDebugSpawner : MonoBehaviour
             return;
         }
 
-        if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject())
+        if (PointerInput.IsOverUI())
         {
             return;
         }
@@ -66,7 +65,7 @@ public sealed class TowerDebugSpawner : MonoBehaviour
             return;
         }
 
-        Vector2 worldPosition = camera.ScreenToWorldPoint(Input.mousePosition);
+        Vector2 worldPosition = camera.ScreenToWorldPoint(PointerInput.ScreenPosition());
         int layerMask = ~(1 << LayerMask.NameToLayer("NonRayLayer"));
         RaycastHit2D hit = Physics2D.Raycast(worldPosition, Vector2.zero, Mathf.Infinity, layerMask);
         if (hit.transform == null || !hit.transform.CompareTag("WallMap"))

@@ -113,7 +113,7 @@ public sealed class StartHintOverlay : MonoBehaviour
             return;
         }
 
-        if (Input.anyKeyDown)
+        if (Input.anyKeyDown || PointerInput.WasPrimaryPressThisFrame())
         {
             Hide();
         }

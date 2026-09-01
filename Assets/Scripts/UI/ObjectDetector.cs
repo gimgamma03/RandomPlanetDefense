@@ -1,8 +1,7 @@
 ﻿using UnityEngine;
-using UnityEngine.EventSystems;
 
 /// <summary>
-/// 빌드 모드가 아닐 때만 타워 클릭 → 정보 패널.
+/// 타워 클릭 → 정보 패널. 합치기/판매 모드 중에는 열지 않는다.
 /// 좌클릭 확정(설치/머지/판매/벽)은 BuildModeController가 담당.
 /// </summary>
 public class ObjectDetector : MonoBehaviour
@@ -57,51 +56,54 @@ public class ObjectDetector : MonoBehaviour
 
     private void Update()
     {
-        if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject())
+        if (PointerInput.IsOverUI())
         {
             return;
         }
 
-        // 빌드 모드 중에는 타워 정보/사거리 클릭 무시
+        // 합치기/판매 모드만 타워 정보 클릭을 막는다. 소환·벽 모드에서 타워를 누르면 정보를 연다.
         ResolveBuildModeState();
-        if (buildModeState != null && buildModeState.HasActiveMode)
+        if (buildModeState != null)
         {
-            if (Input.GetMouseButtonDown(1))
+            BuildMode mode = buildModeState.CurrentMode;
+            if (mode == BuildMode.Combine || mode == BuildMode.Sell)
             {
-                HideAttackRange();
-            }
+                if (Input.GetMouseButtonDown(1))
+                {
+                    HideAttackRange();
+                }
 
-            return;
+                return;
+            }
         }
 
-        if (Input.GetMouseButtonDown(0))
+        if (PointerInput.WasPrimaryPressThisFrame())
         {
             if (mainCamera == null)
             {
                 mainCamera = Camera.main;
             }
 
-            Vector2 rayPoint = mainCamera.ScreenToWorldPoint(Input.mousePosition);
-            RaycastHit2D hit = Physics2D.Raycast(rayPoint, Vector2.zero);
-            if (hit.transform == null)
+            Vector2 rayPoint = mainCamera.ScreenToWorldPoint(PointerInput.ScreenPosition());
+            Transform tower = FindTowerAt(rayPoint);
+            if (tower == null)
             {
                 return;
             }
 
-            if (!hit.transform.CompareTag("Tower"))
+            TowerWeapon towerWeapon = tower.GetComponent<TowerWeapon>();
+            if (towerWeapon == null || towerDataViewer == null)
             {
                 return;
             }
 
-            TowerWeapon towerWeapon = hit.transform.GetComponent<TowerWeapon>();
-            if (towerWeapon == null || towerAttackRange == null || towerDataViewer == null)
+            if (towerAttackRange != null)
             {
-                return;
+                towerAttackRange.gameObject.SetActive(true);
+                towerAttackRange.OnAttackRange(tower.position, towerWeapon.range);
             }
 
-            towerAttackRange.gameObject.SetActive(true);
-            towerAttackRange.OnAttackRange(hit.transform.position, towerWeapon.range);
-            towerDataViewer.OnPanel(hit.transform);
+            towerDataViewer.OnPanel(tower);
         }
         else if (Input.GetMouseButtonDown(1))
         {
@@ -120,5 +122,19 @@ public class ObjectDetector : MonoBehaviour
         {
             towerDataViewer.OffPanel();
         }
+    }
+
+    private static Transform FindTowerAt(Vector2 worldPoint)
+    {
+        Collider2D[] hits = Physics2D.OverlapPointAll(worldPoint);
+        for (int i = 0; i < hits.Length; i++)
+        {
+            if (hits[i] != null && hits[i].CompareTag("Tower"))
+            {
+                return hits[i].transform;
+            }
+        }
+
+        return null;
     }
 }

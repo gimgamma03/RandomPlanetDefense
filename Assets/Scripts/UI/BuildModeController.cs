@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
-using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 /// <summary>
@@ -194,7 +193,7 @@ public class BuildModeController : MonoBehaviour, IBuildModeState
             return;
         }
 
-        Vector2 mouseWorld = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+        Vector2 mouseWorld = Camera.main.ScreenToWorldPoint(PointerInput.ScreenPosition());
 
         if (Input.GetKeyDown(KeyCode.Escape))
         {
@@ -202,10 +201,9 @@ public class BuildModeController : MonoBehaviour, IBuildModeState
         }
         else if (Input.GetMouseButtonDown(1))
         {
-            // 벽 모드: 빈 벽 우클릭 → 철거. 그 외/실패 시 모드 취소
+            // 벽 모드: 빈 벽 우클릭 → 철거. 그 외/실패 시 모드 취소. 폰에는 우클릭 없음.
             if (mode == BuildMode.PlaceWall
-                && EventSystem.current != null
-                && !EventSystem.current.IsPointerOverGameObject()
+                && !PointerInput.IsOverUI()
                 && mapDirector != null
                 && mapDirector.TryRemoveWallAt(mouseWorld))
             {
@@ -230,12 +228,12 @@ public class BuildModeController : MonoBehaviour, IBuildModeState
             }
         }
 
-        if (!Input.GetMouseButtonDown(0) || !HasActiveMode)
+        if (!PointerInput.WasPrimaryPressThisFrame() || !HasActiveMode)
         {
             return;
         }
 
-        if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject())
+        if (PointerInput.IsOverUI())
         {
             return;
         }
