@@ -46,8 +46,15 @@ public class BuildModeController : MonoBehaviour, IBuildModeState
     private readonly List<(Button button, UnityEngine.Events.UnityAction action)> runtimeListeners =
         new List<(Button, UnityEngine.Events.UnityAction)>();
 
+    private readonly Color wallRemoveTint = new Color(0.82f, 0.22f, 0.22f, 1f);
+
     public BuildMode CurrentMode => mode;
     public bool HasActiveMode => mode != BuildMode.None;
+
+    private static bool IsWallMode(BuildMode value)
+    {
+        return value == BuildMode.PlaceWall || value == BuildMode.RemoveWall;
+    }
 
     protected virtual void Awake()
     {
@@ -202,12 +209,12 @@ public class BuildModeController : MonoBehaviour, IBuildModeState
         else if (Input.GetMouseButtonDown(1))
         {
             // 벽 모드: 빈 벽 우클릭 → 철거. 그 외/실패 시 모드 취소. 폰에는 우클릭 없음.
-            if (mode == BuildMode.PlaceWall
+            if (IsWallMode(mode)
                 && !PointerInput.IsOverUI()
                 && mapDirector != null
                 && mapDirector.TryRemoveWallAt(mouseWorld))
             {
-                // 철거 성공 — 벽 모드 유지
+                // 철거 성공 — 현재 벽 모드 유지
             }
             else
             {
@@ -215,12 +222,16 @@ public class BuildModeController : MonoBehaviour, IBuildModeState
             }
         }
 
-        // Space: 벽 모드 진입 (타워 버튼과 같은 흐름). 이미 벽 모드면 즉시 설치.
+        // Space: 벽 모드 진입. 설치 모드면 설치, 해체 모드면 철거.
         if (Input.GetKeyDown(KeyCode.Space))
         {
             if (mode == BuildMode.PlaceWall)
             {
                 TryPlaceWall(mouseWorld);
+            }
+            else if (mode == BuildMode.RemoveWall)
+            {
+                TryRemoveWall(mouseWorld);
             }
             else
             {
@@ -268,6 +279,9 @@ public class BuildModeController : MonoBehaviour, IBuildModeState
             case BuildMode.PlaceWall:
                 TryPlaceWall(mouseWorld);
                 break;
+            case BuildMode.RemoveWall:
+                TryRemoveWall(mouseWorld);
+                break;
         }
     }
 
@@ -296,7 +310,7 @@ public class BuildModeController : MonoBehaviour, IBuildModeState
     {
         if (!EnsureMapDirector() || mapDirector.IsWallPlacementLocked)
         {
-            if (mode == BuildMode.PlaceWall && mapDirector != null && mapDirector.IsWallPlacementLocked)
+            if (IsWallMode(mode) && mapDirector != null && mapDirector.IsWallPlacementLocked)
             {
                 CancelMode();
             }
@@ -305,6 +319,21 @@ public class BuildModeController : MonoBehaviour, IBuildModeState
         }
 
         mapDirector.TryPlaceWallAt(mouseWorld);
+    }
+
+    private void TryRemoveWall(Vector2 mouseWorld)
+    {
+        if (!EnsureMapDirector() || mapDirector.IsWallPlacementLocked)
+        {
+            if (IsWallMode(mode) && mapDirector != null && mapDirector.IsWallPlacementLocked)
+            {
+                CancelMode();
+            }
+
+            return;
+        }
+
+        mapDirector.TryRemoveWallAt(mouseWorld);
     }
 
     private bool EnsureMapDirector()
@@ -350,8 +379,16 @@ public class BuildModeController : MonoBehaviour, IBuildModeState
                 continue;
             }
 
-            bool pressed = mode == bs.associatedMode;
-            ApplyOnOffLabel(bs.label, bs.labelBody, pressed);
+            bool isWallButton = bs.associatedMode == BuildMode.PlaceWall;
+            bool pressed = isWallButton ? IsWallMode(mode) : mode == bs.associatedMode;
+            if (isWallButton)
+            {
+                ApplyWallLabel(bs.label, mode);
+            }
+            else
+            {
+                ApplyOnOffLabel(bs.label, bs.labelBody, pressed);
+            }
 
             if (bs.image == null)
             {
@@ -360,22 +397,29 @@ public class BuildModeController : MonoBehaviour, IBuildModeState
 
             if (pressed)
             {
-                // ColorTint / SpriteSwap 둘 다 덮어쓰지 않게 transition 끔
                 bs.button.transition = Selectable.Transition.None;
 
-                Sprite pressedSprite = bs.button.spriteState.pressedSprite;
-                if (pressedSprite != null)
+                if (isWallButton && mode == BuildMode.RemoveWall)
                 {
-                    // SpriteSwap 버튼: Pressed 스프라이트 고정
-                    bs.image.sprite = pressedSprite;
-                    bs.image.color = bs.normalColor;
+                    bs.image.sprite = bs.normalSprite;
+                    Color removeColor = wallRemoveTint;
+                    removeColor.a = bs.normalColor.a;
+                    bs.image.color = removeColor;
                 }
                 else
                 {
-                    // ColorTint 버튼: Pressed 색 고정
-                    Color pressedColor = bs.button.colors.pressedColor;
-                    pressedColor.a = bs.normalColor.a;
-                    bs.image.color = pressedColor;
+                    Sprite pressedSprite = bs.button.spriteState.pressedSprite;
+                    if (pressedSprite != null)
+                    {
+                        bs.image.sprite = pressedSprite;
+                        bs.image.color = bs.normalColor;
+                    }
+                    else
+                    {
+                        Color pressedColor = bs.button.colors.pressedColor;
+                        pressedColor.a = bs.normalColor.a;
+                        bs.image.color = pressedColor;
+                    }
                 }
             }
             else
@@ -398,12 +442,34 @@ public class BuildModeController : MonoBehaviour, IBuildModeState
         EnterMode(target);
     }
 
-    /// <summary>씬 버튼 / Space — 벽 설치 모드 (좌클릭으로 설치, 연속 가능).</summary>
+    private static void ApplyWallLabel(TextMeshProUGUI label, BuildMode current)
+    {
+        if (label == null)
+        {
+            return;
+        }
+
+        if (current == BuildMode.PlaceWall)
+        {
+            label.text = "벽 설치\nOn";
+            return;
+        }
+
+        if (current == BuildMode.RemoveWall)
+        {
+            label.text = "벽 해체\nOn";
+            return;
+        }
+
+        label.text = "벽 건설 모드\nOff";
+    }
+
+    /// <summary>씬 버튼 / Space — 벽 Off → 설치 On → 해체 On → Off.</summary>
     public void PlaceWallButton()
     {
         if (!CanEnterWallMode())
         {
-            if (mode == BuildMode.PlaceWall)
+            if (IsWallMode(mode))
             {
                 CancelMode();
             }
@@ -411,7 +477,19 @@ public class BuildModeController : MonoBehaviour, IBuildModeState
             return;
         }
 
-        ToggleMode(BuildMode.PlaceWall);
+        if (mode == BuildMode.PlaceWall)
+        {
+            EnterMode(BuildMode.RemoveWall);
+            return;
+        }
+
+        if (mode == BuildMode.RemoveWall)
+        {
+            CancelMode();
+            return;
+        }
+
+        EnterMode(BuildMode.PlaceWall);
     }
 
     public void RandomTowerSpawnerButton()

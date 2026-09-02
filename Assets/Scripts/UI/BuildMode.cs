@@ -9,4 +9,5 @@ public enum BuildMode
     Combine,
     Sell,
     PlaceWall,
+    RemoveWall,
 }

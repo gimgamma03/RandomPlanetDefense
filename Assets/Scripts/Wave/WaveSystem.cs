@@ -266,7 +266,8 @@ public class WaveSystem : MonoBehaviour
             return;
         }
 
-        if (buildMode.CurrentMode == BuildMode.PlaceWall)
+        if (buildMode.CurrentMode == BuildMode.PlaceWall
+            || buildMode.CurrentMode == BuildMode.RemoveWall)
         {
             buildMode.CancelMode();
         }

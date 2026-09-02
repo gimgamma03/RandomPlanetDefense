@@ -2,24 +2,39 @@ using UnityEngine;
 
 /// <summary>
 /// 배경 스프라이트를 왼쪽으로 흘리고, 카메라 왼쪽으로 완전히 나가면 오른쪽 끝으로 보낸다.
-/// 랩 거리는 화면 폭이 아니라 타일 실제 폭을 쓴다.
+/// 타일 크기·간격은 카메라 화면을 덮도록 맞춘다. (20:9에서 별 하늘 틈 방지)
 /// </summary>
 public class ScrollImage : MonoBehaviour
 {
     public float speed;
     public Transform[] backgrounds;
 
+    const float CoverPadding = 1.08f;
+    const float TileOverlap = 0.02f;
+
     float spriteWorldWidth;
     float wrapDistance;
+    int lastScreenWidth;
+    int lastScreenHeight;
 
     void Start()
     {
-        CacheMetrics();
+        FitToCameraAndLayout();
     }
 
     void Update()
     {
-        if (backgrounds == null || backgrounds.Length == 0 || wrapDistance <= 0f)
+        if (backgrounds == null || backgrounds.Length == 0)
+        {
+            return;
+        }
+
+        if (Screen.width != lastScreenWidth || Screen.height != lastScreenHeight)
+        {
+            FitToCameraAndLayout();
+        }
+
+        if (wrapDistance <= 0f)
         {
             return;
         }
@@ -42,7 +57,6 @@ public class ScrollImage : MonoBehaviour
 
             tile.position += delta;
 
-            // 중심이 아니라 오른쪽 끝이 카메라 왼쪽보다 왼쪽일 때만 랩한다.
             if (tile.position.x + halfWidth < camLeft)
             {
                 Vector3 nextPos = tile.position;
@@ -52,27 +66,38 @@ public class ScrollImage : MonoBehaviour
         }
     }
 
-    private void CacheMetrics()
+    private void FitToCameraAndLayout()
     {
-        spriteWorldWidth = MeasureSpriteWorldWidth();
-        float spacing = MeasureTileSpacing();
-        float tileWidth = Mathf.Max(spriteWorldWidth, spacing);
-        if (tileWidth < 0.01f)
+        lastScreenWidth = Screen.width;
+        lastScreenHeight = Screen.height;
+
+        Sprite sprite = FindSprite();
+        if (sprite == null)
         {
-            tileWidth = 32f;
+            CacheMetricsFallback();
+            return;
         }
 
-        spriteWorldWidth = Mathf.Max(spriteWorldWidth, tileWidth);
-        wrapDistance = tileWidth * backgrounds.Length;
-    }
+        Camera cam = Camera.main;
+        float camHeight = cam != null ? cam.orthographicSize * 2f : 20f;
+        float camWidth = cam != null ? camHeight * cam.aspect : camHeight * 16f / 9f;
 
-    private float MeasureSpriteWorldWidth()
-    {
-        if (backgrounds == null)
+        float localWidth = sprite.rect.width / sprite.pixelsPerUnit;
+        float localHeight = sprite.rect.height / sprite.pixelsPerUnit;
+        if (localWidth < 0.01f || localHeight < 0.01f)
         {
-            return 0f;
+            CacheMetricsFallback();
+            return;
         }
 
+        float scaleY = (camHeight / localHeight) * CoverPadding;
+        // 타일 2장이 화면 가로를 덮어야 랩 직후에도 틈이 안 난다.
+        float minTileWorldWidth = (camWidth * 0.55f) * CoverPadding;
+        float scaleX = Mathf.Max(scaleY, minTileWorldWidth / localWidth);
+        transform.localScale = new Vector3(scaleX, scaleY, 1f);
+
+        float localStep = localWidth * (1f - TileOverlap);
+        int index = 0;
         for (int i = 0; i < backgrounds.Length; i++)
         {
             Transform tile = backgrounds[i];
@@ -81,33 +106,21 @@ public class ScrollImage : MonoBehaviour
                 continue;
             }
 
-            SpriteRenderer spriteRenderer = tile.GetComponent<SpriteRenderer>();
-            if (spriteRenderer == null || spriteRenderer.sprite == null)
-            {
-                continue;
-            }
-
-            float localWidth = spriteRenderer.sprite.rect.width / spriteRenderer.sprite.pixelsPerUnit;
-            float worldWidth = localWidth * Mathf.Abs(tile.lossyScale.x);
-            if (worldWidth > 0.01f)
-            {
-                return worldWidth;
-            }
+            tile.localPosition = new Vector3((index - 1) * localStep, 0f, 0f);
+            index++;
         }
 
-        return 0f;
+        spriteWorldWidth = localWidth * scaleX;
+        wrapDistance = localStep * scaleX * CountTiles();
     }
 
-    private float MeasureTileSpacing()
+    private Sprite FindSprite()
     {
-        if (backgrounds == null || backgrounds.Length < 2)
+        if (backgrounds == null)
         {
-            return 0f;
+            return null;
         }
 
-        float minX = float.MaxValue;
-        float maxX = float.MinValue;
-        int count = 0;
         for (int i = 0; i < backgrounds.Length; i++)
         {
             if (backgrounds[i] == null)
@@ -115,25 +128,65 @@ public class ScrollImage : MonoBehaviour
                 continue;
             }
 
-            float x = backgrounds[i].position.x;
-            if (x < minX)
+            SpriteRenderer spriteRenderer = backgrounds[i].GetComponent<SpriteRenderer>();
+            if (spriteRenderer != null && spriteRenderer.sprite != null)
             {
-                minX = x;
+                return spriteRenderer.sprite;
             }
-
-            if (x > maxX)
-            {
-                maxX = x;
-            }
-
-            count++;
         }
 
-        if (count < 2)
+        return null;
+    }
+
+    private int CountTiles()
+    {
+        int count = 0;
+        for (int i = 0; i < backgrounds.Length; i++)
+        {
+            if (backgrounds[i] != null)
+            {
+                count++;
+            }
+        }
+
+        return Mathf.Max(count, 1);
+    }
+
+    private void CacheMetricsFallback()
+    {
+        spriteWorldWidth = MeasureSpriteWorldWidth();
+        if (spriteWorldWidth < 0.01f)
+        {
+            spriteWorldWidth = 32f;
+        }
+
+        wrapDistance = spriteWorldWidth * CountTiles();
+    }
+
+    private float MeasureSpriteWorldWidth()
+    {
+        Sprite sprite = FindSprite();
+        if (sprite == null)
         {
             return 0f;
         }
 
-        return (maxX - minX) / (count - 1);
+        Transform tile = null;
+        for (int i = 0; i < backgrounds.Length; i++)
+        {
+            if (backgrounds[i] != null)
+            {
+                tile = backgrounds[i];
+                break;
+            }
+        }
+
+        if (tile == null)
+        {
+            return 0f;
+        }
+
+        float localWidth = sprite.rect.width / sprite.pixelsPerUnit;
+        return localWidth * Mathf.Abs(tile.lossyScale.x);
     }
 }

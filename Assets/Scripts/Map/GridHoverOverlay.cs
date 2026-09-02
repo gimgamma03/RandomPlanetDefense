@@ -3,7 +3,7 @@ using UnityEngine.Tilemaps;
 
 /// <summary>
 /// 마우스 아래 그리드 셀 미리보기.
-/// 벽 모드: 파란색 반투명 블록(블루프린트).
+/// 벽 설치: 파란색 반투명 블록. 벽 해체: 빨간색 반투명 블록.
 /// 그 외: 테두리(기본 흰 / 소환 초록 / 조합 파랑 / 판매 빨강).
 /// </summary>
 public class GridHoverOverlay : MonoBehaviour
@@ -14,6 +14,10 @@ public class GridHoverOverlay : MonoBehaviour
     private Color wallBlueprintFill = new Color(0.25f, 0.65f, 1f, 0.4f);
     [SerializeField]
     private Color wallBlueprintEdge = new Color(0.45f, 0.85f, 1f, 0.9f);
+    [SerializeField]
+    private Color wallRemoveFill = new Color(0.85f, 0.2f, 0.2f, 0.4f);
+    [SerializeField]
+    private Color wallRemoveEdge = new Color(1f, 0.35f, 0.35f, 0.9f);
     [SerializeField]
     private Color spawnTowerColor = Color.green;
     [SerializeField]
@@ -32,7 +36,7 @@ public class GridHoverOverlay : MonoBehaviour
     private IBuildModeState buildModeState;
     private Vector3Int lastCell = new Vector3Int(int.MinValue, 0, 0);
     private bool visible;
-    private bool wallBlueprintMode;
+    private bool wallFillMode;
 
     public static GridHoverOverlay EnsureExists()
     {
@@ -158,12 +162,14 @@ public class GridHoverOverlay : MonoBehaviour
         bool show;
         if (mode == BuildMode.PlaceWall)
         {
-            // 건설 가능 칸만 (빈 walkable)
             show = walkableMap.HasTile(cell);
+        }
+        else if (mode == BuildMode.RemoveWall)
+        {
+            show = wallMap != null && wallMap.HasTile(cell);
         }
         else
         {
-            // 필드 노드(이동 가능 또는 이미 벽)
             show = walkableMap.HasTile(cell) || (wallMap != null && wallMap.HasTile(cell));
         }
 
@@ -173,16 +179,34 @@ public class GridHoverOverlay : MonoBehaviour
             return;
         }
 
-        bool useBlueprint = mode == BuildMode.PlaceWall;
-        Color edgeColor = useBlueprint ? wallBlueprintEdge : GetModeColor(mode);
+        bool useFill = mode == BuildMode.PlaceWall || mode == BuildMode.RemoveWall;
+        Color edgeColor;
+        Color fillColor;
+        if (mode == BuildMode.PlaceWall)
+        {
+            edgeColor = wallBlueprintEdge;
+            fillColor = wallBlueprintFill;
+        }
+        else if (mode == BuildMode.RemoveWall)
+        {
+            edgeColor = wallRemoveEdge;
+            fillColor = wallRemoveFill;
+        }
+        else
+        {
+            edgeColor = GetModeColor(mode);
+            fillColor = wallBlueprintFill;
+        }
+
         if (!visible
             || cell != lastCell
-            || wallBlueprintMode != useBlueprint
-            || line.startColor != edgeColor)
+            || wallFillMode != useFill
+            || line.startColor != edgeColor
+            || fill.color != fillColor)
         {
-            DrawCell(cell, edgeColor, useBlueprint);
+            DrawCell(cell, edgeColor, fillColor, useFill);
             lastCell = cell;
-            wallBlueprintMode = useBlueprint;
+            wallFillMode = useFill;
         }
 
         SetVisible(true);
@@ -203,7 +227,7 @@ public class GridHoverOverlay : MonoBehaviour
         }
     }
 
-    private void DrawCell(Vector3Int cell, Color edgeColor, bool blueprint)
+    private void DrawCell(Vector3Int cell, Color edgeColor, Color fillColor, bool useFill)
     {
         Vector3 center = walkableMap.GetCellCenterWorld(cell);
         center -= walkableMap.cellGap / 2f;
@@ -223,21 +247,21 @@ public class GridHoverOverlay : MonoBehaviour
         line.startWidth = lineWidth;
         line.endWidth = lineWidth;
 
-        if (blueprint)
+        if (useFill)
         {
             fill.transform.position = center;
             fill.transform.localScale = new Vector3(
                 Mathf.Max(0.01f, size.x - inset * 2f),
                 Mathf.Max(0.01f, size.y - inset * 2f),
                 1f);
-            fill.color = wallBlueprintFill;
+            fill.color = fillColor;
         }
     }
 
     private void SetVisible(bool on)
     {
         bool lineOn = on;
-        bool fillOn = on && wallBlueprintMode;
+        bool fillOn = on && wallFillMode;
 
         if (visible == on && line.enabled == lineOn && fill.enabled == fillOn)
         {
@@ -250,7 +274,7 @@ public class GridHoverOverlay : MonoBehaviour
         if (!on)
         {
             lastCell = new Vector3Int(int.MinValue, 0, 0);
-            wallBlueprintMode = false;
+            wallFillMode = false;
         }
     }
 
