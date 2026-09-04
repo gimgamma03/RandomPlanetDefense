@@ -91,6 +91,7 @@ public class TowerBasePrefabLoader : MonoBehaviour
             yield break;
         }
 
+        //에러체크가 여러겹임
         if (!useAddressables || string.IsNullOrEmpty(entry.address))
         {
             if (entry.basePrefab == null)
@@ -105,7 +106,8 @@ public class TowerBasePrefabLoader : MonoBehaviour
 
         AsyncOperationHandle<GameObject> handle = Addressables.LoadAssetAsync<GameObject>(entry.address);
         yield return handle;
-
+        
+        //로드자체가 실패거나 상태는 성공인데 내용물이 null인 상황이면 돌려보냄
         if (handle.Status != AsyncOperationStatus.Succeeded || handle.Result == null)
         {
             Debug.LogError($"[TowerBasePrefabLoader] Addressables load failed: {entry.address}. Fallback to direct ref.");

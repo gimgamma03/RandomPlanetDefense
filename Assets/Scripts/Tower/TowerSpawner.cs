@@ -187,6 +187,7 @@ public class TowerSpawner : MonoBehaviour
             yield break;
         }
 
+        //노드위치 맞추기
         Vector3Int tilePosition = MapDirector.Instance.WallMap.WorldToCell(towerLocation);
         Vector3 tileCenterPosition = MapDirector.Instance.WallMap.GetCellCenterWorld(tilePosition);
         tileCenterPosition -= WallMap.cellGap / 2f;
